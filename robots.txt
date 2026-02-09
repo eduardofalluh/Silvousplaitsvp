@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://silvousplaitsvp.com/sitemap.xml
+Host: silvousplaitsvp.com

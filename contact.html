@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact – Silvousplait</title>
+  <meta name="description" content="Contactez Silvousplait pour une question, une suggestion de spectacle ou une demande de partenariat." />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <meta name="theme-color" content="#3347CA" />
+
+  <link rel="canonical" href="https://silvousplaitsvp.com/contact.html" />
+  <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+  <link rel="icon" href="assets/favicon.jpg" type="image/jpeg" />
+  <link rel="apple-touch-icon" href="assets/favicon.jpg" />
+
+  <meta property="og:locale" content="fr_CA" />
+  <meta property="og:site_name" content="Silvousplait" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Contact – Silvousplait" />
+  <meta property="og:description" content="Une question, une suggestion ou un partenariat ? Écrivez-nous." />
+  <meta property="og:url" content="https://silvousplaitsvp.com/contact.html" />
+  <meta property="og:image" content="https://silvousplaitsvp.com/assets/favicon.jpg" />
+  <meta property="og:image:alt" content="Logo de Silvousplait" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Contact – Silvousplait" />
+  <meta name="twitter:description" content="Une question, une suggestion ou un partenariat ? Écrivez-nous." />
+  <meta name="twitter:image" content="https://silvousplaitsvp.com/assets/favicon.jpg" />
+
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Inter+Display:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ContactPage",
+      "@id": "https://silvousplaitsvp.com/contact.html#contactpage",
+      "url": "https://silvousplaitsvp.com/contact.html",
+      "name": "Contact – Silvousplait",
+      "inLanguage": "fr-CA",
+      "isPartOf": {
+        "@type": "WebSite",
+        "@id": "https://silvousplaitsvp.com/#website",
+        "name": "Silvousplait",
+        "url": "https://silvousplaitsvp.com/"
+      }
+    }
+  </script>
+  
+  <!-- EmailJS SDK -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script type="text/javascript">
+    (function(){
+      emailjs.init("qKYgMRIeyCUiAPs6Z");
+    })();
+  </script>
+</head>
+
+<body>
+
+<div class="page-transition-overlay"></div>
+
+<header class="nav">
+  <div class="logo">
+    <a href="index.html">
+      <img src="assets/logo.webp" alt="Silvousplait" />
+    </a>
+  </div>
+  <button class="mobile-menu-toggle" aria-label="Toggle menu">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+  <nav class="nav-menu">
+    <a href="contact.html">Contactez-nous</a>
+  </nav>
+</header>
+
+<section class="contact-section">
+  <div class="contact-container">
+    <h1 class="scroll-reveal" data-reveal="fade-up">Contactez-nous</h1>
+    <p class="contact-intro scroll-reveal" data-reveal="fade-in" data-reveal-delay="1">Une question ? Une suggestion ? Nous serions ravis d'avoir de vos nouvelles.</p>
+
+    <form id="contact-form" class="contact-form scroll-reveal" data-reveal="fade-up" data-reveal-delay="2">
+      <div class="form-group">
+        <label for="name">Nom complet</label>
+        <input type="text" id="name" name="name" required placeholder="Votre nom" />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Courriel</label>
+        <input type="email" id="email" name="email" required placeholder="votre@email.com" />
+      </div>
+
+      <div class="form-group">
+        <label for="subject">Sujet</label>
+        <input type="text" id="subject" name="subject" required placeholder="Sujet de votre message" />
+      </div>
+
+      <div class="form-group">
+        <label for="message">Message</label>
+        <textarea id="message" name="message" rows="6" required placeholder="Votre message..."></textarea>
+      </div>
+
+      <button type="submit" class="contact-submit-btn">
+        <span class="btn-text">Envoyer le message</span>
+        <span class="btn-loading" style="display: none;">Envoi en cours...</span>
+      </button>
+
+      <div id="form-message" class="form-message" style="display: none;"></div>
+    </form>
+  </div>
+</section>
+
+<footer class="scroll-reveal" data-reveal="fade-in">
+  <div class="footer-links">
+    <a href="index.html">Accueil</a>
+    <a href="faq.html">Questions et aide</a>
+    <a href="contact.html">Contactez-nous</a>
+    <a href="termes.html">Termes</a>
+    <a href="politique.html">Politique</a>
+  </div>
+  <div class="footer-copyright">
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script>if (typeof window.initScrollReveal === 'function') window.initScrollReveal();</script>
+<script>
+  // Contact form submission
+  document.getElementById('contact-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const form = this;
+    const submitBtn = form.querySelector('.contact-submit-btn');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const btnLoading = submitBtn.querySelector('.btn-loading');
+    const messageDiv = document.getElementById('form-message');
+    
+    // Show loading state
+    btnText.style.display = 'none';
+    btnLoading.style.display = 'inline';
+    submitBtn.disabled = true;
+    messageDiv.style.display = 'none';
+    
+    // Get form data
+    const formData = {
+      name: document.getElementById('name').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      subject: document.getElementById('subject').value.trim(),
+      message: document.getElementById('message').value.trim()
+    };
+    
+    // Validate form data
+    if (!formData.name || !formData.email || !formData.subject || !formData.message) {
+      messageDiv.className = 'form-message error';
+      messageDiv.innerHTML = '<strong>✗ Erreur</strong><br>Veuillez remplir tous les champs.';
+      messageDiv.style.display = 'block';
+      btnText.style.display = 'inline';
+      btnLoading.style.display = 'none';
+      submitBtn.disabled = false;
+      return;
+    }
+    
+    console.log('Sending email with data:', formData);
+    
+    // Send email using EmailJS
+    emailjs.send('service_vyzrc2p', 'template_uhedeli', {
+      from_name: formData.name,
+      from_email: formData.email,
+      subject: formData.subject,
+      message: formData.message
+    })
+    .then(function() {
+      // Success
+      messageDiv.className = 'form-message success';
+      messageDiv.innerHTML = '<strong>✓ Message envoyé avec succès !</strong><br>Nous avons bien reçu votre message et nous vous répondrons dans les plus brefs délais.';
+      messageDiv.style.display = 'block';
+      form.reset();
+      
+      // Scroll to message
+      messageDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      
+      // Reset button
+      btnText.style.display = 'inline';
+      btnLoading.style.display = 'none';
+      submitBtn.disabled = false;
+      
+      // Hide success message after 8 seconds
+      setTimeout(function() {
+        messageDiv.style.display = 'none';
+      }, 8000);
+    }, function(error) {
+      // Error
+      console.error('EmailJS error details:', error);
+      console.error('Error status:', error.status);
+      console.error('Error text:', error.text);
+      
+      let errorMessage = 'Une erreur est survenue. Veuillez réessayer ou nous contacter directement à <a href="mailto:spectacles@silvousplaitsvp.com">spectacles@silvousplaitsvp.com</a>';
+      
+      // More specific error messages
+      if (error.status === 400) {
+        errorMessage = 'Erreur de configuration. Vérifiez que le template EmailJS est correctement configuré.';
+      } else if (error.status === 401) {
+        errorMessage = 'Erreur d\'authentification. Vérifiez votre clé publique EmailJS.';
+      } else if (error.status === 403) {
+        errorMessage = 'Accès refusé. Vérifiez les permissions de votre service EmailJS.';
+      } else if (error.status === 412) {
+        errorMessage = 'Permissions Gmail insuffisantes. Reconnectez votre compte Gmail dans EmailJS avec toutes les permissions.';
+      } else if (error.text) {
+        errorMessage = 'Erreur: ' + error.text;
+      }
+      
+      messageDiv.className = 'form-message error';
+      messageDiv.innerHTML = '<strong>✗ Erreur lors de l\'envoi</strong><br>' + errorMessage;
+      messageDiv.style.display = 'block';
+      
+      // Scroll to message
+      messageDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      
+      // Reset button
+      btnText.style.display = 'inline';
+      btnLoading.style.display = 'none';
+      submitBtn.disabled = false;
+    });
+  });
+</script>
+</body>
+</html>
+
