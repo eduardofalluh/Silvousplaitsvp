@@ -434,27 +434,28 @@ document.addEventListener('DOMContentLoaded', () => {
     return false;
   }
 
-  /** Build JSON body from form (including reCAPTCHA token) and POST to Netlify function for verification + AC forward */
-  async function submitActiveCampaign(form) {
-    const honeypot = form.querySelector('input[name="website"]');
+  var RECAPTCHA_SITE_KEY = '6LdfG2csAAAAABhrVDaPSFqMj_mILqeiZrC0byfE';
+
+  /** Build JSON body from form + token and POST to Netlify function (Enterprise verifies token, then forwards to AC) */
+  async function submitActiveCampaign(form, token) {
+    var honeypot = form.querySelector('input[name="website"]');
     if (honeypot && honeypot.value && honeypot.value.trim() !== '') {
       return { response: { ok: true }, data: { success: 1 } };
     }
 
-    const body = {};
-    const fd = new FormData(form);
-    for (const [key, value] of fd) {
+    var body = {};
+    var fd = new FormData(form);
+    fd.forEach(function (value, key) {
       body[key] = value;
-    }
-    var tokenInput = form.querySelector('[name="g-recaptcha-response"]');
-    if (tokenInput) body['g-recaptcha-response'] = tokenInput.value;
+    });
+    body['g-recaptcha-response'] = token;
 
-    const response = await fetch('/.netlify/functions/submit-signup', {
+    var response = await fetch('/.netlify/functions/submit-signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    let data = null;
+    var data = null;
     try {
       data = await response.json();
     } catch (_) {
@@ -464,7 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.querySelectorAll('form[data-ac-signup="true"]').forEach((form) => {
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', function (e) {
       e.preventDefault();
       setFormFeedback(form, '');
 
@@ -473,33 +474,47 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      var tokenInput = form.querySelector('[name="g-recaptcha-response"]');
-      if (tokenInput && !tokenInput.value) {
-        setFormFeedback(form, "Veuillez cocher « Je ne suis pas un robot » avant d’envoyer.", 'error');
+      var submitButton = form.querySelector('button[type="submit"]');
+      var emailInput = form.querySelector('input[name="email"]');
+      if (submitButton) submitButton.disabled = true;
+      setFormFeedback(form, "Vérification en cours…");
+
+      function onDone() {
+        if (submitButton) submitButton.disabled = false;
+      }
+
+      if (typeof grecaptcha === 'undefined' || !grecaptcha.enterprise) {
+        setFormFeedback(form, "Vérification non disponible. Recharge la page et réessaie.", 'error');
+        onDone();
         return;
       }
 
-      const submitButton = form.querySelector('button[type="submit"]');
-      const emailInput = form.querySelector('input[name="email"]');
+      grecaptcha.enterprise.ready(function () {
+        grecaptcha.enterprise.execute(RECAPTCHA_SITE_KEY, { action: 'signup' })
+          .then(function (token) {
+            setFormFeedback(form, "Envoi en cours…");
+            return submitActiveCampaign(form, token);
+          })
+          .then(function (result) {
+            var response = result.response;
+            var data = result.data;
 
-      if (submitButton) submitButton.disabled = true;
-      setFormFeedback(form, "Envoi en cours…");
-
-      try {
-        const { response, data } = await submitActiveCampaign(form);
-
-        if (response.ok && isActiveCampaignSuccess(data)) {
-          setFormFeedback(form, "Merci ! Tu es inscrit(e). Vérifie ta boîte de réception (et tes indésirables).");
-          if (emailInput) emailInput.value = '';
-        } else {
-          setFormFeedback(form, "Oups — l’inscription n’a pas fonctionné. Vérifie ton email et réessaie.", 'error');
-        }
-      } catch (err) {
-        console.error(err);
-        setFormFeedback(form, "Oups — impossible d’envoyer pour le moment. Réessaie plus tard.", 'error');
-      } finally {
-        if (submitButton) submitButton.disabled = false;
-      }
+            if (response.ok && isActiveCampaignSuccess(data)) {
+              setFormFeedback(form, "Merci ! Tu es inscrit(e). Vérifie ta boîte de réception (et tes indésirables).");
+              if (emailInput) emailInput.value = '';
+            } else if (response.status === 400) {
+              setFormFeedback(form, "Vérification échouée. Réessaie ou recharge la page.", 'error');
+            } else {
+              setFormFeedback(form, "L'inscription n'a pas fonctionné. Vérifie ton email et réessaie.", 'error');
+            }
+            onDone();
+          })
+          .catch(function (err) {
+            console.error(err);
+            setFormFeedback(form, "Impossible d'envoyer pour le moment. Réessaie plus tard.", 'error');
+            onDone();
+          });
+      });
     });
   });
 
