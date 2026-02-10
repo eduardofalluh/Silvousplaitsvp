@@ -1,12 +1,11 @@
 /**
- * Netlify Function: verify reCAPTCHA Enterprise token, then forward signup to ActiveCampaign.
- * Env: RECAPTCHA_SECRET_KEY (Google Cloud API key for reCAPTCHA Enterprise API),
- *      optional RECAPTCHA_PROJECT_ID (default: silvousplaitsvp-1770746538963).
+ * Netlify Function: verify reCAPTCHA (v2 or Enterprise), then forward signup to ActiveCampaign.
+ * - Enterprise: RECAPTCHA_SECRET_KEY = Google Cloud API key (AIza...), RECAPTCHA_PROJECT_ID = your project ID.
+ * - v2: RECAPTCHA_SECRET_KEY = reCAPTCHA v2 secret from https://www.google.com/recaptcha/admin
  */
 
 const AC_URL = 'https://silvousplait.activehosted.com/proc.php';
 const SITE_KEY = '6LdfG2csAAAAABhrVDaPSFqMj_mILqeiZrC0byfE';
-const DEFAULT_PROJECT_ID = 'silvousplaitsvp-1770746538963';
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -19,32 +18,44 @@ function stripForAC(body) {
   return rest;
 }
 
+function isEnterpriseKey(key) {
+  return typeof key === 'string' && key.trim().startsWith('AIza');
+}
+
 async function verifyRecaptchaEnterprise(token, apiKey, projectId) {
   const url = `https://recaptchaenterprise.googleapis.com/v1/projects/${projectId}/assessments?key=${apiKey}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      event: {
-        token: token,
-        expectedAction: 'signup',
-        siteKey: SITE_KEY,
-      },
+      event: { token, siteKey: SITE_KEY, expectedAction: 'signup' },
     }),
+  });
+  if (!res.ok) {
+    console.error('reCAPTCHA Enterprise error:', res.status, await res.text());
+    return false;
+  }
+  const data = await res.json();
+  return !!(data.tokenProperties && data.tokenProperties.valid === true);
+}
+
+async function verifyRecaptchaV2(token, secretKey) {
+  const params = new URLSearchParams({ secret: secretKey, response: token });
+  const res = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
   });
 
   if (!res.ok) {
-    const errText = await res.text();
-    console.error('reCAPTCHA Enterprise error:', res.status, errText);
-    return false;
+    console.error('reCAPTCHA siteverify HTTP error:', res.status, await res.text());
+    return { valid: false };
   }
 
   const data = await res.json();
-  const valid = data.tokenProperties && data.tokenProperties.valid === true;
-  if (!valid && data.tokenProperties && data.tokenProperties.invalidReason) {
-    console.error('reCAPTCHA invalid reason:', data.tokenProperties.invalidReason);
-  }
-  return valid;
+  if (data.success === true) return { valid: true };
+  console.error('reCAPTCHA siteverify failed:', JSON.stringify(data));
+  return { valid: false, errorCodes: data['error-codes'] };
 }
 
 async function forwardToActiveCampaign(formData) {
@@ -67,17 +78,18 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  const apiKey = process.env.RECAPTCHA_SECRET_KEY;
-  if (!apiKey) {
-    console.error('RECAPTCHA_SECRET_KEY not set');
+  const secretKey = (process.env.RECAPTCHA_SECRET_KEY || '').trim();
+  if (!secretKey) {
+    console.error('RECAPTCHA_SECRET_KEY not set in Netlify');
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Server configuration error' }),
+      body: JSON.stringify({
+        error: 'Server configuration error',
+        hint: 'In Netlify add RECAPTCHA_SECRET_KEY. For Enterprise use your Google Cloud API key (AIza...); for v2 use the reCAPTCHA secret key.',
+      }),
     };
   }
-
-  const projectId = process.env.RECAPTCHA_PROJECT_ID || DEFAULT_PROJECT_ID;
 
   let body;
   try {
@@ -91,9 +103,31 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing verification' }) };
   }
 
-  const valid = await verifyRecaptchaEnterprise(token, apiKey, projectId);
-  if (!valid) {
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Verification failed' }) };
+  if (isEnterpriseKey(secretKey)) {
+    const projectId = (process.env.RECAPTCHA_PROJECT_ID || '').trim();
+    if (!projectId) {
+      console.error('RECAPTCHA_PROJECT_ID not set (required for Enterprise)');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Server configuration error',
+          hint: 'For reCAPTCHA Enterprise, set RECAPTCHA_PROJECT_ID in Netlify (your Google Cloud project ID).',
+        }),
+      };
+    }
+    const valid = await verifyRecaptchaEnterprise(token, secretKey, projectId);
+    if (!valid) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Verification failed', hint: 'Complete the reCAPTCHA and try again.' }) };
+    }
+  } else {
+    const result = await verifyRecaptchaV2(token, secretKey);
+    if (!result.valid) {
+      const hint = result.errorCodes && result.errorCodes.includes('invalid-input-secret')
+        ? 'Wrong RECAPTCHA_SECRET_KEY in Netlify.'
+        : 'Complete the reCAPTCHA and try again.';
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Verification failed', hint }) };
+    }
   }
 
   const { ok, data } = await forwardToActiveCampaign(body);

@@ -1,27 +1,44 @@
-# Bot protection (reCAPTCHA Enterprise + honeypot)
+# Bot protection (reCAPTCHA + honeypot)
 
 The signup forms use:
 
 1. **Honeypot** – A hidden field; if a bot fills it, the submission is ignored.
-2. **reCAPTCHA Enterprise** – Verification runs when the user clicks “S’inscrire”. No visible checkbox; the challenge may appear only when Google deems it necessary. The token is verified on the server via the Enterprise Assessment API before the email is sent to ActiveCampaign.
+2. **reCAPTCHA** – “I'm not a robot” checkbox (and image challenge when needed). The site supports **reCAPTCHA Enterprise** (Google Cloud) and **reCAPTCHA v2** (classic).
 
-## What you need in Netlify
+---
 
-- **RECAPTCHA_SECRET_KEY** – In reCAPTCHA Enterprise this is the **Google Cloud API key** used to call the Assessment API (not the “secret key” from the key pair).
-  - In [Google Cloud Console](https://console.cloud.google.com): **APIs & Services** → **Credentials** → **Create credentials** → **API key**.
-  - Enable **reCAPTCHA Enterprise API** for the project (APIs & Services → Library → search “reCAPTCHA Enterprise”).
-  - Put that API key in Netlify as **RECAPTCHA_SECRET_KEY**.
-- **RECAPTCHA_PROJECT_ID** (optional) – Your Google Cloud project ID (e.g. `silvousplaitsvp-1770746538963`). The function has a default; set this only if you use a different project.
+## reCAPTCHA Enterprise (current setup)
+
+Your key is an **Enterprise** key (from Google Cloud). The page loads `enterprise.js` and the backend verifies with the **Assessment API**.
+
+### Netlify environment variables
+
+- **RECAPTCHA_SECRET_KEY** = your **Google Cloud API key** (starts with `AIzaSy...`).  
+  Create in [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → Credentials → Create credentials → API key. Enable **reCAPTCHA Enterprise API** for the project.
+- **RECAPTCHA_PROJECT_ID** = your **Google Cloud project ID** (e.g. `my-project-123`).  
+  Find it in Google Cloud Console in the project selector or in Project settings.
+
+If you see “Invalid key type” on the page, the HTML was using the classic script with an Enterprise key; the site now uses the Enterprise script so that error should be gone.
+
+---
+
+## reCAPTCHA v2 (alternative)
+
+If you prefer the **classic** reCAPTCHA (no Cloud API key):
+
+1. Create a key at [Google reCAPTCHA Admin](https://www.google.com/recaptcha/admin) → reCAPTCHA v2 → “I'm not a robot” Checkbox.
+2. Put the **site key** in `index.html` in both `data-sitekey` attributes.
+3. In Netlify set **RECAPTCHA_SECRET_KEY** to the **secret key** (the v2 secret, not an `AIza...` key).
+4. Change the script in `index.html` back to:  
+   `https://www.google.com/recaptcha/api.js`
+
+The backend detects the key type: if `RECAPTCHA_SECRET_KEY` starts with `AIza`, it uses Enterprise; otherwise it uses v2 siteverify.
+
+---
 
 ## Flow
 
-1. User enters email and clicks **S’inscrire**.
-2. Page shows “Vérification en cours…”, then calls `grecaptcha.enterprise.execute(SITE_KEY, { action: 'signup' })`.
-3. Google returns a token (and may show a challenge if needed).
-4. The token is sent to `/.netlify/functions/submit-signup`.
-5. The function calls the reCAPTCHA Enterprise Assessment API to verify the token.
-6. If verification succeeds, the function forwards the signup to ActiveCampaign and returns the result; the user sees success or an error message.
-
-## Local testing
-
-Run `netlify dev` and set **RECAPTCHA_SECRET_KEY** (and **RECAPTCHA_PROJECT_ID** if needed) in Netlify or in a `.env` file so the function can call the Assessment API.
+1. User enters email, checks “I'm not a robot” (and completes the image challenge if shown).
+2. User clicks **S'inscrire**; the token is sent to `/.netlify/functions/submit-signup`.
+3. The function verifies the token (Enterprise or v2), then forwards the signup to ActiveCampaign.
+4. The user sees success or an error message.

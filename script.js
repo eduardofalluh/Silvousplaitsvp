@@ -434,10 +434,8 @@ document.addEventListener('DOMContentLoaded', () => {
     return false;
   }
 
-  var RECAPTCHA_SITE_KEY = '6LdfG2csAAAAABhrVDaPSFqMj_mILqeiZrC0byfE';
-
-  /** Build JSON body from form + token and POST to Netlify function (Enterprise verifies token, then forwards to AC) */
-  async function submitActiveCampaign(form, token) {
+  /** Build JSON body from form + explicit reCAPTCHA token, POST to Netlify function */
+  async function submitActiveCampaign(form, recaptchaToken) {
     var honeypot = form.querySelector('input[name="website"]');
     if (honeypot && honeypot.value && honeypot.value.trim() !== '') {
       return { response: { ok: true }, data: { success: 1 } };
@@ -448,7 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fd.forEach(function (value, key) {
       body[key] = value;
     });
-    body['g-recaptcha-response'] = token;
+    body['g-recaptcha-response'] = recaptchaToken;
 
     var response = await fetch('/.netlify/functions/submit-signup', {
       method: 'POST',
@@ -464,7 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return { response, data };
   }
 
-  document.querySelectorAll('form[data-ac-signup="true"]').forEach((form) => {
+  document.querySelectorAll('form[data-ac-signup="true"]').forEach(function (form) {
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       setFormFeedback(form, '');
@@ -474,46 +472,47 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      var submitButton = form.querySelector('button[type="submit"]');
-      var emailInput = form.querySelector('input[name="email"]');
-      if (submitButton) submitButton.disabled = true;
-      setFormFeedback(form, "Vérification en cours…");
-
-      function onDone() {
-        if (submitButton) submitButton.disabled = false;
+      var token = '';
+      var tokenEl = form.querySelector('textarea[name="g-recaptcha-response"]');
+      if (tokenEl && tokenEl.value) token = tokenEl.value.trim();
+      if (!token && typeof grecaptcha !== 'undefined' && grecaptcha.enterprise && grecaptcha.enterprise.getResponse) {
+        var forms = document.querySelectorAll('form[data-ac-signup="true"]');
+        var widgetId = Array.prototype.indexOf.call(forms, form);
+        if (widgetId >= 0) token = (grecaptcha.enterprise.getResponse(widgetId) || '').trim();
       }
-
-      if (typeof grecaptcha === 'undefined' || !grecaptcha.enterprise) {
-        setFormFeedback(form, "Vérification non disponible. Recharge la page et réessaie.", 'error');
-        onDone();
+      if (!token) {
+        setFormFeedback(form, "Coche « Je ne suis pas un robot » et complète les images si demandé, puis réessaie.", 'error');
         return;
       }
 
-      grecaptcha.enterprise.ready(function () {
-        grecaptcha.enterprise.execute(RECAPTCHA_SITE_KEY, { action: 'signup' })
-          .then(function (token) {
-            setFormFeedback(form, "Envoi en cours…");
-            return submitActiveCampaign(form, token);
-          })
-          .then(function (result) {
-            var response = result.response;
-            var data = result.data;
+      var submitButton = form.querySelector('button[type="submit"]');
+      var emailInput = form.querySelector('input[name="email"]');
+      if (submitButton) submitButton.disabled = true;
+      setFormFeedback(form, "Envoi en cours…");
 
-            if (response.ok && isActiveCampaignSuccess(data)) {
-              setFormFeedback(form, "Merci ! Tu es inscrit(e). Vérifie ta boîte de réception (et tes indésirables).");
-              if (emailInput) emailInput.value = '';
-            } else if (response.status === 400) {
-              setFormFeedback(form, "Vérification échouée. Réessaie ou recharge la page.", 'error');
-            } else {
-              setFormFeedback(form, "L'inscription n'a pas fonctionné. Vérifie ton email et réessaie.", 'error');
-            }
-            onDone();
-          })
-          .catch(function (err) {
-            console.error(err);
-            setFormFeedback(form, "Impossible d'envoyer pour le moment. Réessaie plus tard.", 'error');
-            onDone();
-          });
+      submitActiveCampaign(form, token).then(function (result) {
+        var response = result.response;
+        var data = result.data;
+
+        if (response.ok && isActiveCampaignSuccess(data)) {
+          setFormFeedback(form, "Merci ! Tu es inscrit(e). Vérifie ta boîte de réception (et tes indésirables).");
+          if (emailInput) emailInput.value = '';
+        } else if (response.status === 400) {
+          var hint = (data && data.hint) ? data.hint : '';
+          var msg = "Vérification échouée.";
+          if (hint) msg += " " + hint;
+          else msg += " Vérifie que tu as coché « Je ne suis pas un robot » et complété le test. Si le problème continue, dans Netlify ajoute la variable RECAPTCHA_SECRET_KEY = 6LeIxAcTAAAAANIqA9dGf-vXIaEMH63cRbeKVgyF (clé test).";
+          setFormFeedback(form, msg, 'error');
+        } else if (response.status === 500 && data && data.hint) {
+          setFormFeedback(form, "Erreur serveur : " + (data.hint || data.error || "Réessaie plus tard."), 'error');
+        } else {
+          setFormFeedback(form, "L'inscription n'a pas fonctionné. Vérifie ton email et réessaie.", 'error');
+        }
+        if (submitButton) submitButton.disabled = false;
+      }).catch(function (err) {
+        console.error(err);
+        setFormFeedback(form, "Impossible d'envoyer pour le moment. Réessaie plus tard.", 'error');
+        if (submitButton) submitButton.disabled = false;
       });
     });
   });
