@@ -434,8 +434,8 @@ document.addEventListener('DOMContentLoaded', () => {
     return false;
   }
 
-  /** Build JSON body from form + explicit reCAPTCHA token, POST to Netlify function */
-  async function submitActiveCampaign(form, recaptchaToken) {
+  /** Build JSON body from form, POST to Netlify function (honeypot blocks bots) */
+  async function submitActiveCampaign(form) {
     var honeypot = form.querySelector('input[name="website"]');
     if (honeypot && honeypot.value && honeypot.value.trim() !== '') {
       return { response: { ok: true }, data: { success: 1 } };
@@ -446,7 +446,6 @@ document.addEventListener('DOMContentLoaded', () => {
     fd.forEach(function (value, key) {
       body[key] = value;
     });
-    body['g-recaptcha-response'] = recaptchaToken;
 
     var response = await fetch('/.netlify/functions/submit-signup', {
       method: 'POST',
@@ -472,37 +471,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      var token = '';
-      var tokenEl = form.querySelector('textarea[name="g-recaptcha-response"]');
-      if (tokenEl && tokenEl.value) token = tokenEl.value.trim();
-      if (!token && typeof grecaptcha !== 'undefined' && grecaptcha.enterprise && grecaptcha.enterprise.getResponse) {
-        var forms = document.querySelectorAll('form[data-ac-signup="true"]');
-        var widgetId = Array.prototype.indexOf.call(forms, form);
-        if (widgetId >= 0) token = (grecaptcha.enterprise.getResponse(widgetId) || '').trim();
-      }
-      if (!token) {
-        setFormFeedback(form, "Coche « Je ne suis pas un robot » et complète les images si demandé, puis réessaie.", 'error');
-        return;
-      }
-
       var submitButton = form.querySelector('button[type="submit"]');
       var emailInput = form.querySelector('input[name="email"]');
       if (submitButton) submitButton.disabled = true;
       setFormFeedback(form, "Envoi en cours…");
 
-      submitActiveCampaign(form, token).then(function (result) {
+      submitActiveCampaign(form).then(function (result) {
         var response = result.response;
         var data = result.data;
 
         if (response.ok && isActiveCampaignSuccess(data)) {
           setFormFeedback(form, "Merci ! Tu es inscrit(e). Vérifie ta boîte de réception (et tes indésirables).");
           if (emailInput) emailInput.value = '';
-        } else if (response.status === 400) {
-          var hint = (data && data.hint) ? data.hint : '';
-          var msg = "Vérification échouée.";
-          if (hint) msg += " " + hint;
-          else msg += " Vérifie que tu as coché « Je ne suis pas un robot » et complété le test. Si le problème continue, dans Netlify ajoute la variable RECAPTCHA_SECRET_KEY = 6LeIxAcTAAAAANIqA9dGf-vXIaEMH63cRbeKVgyF (clé test).";
-          setFormFeedback(form, msg, 'error');
         } else if (response.status === 500 && data && data.hint) {
           setFormFeedback(form, "Erreur serveur : " + (data.hint || data.error || "Réessaie plus tard."), 'error');
         } else {
