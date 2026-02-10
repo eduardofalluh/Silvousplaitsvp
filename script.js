@@ -434,13 +434,26 @@ document.addEventListener('DOMContentLoaded', () => {
     return false;
   }
 
+  /** Build JSON body from form (including reCAPTCHA token) and POST to Netlify function for verification + AC forward */
   async function submitActiveCampaign(form) {
-    const request = {
-      headers: { Accept: 'application/json' },
-      body: new FormData(form),
+    const honeypot = form.querySelector('input[name="website"]');
+    if (honeypot && honeypot.value && honeypot.value.trim() !== '') {
+      return { response: { ok: true }, data: { success: 1 } };
+    }
+
+    const body = {};
+    const fd = new FormData(form);
+    for (const [key, value] of fd) {
+      body[key] = value;
+    }
+    var tokenInput = form.querySelector('[name="g-recaptcha-response"]');
+    if (tokenInput) body['g-recaptcha-response'] = tokenInput.value;
+
+    const response = await fetch('/.netlify/functions/submit-signup', {
       method: 'POST',
-    };
-    const response = await fetch('https://silvousplait.activehosted.com/proc.php?jsonp=true', request);
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
     let data = null;
     try {
       data = await response.json();
@@ -457,6 +470,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!form.checkValidity()) {
         form.reportValidity();
+        return;
+      }
+
+      var tokenInput = form.querySelector('[name="g-recaptcha-response"]');
+      if (tokenInput && !tokenInput.value) {
+        setFormFeedback(form, "Veuillez cocher « Je ne suis pas un robot » avant d’envoyer.", 'error');
         return;
       }
 

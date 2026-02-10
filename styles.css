@@ -642,6 +642,16 @@ footer {
   opacity: 0.9;
 }
 
+/* Honeypot: hidden from users, bots often fill it */
+.form-honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .form-feedback {
   flex-basis: 100%;
   margin: 10px 0 0 0;
@@ -657,6 +667,12 @@ footer {
 .email-form button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* reCAPTCHA widget spacing */
+.email-form .g-recaptcha {
+  flex-basis: 100%;
+  margin: 8px 0 0 0;
 }
 
 /* How It Works Section */
