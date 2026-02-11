@@ -430,6 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!data || typeof data !== 'object') return false;
     if (data.success === 1 || data.success === true) return true;
     if (data.result === 'success' || data.status === 'success' || data.type === 'success') return true;
+    if (data.result_code === 1) return true;
     if (typeof data.js === 'string' && data.js.includes('_show_thank_you')) return true;
     return false;
   }
@@ -480,7 +481,9 @@ document.addEventListener('DOMContentLoaded', () => {
         var response = result.response;
         var data = result.data;
 
-        if (response.ok && isActiveCampaignSuccess(data)) {
+        if (response.ok && data && data.alreadyRegistered) {
+          setFormFeedback(form, "Cette adresse est déjà inscrite à notre liste. Tu recevras nos prochains emails.", 'error');
+        } else if (response.ok && isActiveCampaignSuccess(data)) {
           setFormFeedback(form, "Merci ! Un email de confirmation t'a été envoyé. Clique sur le lien dans le message pour confirmer ton inscription et rejoindre la liste.");
           if (emailInput) emailInput.value = '';
         } else if (response.status === 500 && data && data.hint) {

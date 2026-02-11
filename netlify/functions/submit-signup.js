@@ -20,11 +20,25 @@ async function forwardToActiveCampaign(formData) {
   const params = new URLSearchParams(stripForAC(formData));
   const res = await fetch(AC_URL + '?jsonp=true', {
     method: 'POST',
-    headers: { Accept: 'application/json' },
-    body: params,
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: params.toString(),
   });
-  const data = await res.json().catch(() => ({}));
-  return { ok: res.ok, data };
+  const text = await res.text();
+  let data = {};
+  try {
+    data = JSON.parse(text);
+  } catch {
+    const jsonpMatch = text.match(/^\s*[^(]*\((\{[\s\S]*\})\)\s*;?\s*$/);
+    if (jsonpMatch) data = JSON.parse(jsonpMatch[1]);
+  }
+  const resultMsg = (data.result_message || data.message || '').toLowerCase();
+  const resultCode = data.result_code !== undefined ? data.result_code : (data.result === 'success' || data.result === 1 ? 1 : 0);
+  const alreadyRegistered =
+    resultCode === 0 && (resultMsg.includes('already') || resultMsg.includes('déjà') || resultMsg.includes('exist') || resultMsg.includes('duplicate') || resultMsg.includes('subscribed'));
+  return { ok: res.ok, data: { ...data, alreadyRegistered } };
 }
 
 exports.handler = async (event) => {
