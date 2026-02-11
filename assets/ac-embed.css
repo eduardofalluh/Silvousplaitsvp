@@ -1,0 +1,22 @@
+/* ActiveCampaign embed form 2 - double opt-in */
+#_form_1_{font-size:14px;line-height:1.6;font-family:"IBM Plex Sans",Helvetica,sans-serif;margin:0;box-shadow:none;position:relative;text-align:left;max-width:500px;background:transparent;border:0;color:#000}
+._form_hide{display:none;visibility:hidden}
+._form_show{display:block;visibility:visible}
+#_form_1_ input[type="text"],#_form_1_ input[type="email"]{padding:10px 12px;height:auto;border:1px solid #979797;border-radius:4px;color:#000;font-size:14px;font-family:inherit;width:100%;box-sizing:border-box}
+#_form_1_ ._submit{cursor:pointer;font-family:"IBM Plex Sans",Helvetica,sans-serif;font-size:14px;text-align:center;background:#3347CA;border:0;border-radius:4px;color:#fff;padding:10px 20px}
+#_form_1_ ._submit:disabled{cursor:not-allowed;opacity:0.4}
+#_form_1_ ._form-body{margin-bottom:20px}
+#_form_1_ ._form-label,#_form_1_ ._form_element ._form-label{font-weight:700;margin-bottom:5px;display:block;font-size:14px}
+#_form_1_ ._form_element{position:relative;margin-bottom:10px;font-size:0;max-width:100%}
+#_form_1_ ._form_element *{font-size:14px}
+#_form_1_ ._form_content{margin:0;width:100%}
+#_form_1_ ._inline-style{float:left}
+#_form_1_ ._inline-style input[type="text"],#_form_1_ ._inline-style input[type="email"]{width:auto;min-width:200px}
+#_form_1_ ._button-wrapper{margin-top:12px}
+#_form_1_ ._form-thank-you{font-size:16px;line-height:1.5;margin-top:12px}
+#_form_1_ ._form-branding{color:#999;font-size:11px;margin-top:20px}
+#_form_1_ ._form-branding ._logo{display:inline-block;height:14px}
+#_form_1_ .form-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+#_form_1_ ._clear-element{clear:both}
+#_form_1_ .field-required{color:#c00}
+@media (max-width:667px){#_form_1_ ._inline-style{float:none}#_form_1_ ._inline-style input{width:100%!important}}
