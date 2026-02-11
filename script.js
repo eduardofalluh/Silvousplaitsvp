@@ -481,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
         var data = result.data;
 
         if (response.ok && isActiveCampaignSuccess(data)) {
-          setFormFeedback(form, "Merci ! Tu es inscrit(e). Vérifie ta boîte de réception (et tes indésirables).");
+          setFormFeedback(form, "Merci ! Un email de confirmation t'a été envoyé. Clique sur le lien dans le message pour confirmer ton inscription et rejoindre la liste.");
           if (emailInput) emailInput.value = '';
         } else if (response.status === 500 && data && data.hint) {
           setFormFeedback(form, "Erreur serveur : " + (data.hint || data.error || "Réessaie plus tard."), 'error');
