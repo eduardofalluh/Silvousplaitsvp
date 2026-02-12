@@ -675,50 +675,114 @@ footer {
   margin: 8px 0 0 0;
 }
 
-/* ActiveCampaign simple embed: form injected into ._form_1 (hero) – match .email-form look */
+/* ActiveCampaign embed: exact same look as .email-form (hero + any AC form on site) */
 ._form_1,
-._form_1 form {
-  display: flex;
+._form_1 form,
+#_form_1_,
+.hero ._form_1 form,
+.cta ._form_1 form {
+  display: flex !important;
   flex-wrap: wrap;
   gap: 16px;
-  margin-top: 0;
+  margin-top: 0 !important;
   align-items: center;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  max-width: none !important;
+}
+/* Hide AC label and branding – same single-line look as before */
+._form_1 ._form-label,
+._form_1 ._form_element ._form-label,
+._form_1 label[for="email"],
+#_form_1_ ._form-label,
+#_form_1_ ._form_element ._form-label,
+._form_1 ._form-branding,
+._form_1 ._marketing-by,
+._form_1 ._logo,
+#_form_1_ ._form-branding,
+#_form_1_ ._marketing-by {
+  display: none !important;
+}
+._form_1 ._form_element,
+#_form_1_ ._form_element {
+  margin: 0 !important;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+._form_1 ._field-wrapper,
+#_form_1_ ._field-wrapper {
+  margin: 0;
 }
 ._form_1 input[type="email"],
-._form_1 input[type="text"]:not(.form-honeypot) {
-  flex: 1;
-  min-width: 200px;
-  padding: 20px 24px;
-  font-size: 18px;
-  border-radius: 24px;
-  border: 2px solid #ddd;
-  font-family: 'Inter', sans-serif;
+._form_1 input[name="email"],
+#_form_1_ input[type="email"],
+#_form_1_ input[name="email"] {
+  flex: 1 !important;
+  min-width: 300px !important;
+  padding: 20px 24px !important;
+  font-size: 18px !important;
+  border-radius: 24px !important;
+  border: 2px solid #ddd !important;
+  font-family: 'Inter', sans-serif !important;
+  background: #fff;
 }
 ._form_1 button[type="submit"],
-._form_1 ._submit {
-  padding: 20px 40px;
-  background: var(--blue);
-  color: white;
-  border: none;
-  border-radius: 32px;
+._form_1 ._submit,
+#_form_1_ button[type="submit"],
+#_form_1_ ._submit {
+  padding: 20px 40px !important;
+  background: var(--blue) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 32px !important;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 18px;
+  font-weight: 600 !important;
+  font-size: 18px !important;
   white-space: nowrap;
+  transition: opacity 0.2s;
+}
+._form_1 button[type="submit"]:hover,
+._form_1 ._submit:hover,
+#_form_1_ ._submit:hover {
+  opacity: 0.9;
+}
+._form_1 button[type="submit"]:disabled,
+._form_1 ._submit:disabled,
+#_form_1_ ._submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+._form_1 ._button-wrapper,
+#_form_1_ ._button-wrapper {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+._form_1 ._form-content,
+#_form_1_ ._form-content {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0 !important;
 }
 ._form_1 ._form-thank-you,
-._form_1 ._form_error {
+._form_1 ._form_error,
+#_form_1_ ._form-thank-you,
+#_form_1_ ._form_error {
   flex-basis: 100%;
   margin-top: 10px;
   font-weight: 600;
   font-size: 14px;
   color: var(--blue);
 }
-._form_1 ._form_error { color: #b00020; }
-._form_1 ._button-wrapper { margin: 0; padding: 0; }
-._form_1 ._form-content { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; flex: 1 1 auto; min-width: 0; }
-#_form_1_ ._form-content input[name="email"] { flex: 1; min-width: 0; }
-#_form_1_ ._form-thank-you { flex-basis: 100%; margin-top: 10px; font-weight: 600; font-size: 14px; color: var(--blue); }
+._form_1 ._form_error,
+#_form_1_ ._form_error { color: #b00020; }
+._form_1 ._clear-element,
+#_form_1_ ._clear-element { display: none; }
 
 /* How It Works Section */
 .how {
@@ -1909,12 +1973,16 @@ body.modal-open {
     margin: 0 auto;
   }
 
-  #_form_1_ ._form-content {
+  #_form_1_ ._form-content,
+  ._form_1 ._form-content,
+  ._form_1 form {
     flex-direction: column;
   }
 
-  #_form_1_ ._form-content input[name="email"] {
-    min-width: auto;
+  #_form_1_ ._form-content input[name="email"],
+  ._form_1 input[name="email"],
+  ._form_1 input[type="email"] {
+    min-width: auto !important;
     width: 100%;
   }
 
@@ -2273,8 +2341,16 @@ body.modal-open {
     margin-bottom: 0;
   }
 
-  #_form_1_ ._form-content {
+  #_form_1_ ._form-content,
+  ._form_1 ._form-content,
+  ._form_1 form {
     flex-direction: column;
+  }
+
+  ._form_1 input[name="email"],
+  ._form_1 input[type="email"] {
+    min-width: auto !important;
+    width: 100%;
   }
 
   .email-form input {

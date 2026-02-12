@@ -5,6 +5,43 @@
 console.log("Silvousplait landing loaded");
 
 // =====================================================
+// ACTIVE CAMPAIGN EMBED – same look as .email-form (hero + CTA)
+// Runs when AC injects form into ._form_1: placeholder + button text
+// =====================================================
+function styleACEmbedForms() {
+  var containers = document.querySelectorAll('._form_1');
+  containers.forEach(function (container) {
+    var form = container.querySelector('form');
+    if (!form || form.dataset.silvousplaitStyled) return;
+    var emailInput = form.querySelector('input[name="email"], input[type="email"]');
+    var submitBtn = form.querySelector('button[type="submit"], ._submit');
+    if (emailInput) {
+      emailInput.placeholder = 'nom@email.com';
+      emailInput.setAttribute('placeholder', 'nom@email.com');
+    }
+    if (submitBtn) submitBtn.textContent = "S'inscrire";
+    form.dataset.silvousplaitStyled = '1';
+  });
+}
+function initACEmbedStyle() {
+  styleACEmbedForms();
+  setTimeout(styleACEmbedForms, 300);
+  setTimeout(styleACEmbedForms, 1000);
+  var root = document.querySelector('._form_1');
+  if (root && typeof MutationObserver !== 'undefined') {
+    var mo = new MutationObserver(function () { styleACEmbedForms(); });
+    mo.observe(root, { childList: true, subtree: true });
+  }
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initACEmbedStyle);
+} else {
+  initACEmbedStyle();
+}
+setTimeout(styleACEmbedForms, 500);
+setTimeout(styleACEmbedForms, 1500);
+
+// =====================================================
 // SCROLL TO TOP ON PAGE LOAD/REFRESH
 // =====================================================
 (function scrollToTopOnLoad() {
