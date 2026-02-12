@@ -675,6 +675,35 @@ footer {
   margin: 8px 0 0 0;
 }
 
+/* ActiveCampaign embed form _form_1_: keep same layout as .email-form */
+#_form_1_.email-form ._form-content {
+  display: flex;
+  gap: 16px;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+}
+#_form_1_ ._form-content input[name="email"] {
+  flex: 1;
+  min-width: 0;
+  padding: 20px 24px;
+  font-size: 18px;
+  border-radius: 24px;
+  border: 2px solid #ddd;
+  font-family: 'Inter', sans-serif;
+}
+#_form_1_ ._button-wrapper {
+  margin: 0;
+  padding: 0;
+}
+#_form_1_ ._form-thank-you {
+  flex-basis: 100%;
+  margin-top: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--blue);
+}
+
 /* How It Works Section */
 .how {
   padding: 10px 48px;
@@ -1864,6 +1893,15 @@ body.modal-open {
     margin: 0 auto;
   }
 
+  #_form_1_ ._form-content {
+    flex-direction: column;
+  }
+
+  #_form_1_ ._form-content input[name="email"] {
+    min-width: auto;
+    width: 100%;
+  }
+
   .email-form input {
     min-width: auto;
     width: 100%;
@@ -2217,6 +2255,10 @@ body.modal-open {
     gap: 12px;
     flex-direction: column;
     margin-bottom: 0;
+  }
+
+  #_form_1_ ._form-content {
+    flex-direction: column;
   }
 
   .email-form input {

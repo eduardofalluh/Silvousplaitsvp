@@ -34,10 +34,11 @@ async function forwardToActiveCampaign(formData) {
     const jsonpMatch = text.match(/^\s*[^(]*\((\{[\s\S]*\})\)\s*;?\s*$/);
     if (jsonpMatch) data = JSON.parse(jsonpMatch[1]);
   }
-  const resultMsg = (data.result_message || data.message || '').toLowerCase();
+  const resultMsg = (data.result_message || data.message || data.result_message_message || '').toLowerCase();
   const resultCode = data.result_code !== undefined ? data.result_code : (data.result === 'success' || data.result === 1 ? 1 : 0);
+  const alreadyKeywords = ['already', 'déjà', 'exist', 'duplicate', 'subscribed', 'inscrit', 'inscrite', 'liste', 'list'];
   const alreadyRegistered =
-    resultCode === 0 && (resultMsg.includes('already') || resultMsg.includes('déjà') || resultMsg.includes('exist') || resultMsg.includes('duplicate') || resultMsg.includes('subscribed'));
+    resultCode === 0 && alreadyKeywords.some((k) => resultMsg.includes(k));
   return { ok: res.ok, data: { ...data, alreadyRegistered } };
 }
 
@@ -64,6 +65,9 @@ exports.handler = async (event) => {
   }
 
   const { ok, data } = await forwardToActiveCampaign(body);
+  if (data.alreadyRegistered) {
+    return { statusCode: 200, headers, body: JSON.stringify(data) };
+  }
   return {
     statusCode: ok ? 200 : 400,
     headers,
