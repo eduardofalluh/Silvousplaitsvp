@@ -119,7 +119,7 @@ window._load_script = function(url, callback, isSubmit) {
   head.appendChild(script);
 };
 
-(function() {
+function _attachForm1Submit() {
   if (window.location.search.indexOf('excludeform') !== -1) return;
   var form_to_submit = document.getElementById('_form_1_');
   if (!form_to_submit) return;
@@ -201,4 +201,10 @@ window._load_script = function(url, callback, isSubmit) {
   };
 
   addEvent(form_to_submit, 'submit', form_submit);
-})();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _attachForm1Submit);
+} else {
+  _attachForm1Submit();
+}

@@ -675,34 +675,50 @@ footer {
   margin: 8px 0 0 0;
 }
 
-/* ActiveCampaign embed form _form_1_: keep same layout as .email-form */
-#_form_1_.email-form ._form-content {
+/* ActiveCampaign simple embed: form injected into ._form_1 (hero) – match .email-form look */
+._form_1,
+._form_1 form {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
-  flex: 1 1 auto;
-  min-width: 0;
+  margin-top: 0;
   align-items: center;
 }
-#_form_1_ ._form-content input[name="email"] {
+._form_1 input[type="email"],
+._form_1 input[type="text"]:not(.form-honeypot) {
   flex: 1;
-  min-width: 0;
+  min-width: 200px;
   padding: 20px 24px;
   font-size: 18px;
   border-radius: 24px;
   border: 2px solid #ddd;
   font-family: 'Inter', sans-serif;
 }
-#_form_1_ ._button-wrapper {
-  margin: 0;
-  padding: 0;
+._form_1 button[type="submit"],
+._form_1 ._submit {
+  padding: 20px 40px;
+  background: var(--blue);
+  color: white;
+  border: none;
+  border-radius: 32px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 18px;
+  white-space: nowrap;
 }
-#_form_1_ ._form-thank-you {
+._form_1 ._form-thank-you,
+._form_1 ._form_error {
   flex-basis: 100%;
   margin-top: 10px;
   font-weight: 600;
   font-size: 14px;
   color: var(--blue);
 }
+._form_1 ._form_error { color: #b00020; }
+._form_1 ._button-wrapper { margin: 0; padding: 0; }
+._form_1 ._form-content { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; flex: 1 1 auto; min-width: 0; }
+#_form_1_ ._form-content input[name="email"] { flex: 1; min-width: 0; }
+#_form_1_ ._form-thank-you { flex-basis: 100%; margin-top: 10px; font-weight: 600; font-size: 14px; color: var(--blue); }
 
 /* How It Works Section */
 .how {
