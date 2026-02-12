@@ -1,8 +1,10 @@
 // ActiveCampaign embed form 2 - double opt-in (client-provided script)
 window.cfields = [];
+window._form1FeedbackTimeout = null;
 window._show_thank_you = function(id, message, trackcmp_url, email) {
   var form = document.getElementById('_form_' + id + '_'), thank_you = form.querySelector('._form-thank-you');
   if (!form || !thank_you) return;
+  if (window._form1FeedbackTimeout) { clearTimeout(window._form1FeedbackTimeout); window._form1FeedbackTimeout = null; }
   var content = form.querySelector('._form-content');
   if (content) content.style.display = 'none';
   thank_you.innerHTML = message || "Merci ! Un email de confirmation t'a été envoyé. Clique sur le lien dans le message pour confirmer ton inscription et rejoindre la liste.";
@@ -17,6 +19,14 @@ window._show_thank_you = function(id, message, trackcmp_url, email) {
   if (typeof window._form_callback !== 'undefined') window._form_callback(id);
   thank_you.setAttribute('tabindex', '-1');
   thank_you.focus();
+  window._form1FeedbackTimeout = setTimeout(function() {
+    thank_you.style.display = 'none';
+    thank_you.innerHTML = '';
+    if (content) content.style.display = '';
+    var fb = form.querySelector('.form-feedback');
+    if (fb) { fb.textContent = ''; fb.classList.remove('is-error'); }
+    window._form1FeedbackTimeout = null;
+  }, 5000);
 };
 window._show_unsubscribe = function(id, message, trackcmp_url, email) {
   var form = document.getElementById('_form_' + id + '_'), unsub = form.querySelector('._form-thank-you');
@@ -65,6 +75,16 @@ window._show_error = function(id, message, html) {
     feedback.textContent = displayMessage;
     feedback.classList.add('is-error');
   }
+  if (window._form1FeedbackTimeout) { clearTimeout(window._form1FeedbackTimeout); window._form1FeedbackTimeout = null; }
+  window._form1FeedbackTimeout = setTimeout(function() {
+    var errEl = form.querySelector('._form_error');
+    if (errEl) {
+      var wrapper = errEl.closest('._form-inner._show_be_error');
+      if (wrapper) wrapper.parentNode.removeChild(wrapper);
+    }
+    if (feedback) { feedback.textContent = ''; feedback.classList.remove('is-error'); }
+    window._form1FeedbackTimeout = null;
+  }, 5000);
 };
 window._show_pc_confirmation = function(id, header, detail, show, email) {
   var form = document.getElementById('_form_' + id + '_'), pc_confirmation = form.querySelector('._form-pc-confirmation');

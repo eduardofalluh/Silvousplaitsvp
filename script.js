@@ -459,7 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
       formFeedbackTimeout = setTimeout(() => {
         feedback.textContent = '';
         feedback.classList.remove('is-error');
-      }, 15000);
+      }, 5000);
     }
   }
 
