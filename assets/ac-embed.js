@@ -176,6 +176,20 @@ function _attachForm1Submit() {
     return q.join('&');
   };
 
+  function formToBody(form) {
+    var body = {};
+    for (var i = 0; i < form.elements.length; i++) {
+      var el = form.elements[i];
+      if (!el.name) continue;
+      if (el.type === 'checkbox' || el.type === 'radio') {
+        if (el.checked) body[el.name] = el.value;
+      } else {
+        body[el.name] = el.value;
+      }
+    }
+    return body;
+  }
+
   var form_submit = function(e) {
     e.preventDefault();
     var emailEl = form_to_submit.querySelector('input[name="email"]');
@@ -195,8 +209,34 @@ function _attachForm1Submit() {
     }
     var err = form_to_submit.querySelector('._form_error');
     if (err) err.parentNode.removeChild(err);
-    var serialized = _form_serialize(form_to_submit).replace(/%0A/g, '\\n');
-    window._load_script('https://silvousplait.activehosted.com/proc.php?' + serialized + '&jsonp=true', null, true);
+    var feedback = form_to_submit.querySelector('.form-feedback');
+    if (feedback) { feedback.textContent = ''; feedback.classList.remove('is-error'); }
+
+    var body = formToBody(form_to_submit);
+    fetch('/.netlify/functions/submit-signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+      .then(function(res) { return res.json().then(function(data) { return { res: res, data: data }; }); })
+      .then(function(result) {
+        var data = result.data;
+        var ok = result.res.ok;
+        if (ok && data && data.alreadyRegistered) {
+          window._show_error('1', "Cette adresse est déjà inscrite à notre liste. Tu recevras nos prochains emails.");
+        } else if (ok && (data && (data.result_code === 1 || data.result === 'success' || data.success === 1 || (data.js && data.js.indexOf('_show_thank_you') !== -1)))) {
+          window._show_thank_you('1', "Merci ! Un email de confirmation t'a été envoyé. Clique sur le lien dans le message pour confirmer ton inscription et rejoindre la liste.");
+          if (emailEl) emailEl.value = '';
+        } else {
+          window._show_error('1', "L'inscription n'a pas fonctionné. Vérifie ton email et réessaie.");
+        }
+        if (submitButton) { submitButton.disabled = false; submitButton.classList.remove('processing'); }
+      })
+      .catch(function() {
+        window._show_error('1', "Impossible d'envoyer pour le moment. Réessaie plus tard.");
+        if (submitButton) { submitButton.disabled = false; submitButton.classList.remove('processing'); }
+      });
+
     return false;
   };
 
