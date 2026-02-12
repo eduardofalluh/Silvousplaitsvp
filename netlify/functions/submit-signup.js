@@ -34,11 +34,11 @@ async function forwardToActiveCampaign(formData) {
     const jsonpMatch = text.match(/^\s*[^(]*\((\{[\s\S]*\})\)\s*;?\s*$/);
     if (jsonpMatch) data = JSON.parse(jsonpMatch[1]);
   }
-  const resultMsg = (data.result_message || data.message || data.result_message_message || '').toLowerCase();
+  const resultMsg = (data.result_message || data.message || data.result_message_message || data.msg || '').toLowerCase();
   const resultCode = data.result_code !== undefined ? data.result_code : (data.result === 'success' || data.result === 1 ? 1 : 0);
   const alreadyKeywords = ['already', 'déjà', 'exist', 'duplicate', 'subscribed', 'inscrit', 'inscrite', 'liste', 'list'];
   const alreadyRegistered =
-    resultCode === 0 && alreadyKeywords.some((k) => resultMsg.includes(k));
+    alreadyKeywords.some((k) => resultMsg.includes(k)) && (resultCode === 0 || !res.ok);
   return { ok: res.ok, data: { ...data, alreadyRegistered } };
 }
 

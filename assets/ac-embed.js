@@ -222,9 +222,12 @@ function _attachForm1Submit() {
       .then(function(result) {
         var data = result.data;
         var ok = result.res.ok;
-        if (ok && data && data.alreadyRegistered) {
+        if (data && data.alreadyRegistered) {
           window._show_error('1', "Cette adresse est déjà inscrite à notre liste. Tu recevras nos prochains emails.");
-        } else if (ok && (data && (data.result_code === 1 || data.result === 'success' || data.success === 1 || (data.js && data.js.indexOf('_show_thank_you') !== -1)))) {
+        } else if (ok && data && (data.result_code === 1 || data.result === 'success' || data.success === 1 || (data.js && data.js.indexOf('_show_thank_you') !== -1))) {
+          window._show_thank_you('1', "Merci ! Un email de confirmation t'a été envoyé. Clique sur le lien dans le message pour confirmer ton inscription et rejoindre la liste.");
+          if (emailEl) emailEl.value = '';
+        } else if (ok && data) {
           window._show_thank_you('1', "Merci ! Un email de confirmation t'a été envoyé. Clique sur le lien dans le message pour confirmer ton inscription et rejoindre la liste.");
           if (emailEl) emailEl.value = '';
         } else {
