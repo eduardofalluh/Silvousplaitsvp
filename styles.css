@@ -440,8 +440,10 @@ footer {
   margin-left: 4px;
 }
 
-/* Remove arrow from Contact link on desktop */
+/* Remove arrow from Premium and Contact links on desktop */
 @media (min-width: 769px) {
+  .nav a[href="premium.html"]::after,
+  .nav a[href*="premium"]::after,
   .nav a[href="contact.html"]::after,
   .nav a[href*="contact"]::after {
     display: none;
@@ -2993,4 +2995,510 @@ body.modal-open {
   .contact-intro {
     text-align: center !important;
   }
+}
+
+/* ============================================
+   PREMIUM PAGE STYLES
+   ============================================ */
+
+/* Premium Hero Section */
+.premium-hero {
+  padding: 120px 40px 100px 40px;
+  text-align: center;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-hero-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%) scale(1.15);
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.premium-hero-video::-webkit-media-controls {
+  display: none !important;
+}
+
+.premium-hero-video::-webkit-media-controls-enclosure {
+  display: none !important;
+}
+
+.premium-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(51, 71, 202, 0.3);
+  z-index: 1;
+}
+
+.premium-hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.premium-hero h1 {
+  font-family: 'Inter Display', sans-serif;
+  font-size: 64px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  line-height: 1.1;
+}
+
+.premium-hero-subtitle {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  opacity: 0.95;
+}
+
+.premium-hero-text {
+  font-size: 20px;
+  opacity: 0.9;
+  margin-bottom: 60px;
+}
+
+/* Premium Pricing Card */
+.premium-pricing-card {
+  background: white;
+  color: var(--text);
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 420px;
+  margin: 0 auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 2;
+}
+
+.pricing-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.pricing-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  padding-bottom: 32px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.pricing-amount .price {
+  font-size: 48px;
+  font-weight: 800;
+  font-family: 'Inter Display', sans-serif;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.pricing-note {
+  font-size: 14px;
+  color: #888;
+}
+
+.pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 32px 0;
+  text-align: left;
+}
+
+.pricing-features li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  font-size: 17px;
+  color: var(--text);
+}
+
+.pricing-features li svg {
+  flex-shrink: 0;
+}
+
+.premium-card-button {
+  width: 100%;
+  background: var(--blue);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  font-size: 17px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.premium-card-button:hover {
+  background: #2839b5;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(51, 71, 202, 0.3);
+}
+
+/* Premium Why Section */
+.premium-why {
+  background: #F9F8F6;
+  padding: 100px 40px 120px 40px;
+}
+
+.premium-why-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.premium-why h2 {
+  font-family: 'Inter Display', sans-serif;
+  font-size: 52px;
+  font-weight: 800;
+  color: var(--text);
+  text-align: center;
+  margin-bottom: 20px;
+  line-height: 1.1;
+}
+
+.premium-why-subtitle {
+  font-size: 24px;
+  color: var(--text);
+  text-align: center;
+  margin-bottom: 60px;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.premium-why-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+  margin-bottom: 60px;
+}
+
+.premium-why-left {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.premium-benefit-item {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.benefit-icon-large {
+  flex-shrink: 0;
+}
+
+.premium-benefit-item h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+  margin: 0;
+}
+
+.premium-why-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.premium-why-right img {
+  width: 100%;
+  max-width: 450px;
+  height: auto;
+  border-radius: 20px;
+}
+
+.premium-bottom-button {
+  display: block;
+  margin: 0 auto;
+  background: var(--blue);
+  color: white;
+  border: none;
+  padding: 18px 48px;
+  font-size: 18px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.premium-bottom-button:hover {
+  background: #2839b5;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(51, 71, 202, 0.3);
+}
+
+/* Premium Page - Tablet Styles */
+@media (max-width: 1024px) {
+  .premium-hero {
+    padding: 100px 32px 80px 32px;
+  }
+
+  .premium-hero-video {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+
+  .premium-hero h1 {
+    font-size: 52px;
+  }
+
+  .premium-hero-subtitle {
+    font-size: 24px;
+  }
+
+  .premium-hero-text {
+    font-size: 18px;
+    margin-bottom: 50px;
+  }
+
+  .premium-pricing-card {
+    padding: 36px;
+  }
+
+  .premium-why {
+    padding: 80px 32px 100px 32px;
+  }
+
+  .premium-why h2 {
+    font-size: 44px;
+  }
+
+  .premium-why-subtitle {
+    font-size: 22px;
+    margin-bottom: 50px;
+  }
+
+  .premium-why-content {
+    gap: 60px;
+  }
+
+  .premium-benefit-item h3 {
+    font-size: 20px;
+  }
+}
+
+/* Premium Page - Mobile Styles */
+@media (max-width: 768px) {
+  .premium-hero {
+    padding: 80px 24px 60px 24px;
+  }
+
+  .premium-hero-video {
+    transform: translate(-50%, -50%) scale(1.25);
+  }
+
+  .premium-hero h1 {
+    font-size: 40px;
+  }
+
+  .premium-hero-subtitle {
+    font-size: 22px;
+  }
+
+  .premium-hero-text {
+    font-size: 17px;
+    margin-bottom: 40px;
+  }
+
+  .premium-pricing-card {
+    padding: 32px 28px;
+  }
+
+  .pricing-amount .price {
+    font-size: 42px;
+  }
+
+  .premium-why {
+    padding: 60px 24px 80px 24px;
+  }
+
+  .premium-why h2 {
+    font-size: 36px;
+    margin-bottom: 16px;
+  }
+
+  .premium-why-subtitle {
+    font-size: 19px;
+    margin-bottom: 40px;
+  }
+
+  .premium-why-content {
+    grid-template-columns: 1fr;
+    gap: 50px;
+  }
+
+  .premium-why-left {
+    gap: 32px;
+  }
+
+  .premium-benefit-item {
+    gap: 12px;
+  }
+
+  .benefit-icon-large {
+    width: 40px;
+    height: 40px;
+  }
+
+  .premium-benefit-item h3 {
+    font-size: 19px;
+  }
+
+  .premium-why-right img {
+    max-width: 100%;
+  }
+
+  .premium-bottom-button {
+    width: 100%;
+    padding: 16px 32px;
+    font-size: 17px;
+  }
+}
+
+/* Premium Page - Small Mobile Styles */
+@media (max-width: 480px) {
+  .premium-hero {
+    padding: 60px 16px 48px 16px;
+  }
+
+  .premium-hero-video {
+    transform: translate(-50%, -50%) scale(1.3);
+  }
+
+  .premium-hero h1 {
+    font-size: 32px;
+  }
+
+  .premium-hero-subtitle {
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+
+  .premium-hero-text {
+    font-size: 16px;
+    margin-bottom: 32px;
+  }
+
+  .premium-pricing-card {
+    padding: 28px 24px;
+    border-radius: 16px;
+  }
+
+  .pricing-label {
+    font-size: 15px;
+  }
+
+  .pricing-amount {
+    margin-bottom: 28px;
+    padding-bottom: 28px;
+  }
+
+  .pricing-amount .price {
+    font-size: 36px;
+  }
+
+  .pricing-note {
+    font-size: 13px;
+  }
+
+  .pricing-features {
+    margin-bottom: 28px;
+  }
+
+  .pricing-features li {
+    padding: 10px 0;
+    font-size: 16px;
+    gap: 10px;
+  }
+
+  .pricing-features li svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .premium-card-button {
+    padding: 14px 28px;
+    font-size: 16px;
+    border-radius: 10px;
+  }
+
+  .premium-why {
+    padding: 48px 16px 60px 16px;
+  }
+
+  .premium-why h2 {
+    font-size: 28px;
+  }
+
+  .premium-why-subtitle {
+    font-size: 17px;
+    margin-bottom: 32px;
+  }
+
+  .premium-why-content {
+    gap: 40px;
+  }
+
+  .premium-why-left {
+    gap: 28px;
+  }
+
+  .benefit-icon-large {
+    width: 36px;
+    height: 36px;
+  }
+
+  .premium-benefit-item h3 {
+    font-size: 17px;
+  }
+
+  .premium-bottom-button {
+    padding: 14px 28px;
+    font-size: 16px;
+    border-radius: 10px;
+  }
+}
+
+/* Additional video control hiding for all browsers */
+.premium-hero-video::-webkit-media-controls-start-playback-button {
+  display: none !important;
+}
+
+.premium-hero-video::-moz-media-controls {
+  display: none !important;
+}
+
+video::-internal-media-controls-download-button {
+  display: none !important;
+}
+
+video::-webkit-media-controls-enclosure {
+  overflow: hidden !important;
+}
+
+video::-webkit-media-controls-panel {
+  display: none !important;
 }

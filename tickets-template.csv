@@ -1,0 +1,6 @@
+event_name,ticket_number,recipient_email,recipient_name,pdf_url
+SHOW XYZ - 2026-03-15,1,client1@example.com,Jean Dupont,https://drive.google.com/uc?export=download&id=YOUR_FILE_ID_1
+SHOW XYZ - 2026-03-15,2,client2@example.com,Marie Martin,https://drive.google.com/uc?export=download&id=YOUR_FILE_ID_2
+SHOW XYZ - 2026-03-15,3,client3@example.com,Pierre Leblanc,https://drive.google.com/uc?export=download&id=YOUR_FILE_ID_3
+SHOW ABC - 2026-04-20,1,client4@example.com,Sophie Tremblay,https://www.dropbox.com/s/YOUR_SHARE_LINK?dl=1
+SHOW ABC - 2026-04-20,2,client5@example.com,Luc Gagnon,https://www.dropbox.com/s/YOUR_SHARE_LINK?dl=1

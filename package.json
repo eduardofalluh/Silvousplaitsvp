@@ -1,0 +1,21 @@
+{
+  "name": "silvousplaitsvp-ticket-automation",
+  "version": "1.0.0",
+  "description": "Automated ticket sending via ActiveCampaign",
+  "main": "send-tickets.js",
+  "scripts": {
+    "send-tickets": "node send-tickets.js",
+    "test": "node test-bot-signup.js"
+  },
+  "dependencies": {
+    "csv-parse": "^5.5.6",
+    "dotenv": "^16.4.5",
+    "node-fetch": "^2.7.0",
+    "nodemailer": "^6.9.8",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {},
+  "keywords": ["activecampaign", "tickets", "automation"],
+  "author": "Eduardo",
+  "license": "ISC"
+}
