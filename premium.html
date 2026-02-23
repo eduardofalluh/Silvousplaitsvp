@@ -197,25 +197,69 @@
       window.initScrollReveal();
     }
 
-    // Premium CTA buttons - show modal
+    // Premium modal handling (matching index.html behavior)
     const premiumHeroBtn = document.getElementById('premium-hero-btn');
     const premiumBottomBtn = document.getElementById('premium-bottom-btn');
+    const premiumModal = document.getElementById('premium-modal');
+    const premiumClose = premiumModal?.querySelector('.modal-close');
+    const premiumModalSignup = document.getElementById('premium-modal-signup');
 
-    function showPremiumModal() {
-      const modal = document.getElementById('premium-modal');
-      if (modal) {
-        modal.setAttribute('aria-hidden', 'false');
-        document.body.style.overflow = 'hidden';
-      }
+    function openPremiumModal() {
+      if (!premiumModal) return;
+      premiumModal.classList.add('open');
+      premiumModal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('modal-open');
     }
 
+    function closePremiumModal() {
+      if (!premiumModal) return;
+      premiumModal.classList.remove('open');
+      premiumModal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('modal-open');
+    }
+
+    // Open modal when clicking premium buttons
     if (premiumHeroBtn) {
-      premiumHeroBtn.addEventListener('click', showPremiumModal);
+      premiumHeroBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openPremiumModal();
+      });
     }
 
     if (premiumBottomBtn) {
-      premiumBottomBtn.addEventListener('click', showPremiumModal);
+      premiumBottomBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openPremiumModal();
+      });
     }
+
+    // Close modal when clicking close button
+    if (premiumClose) {
+      premiumClose.addEventListener('click', closePremiumModal);
+    }
+
+    // Close modal when clicking outside
+    if (premiumModal) {
+      premiumModal.addEventListener('click', (e) => {
+        if (e.target === premiumModal) {
+          closePremiumModal();
+        }
+      });
+    }
+
+    // Modal signup button - redirect to index.html signup
+    if (premiumModalSignup) {
+      premiumModalSignup.addEventListener('click', () => {
+        window.location.href = 'index.html#contact-form';
+      });
+    }
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && premiumModal?.classList.contains('open')) {
+        closePremiumModal();
+      }
+    });
   })();
 </script>
 </body>
