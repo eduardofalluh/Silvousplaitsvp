@@ -3003,7 +3003,7 @@ body.modal-open {
 
 /* Premium Hero Section */
 .premium-hero {
-  padding: 120px 40px 100px 40px;
+  padding: 60px 40px 100px 40px;
   text-align: center;
   color: white;
   position: relative;
@@ -3052,21 +3052,21 @@ body.modal-open {
 
 .premium-hero h1 {
   font-family: 'Inter Display', sans-serif;
-  font-size: 64px;
+  font-size: 76px;
   font-weight: 800;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   line-height: 1.1;
 }
 
 .premium-hero-subtitle {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 600;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   opacity: 0.95;
 }
 
 .premium-hero-text {
-  font-size: 20px;
+  font-size: 24px;
   opacity: 0.9;
   margin-bottom: 60px;
 }
@@ -3254,7 +3254,7 @@ body.modal-open {
 /* Premium Page - Tablet Styles */
 @media (max-width: 1024px) {
   .premium-hero {
-    padding: 100px 32px 80px 32px;
+    padding: 50px 32px 80px 32px;
   }
 
   .premium-hero-video {
@@ -3262,15 +3262,15 @@ body.modal-open {
   }
 
   .premium-hero h1 {
-    font-size: 52px;
+    font-size: 60px;
   }
 
   .premium-hero-subtitle {
-    font-size: 24px;
+    font-size: 28px;
   }
 
   .premium-hero-text {
-    font-size: 18px;
+    font-size: 22px;
     margin-bottom: 50px;
   }
 
@@ -3303,7 +3303,7 @@ body.modal-open {
 /* Premium Page - Mobile Styles */
 @media (max-width: 768px) {
   .premium-hero {
-    padding: 80px 24px 60px 24px;
+    padding: 50px 24px 60px 24px;
   }
 
   .premium-hero-video {
@@ -3311,15 +3311,15 @@ body.modal-open {
   }
 
   .premium-hero h1 {
-    font-size: 40px;
+    font-size: 46px;
   }
 
   .premium-hero-subtitle {
-    font-size: 22px;
+    font-size: 26px;
   }
 
   .premium-hero-text {
-    font-size: 17px;
+    font-size: 20px;
     margin-bottom: 40px;
   }
 
@@ -3381,7 +3381,7 @@ body.modal-open {
 /* Premium Page - Small Mobile Styles */
 @media (max-width: 480px) {
   .premium-hero {
-    padding: 60px 16px 48px 16px;
+    padding: 40px 16px 48px 16px;
   }
 
   .premium-hero-video {
@@ -3389,16 +3389,16 @@ body.modal-open {
   }
 
   .premium-hero h1 {
-    font-size: 32px;
+    font-size: 36px;
   }
 
   .premium-hero-subtitle {
-    font-size: 20px;
-    margin-bottom: 12px;
+    font-size: 23px;
+    margin-bottom: 16px;
   }
 
   .premium-hero-text {
-    font-size: 16px;
+    font-size: 18px;
     margin-bottom: 32px;
   }
 
