@@ -3160,7 +3160,7 @@ body.modal-open {
 /* Premium Why Section */
 .premium-why {
   background: var(--bg);
-  padding: 60px 40px 100px 40px;
+  padding: 30px 40px 100px 40px;
 }
 
 .premium-why-container {
@@ -3286,7 +3286,7 @@ body.modal-open {
   }
 
   .premium-why {
-    padding: 50px 32px 80px 32px;
+    padding: 25px 32px 80px 32px;
   }
 
   .premium-why h2 {
@@ -3340,7 +3340,7 @@ body.modal-open {
   }
 
   .premium-why {
-    padding: 40px 24px 60px 24px;
+    padding: 20px 24px 60px 24px;
   }
 
   .premium-why h2 {
@@ -3456,7 +3456,7 @@ body.modal-open {
   }
 
   .premium-why {
-    padding: 30px 16px 48px 16px;
+    padding: 15px 16px 48px 16px;
   }
 
   .premium-why h2 {
