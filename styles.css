@@ -398,6 +398,7 @@ footer {
   max-width: 100%;
   box-sizing: border-box;
   margin: 0 auto;
+  background: white;
 }
 
 .logo {
@@ -1331,6 +1332,7 @@ footer {
   margin: 0;
   border-top: 1px solid #e0e0e0;
   box-sizing: border-box;
+  background: white;
 }
 
 .footer-links {
