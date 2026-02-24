@@ -3159,7 +3159,7 @@ body.modal-open {
 
 /* Premium Why Section */
 .premium-why {
-  background: #F9F8F6;
+  background: var(--bg);
   padding: 100px 40px 120px 40px;
 }
 
