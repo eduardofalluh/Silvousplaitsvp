@@ -3160,7 +3160,7 @@ body.modal-open {
 /* Premium Why Section */
 .premium-why {
   background: var(--bg);
-  padding: 100px 40px 120px 40px;
+  padding: 60px 40px 100px 40px;
 }
 
 .premium-why-container {
@@ -3173,7 +3173,7 @@ body.modal-open {
   font-size: 52px;
   font-weight: 800;
   color: var(--text);
-  text-align: center;
+  text-align: left;
   margin-bottom: 20px;
   line-height: 1.1;
 }
@@ -3181,7 +3181,7 @@ body.modal-open {
 .premium-why-subtitle {
   font-size: 24px;
   color: var(--text);
-  text-align: center;
+  text-align: left;
   margin-bottom: 60px;
   line-height: 1.5;
   opacity: 0.85;
@@ -3282,7 +3282,7 @@ body.modal-open {
   }
 
   .premium-why {
-    padding: 80px 32px 100px 32px;
+    padding: 50px 32px 80px 32px;
   }
 
   .premium-why h2 {
@@ -3336,7 +3336,7 @@ body.modal-open {
   }
 
   .premium-why {
-    padding: 60px 24px 80px 24px;
+    padding: 40px 24px 60px 24px;
   }
 
   .premium-why h2 {
@@ -3451,7 +3451,7 @@ body.modal-open {
   }
 
   .premium-why {
-    padding: 48px 16px 60px 16px;
+    padding: 30px 16px 48px 16px;
   }
 
   .premium-why h2 {
