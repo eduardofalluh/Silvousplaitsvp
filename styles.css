@@ -3210,6 +3210,9 @@ body.modal-open {
 .benefit-icon-large {
   flex-shrink: 0;
   background: transparent;
+  object-fit: contain;
+  width: 48px;
+  height: 48px;
 }
 
 .premium-benefit-item h3 {
@@ -3366,6 +3369,7 @@ body.modal-open {
   .benefit-icon-large {
     width: 40px;
     height: 40px;
+    object-fit: contain;
   }
 
   .premium-benefit-item h3 {
@@ -3475,6 +3479,7 @@ body.modal-open {
   .benefit-icon-large {
     width: 36px;
     height: 36px;
+    object-fit: contain;
   }
 
   .premium-benefit-item h3 {
