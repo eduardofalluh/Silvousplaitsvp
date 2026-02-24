@@ -3005,7 +3005,7 @@ body.modal-open {
 
 /* Premium Hero Section */
 .premium-hero {
-  padding: 60px 40px 100px 40px;
+  padding: 30px 40px 100px 40px;
   text-align: center;
   color: white;
   position: relative;
@@ -3256,7 +3256,7 @@ body.modal-open {
 /* Premium Page - Tablet Styles */
 @media (max-width: 1024px) {
   .premium-hero {
-    padding: 50px 32px 80px 32px;
+    padding: 30px 32px 80px 32px;
   }
 
   .premium-hero-video {
@@ -3306,7 +3306,7 @@ body.modal-open {
 /* Premium Page - Mobile Styles */
 @media (max-width: 768px) {
   .premium-hero {
-    padding: 50px 24px 60px 24px;
+    padding: 30px 24px 60px 24px;
   }
 
   .premium-hero-video {
@@ -3385,7 +3385,7 @@ body.modal-open {
 /* Premium Page - Small Mobile Styles */
 @media (max-width: 480px) {
   .premium-hero {
-    padding: 40px 16px 48px 16px;
+    padding: 25px 16px 48px 16px;
   }
 
   .premium-hero-video {
