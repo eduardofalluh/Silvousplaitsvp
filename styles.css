@@ -3020,7 +3020,7 @@ body.modal-open {
   min-height: 100%;
   width: auto;
   height: auto;
-  transform: translate(-50%, -50%) scale(1.15);
+  transform: translate(-50%, -50%) scale(1.3);
   object-fit: cover;
   z-index: 0;
   pointer-events: none;
@@ -3264,7 +3264,7 @@ body.modal-open {
   }
 
   .premium-hero-video {
-    transform: translate(-50%, -50%) scale(1.2);
+    transform: translate(-50%, -50%) scale(1.35);
   }
 
   .premium-hero h1 {
@@ -3314,7 +3314,7 @@ body.modal-open {
   }
 
   .premium-hero-video {
-    transform: translate(-50%, -50%) scale(1.25);
+    transform: translate(-50%, -50%) scale(1.4);
   }
 
   .premium-hero h1 {
@@ -3394,7 +3394,7 @@ body.modal-open {
   }
 
   .premium-hero-video {
-    transform: translate(-50%, -50%) scale(1.3);
+    transform: translate(-50%, -50%) scale(1.45);
   }
 
   .premium-hero h1 {
@@ -3499,6 +3499,14 @@ body.modal-open {
 }
 
 .premium-hero-video::-moz-media-controls {
+  display: none !important;
+}
+
+.premium-hero-video::-webkit-media-controls-panel {
+  display: none !important;
+}
+
+.premium-hero-video::-webkit-media-controls-overlay-play-button {
   display: none !important;
 }
 
