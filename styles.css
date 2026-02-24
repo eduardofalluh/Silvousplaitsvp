@@ -3076,8 +3076,8 @@ body.modal-open {
   background: white;
   color: var(--text);
   border-radius: 20px;
-  padding: 40px;
-  max-width: 420px;
+  padding: 32px;
+  max-width: 340px;
   margin: 0 auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   position: relative;
@@ -3105,7 +3105,7 @@ body.modal-open {
   font-size: 48px;
   font-weight: 800;
   font-family: 'Inter Display', sans-serif;
-  color: var(--text);
+  color: var(--blue);
   line-height: 1;
   margin-bottom: 8px;
 }
@@ -3275,7 +3275,8 @@ body.modal-open {
   }
 
   .premium-pricing-card {
-    padding: 36px;
+    padding: 30px;
+    max-width: 320px;
   }
 
   .premium-why {
@@ -3324,7 +3325,8 @@ body.modal-open {
   }
 
   .premium-pricing-card {
-    padding: 32px 28px;
+    padding: 28px 24px;
+    max-width: 300px;
   }
 
   .pricing-amount .price {
@@ -3403,8 +3405,9 @@ body.modal-open {
   }
 
   .premium-pricing-card {
-    padding: 28px 24px;
+    padding: 24px 20px;
     border-radius: 16px;
+    max-width: 280px;
   }
 
   .pricing-label {
