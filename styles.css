@@ -3005,7 +3005,7 @@ body.modal-open {
 
 /* Premium Hero Section */
 .premium-hero {
-  padding: 30px 40px 100px 40px;
+  padding: 15px 40px 80px 40px;
   text-align: center;
   color: white;
   position: relative;
@@ -3056,21 +3056,21 @@ body.modal-open {
   font-family: 'Inter Display', sans-serif;
   font-size: 76px;
   font-weight: 800;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   line-height: 1.1;
 }
 
 .premium-hero-subtitle {
   font-size: 32px;
   font-weight: 600;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   opacity: 0.95;
 }
 
 .premium-hero-text {
   font-size: 24px;
   opacity: 0.9;
-  margin-bottom: 60px;
+  margin-bottom: 40px;
 }
 
 /* Premium Pricing Card */
@@ -3078,7 +3078,7 @@ body.modal-open {
   background: white;
   color: var(--text);
   border-radius: 20px;
-  padding: 32px;
+  padding: 28px;
   max-width: 340px;
   margin: 0 auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
@@ -3090,7 +3090,7 @@ body.modal-open {
   font-size: 16px;
   font-weight: 600;
   color: #666;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   text-align: left;
 }
 
@@ -3098,8 +3098,8 @@ body.modal-open {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  margin-bottom: 32px;
-  padding-bottom: 32px;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
   border-bottom: 2px solid #f0f0f0;
 }
 
@@ -3109,7 +3109,7 @@ body.modal-open {
   font-family: 'Inter Display', sans-serif;
   color: var(--blue);
   line-height: 1;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .pricing-note {
@@ -3120,7 +3120,7 @@ body.modal-open {
 .pricing-features {
   list-style: none;
   padding: 0;
-  margin: 0 0 32px 0;
+  margin: 0 0 24px 0;
   text-align: left;
 }
 
@@ -3128,7 +3128,7 @@ body.modal-open {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 0;
+  padding: 8px 0;
   font-size: 17px;
   color: var(--text);
 }
@@ -3260,7 +3260,7 @@ body.modal-open {
 /* Premium Page - Tablet Styles */
 @media (max-width: 1024px) {
   .premium-hero {
-    padding: 30px 32px 80px 32px;
+    padding: 15px 32px 60px 32px;
   }
 
   .premium-hero-video {
@@ -3277,11 +3277,11 @@ body.modal-open {
 
   .premium-hero-text {
     font-size: 22px;
-    margin-bottom: 50px;
+    margin-bottom: 35px;
   }
 
   .premium-pricing-card {
-    padding: 30px;
+    padding: 26px;
     max-width: 320px;
   }
 
@@ -3310,7 +3310,7 @@ body.modal-open {
 /* Premium Page - Mobile Styles */
 @media (max-width: 768px) {
   .premium-hero {
-    padding: 30px 24px 60px 24px;
+    padding: 15px 24px 50px 24px;
   }
 
   .premium-hero-video {
@@ -3327,11 +3327,11 @@ body.modal-open {
 
   .premium-hero-text {
     font-size: 20px;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
   }
 
   .premium-pricing-card {
-    padding: 28px 24px;
+    padding: 24px 20px;
     max-width: 300px;
   }
 
@@ -3390,7 +3390,7 @@ body.modal-open {
 /* Premium Page - Small Mobile Styles */
 @media (max-width: 480px) {
   .premium-hero {
-    padding: 25px 16px 48px 16px;
+    padding: 12px 16px 40px 16px;
   }
 
   .premium-hero-video {
@@ -3403,16 +3403,16 @@ body.modal-open {
 
   .premium-hero-subtitle {
     font-size: 23px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
 
   .premium-hero-text {
     font-size: 18px;
-    margin-bottom: 32px;
+    margin-bottom: 28px;
   }
 
   .premium-pricing-card {
-    padding: 24px 20px;
+    padding: 22px 18px;
     border-radius: 16px;
     max-width: 280px;
   }
