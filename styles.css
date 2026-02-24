@@ -3209,6 +3209,7 @@ body.modal-open {
 
 .benefit-icon-large {
   flex-shrink: 0;
+  background: transparent;
 }
 
 .premium-benefit-item h3 {
