@@ -67,9 +67,11 @@ async function isPremiumMember(email, useMockData = false) {
 
       if (listResponse.ok) {
         const listData = await listResponse.json();
-        isOnPremiumList = listData.contactLists.some(
-          (cl) => cl.list === PREMIUM_LIST_ID && cl.status === '1'
-        );
+        isOnPremiumList = listData.contactLists.some((cl) => {
+          const listId = String(cl.list || '').trim();
+          const status = String(cl.status || '').trim();
+          return listId === String(PREMIUM_LIST_ID).trim() && status === '1';
+        });
       }
     }
 
@@ -99,7 +101,9 @@ async function isPremiumMember(email, useMockData = false) {
 
         if (tagResponse.ok) {
           const tagData = await tagResponse.json();
-          if (tagData.tag.tag === PREMIUM_TAG) {
+          const currentTag = String(tagData.tag.tag || '').trim().toLowerCase();
+          const expectedTag = String(PREMIUM_TAG || '').trim().toLowerCase();
+          if (currentTag === expectedTag) {
             hasPremiumTag = true;
             break;
           }
