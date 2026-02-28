@@ -12,6 +12,10 @@ const path = require('path');
 const { parse } = require('csv-parse/sync');
 const fetch = require('node-fetch');
 const nodemailer = require('nodemailer');
+const {
+  createPremiumAccessToken,
+  normalizeEmail,
+} = require('./utils/premium-access-token');
 
 // Import new utilities
 const ticketTracker = require('./utils/ticket-tracker');
@@ -34,14 +38,18 @@ const PREMIUM_ONLY = process.env.PREMIUM_ONLY === 'true'; // Default: disabled
 const USE_MOCK_PREMIUM = process.env.USE_MOCK_PREMIUM === 'true'; // Default: disabled
 
 // Optional: ActiveCampaign API for contact tracking
-const AC_API_URL = process.env.AC_API_URL;
-const AC_API_KEY = process.env.AC_API_KEY;
+const AC_API_URL = process.env.ACTIVECAMPAIGN_API_URL || process.env.AC_API_URL;
+const AC_API_KEY = process.env.ACTIVECAMPAIGN_API_KEY || process.env.AC_API_KEY;
+const AC_TICKET_SENT_TAG = process.env.ACTIVECAMPAIGN_TICKET_SENT_TAG || 'ticket-sent';
+const PREMIUM_ACCESS_SECRET = process.env.PREMIUM_ACCESS_SECRET;
+const PREMIUM_ACCESS_BASE_URL = process.env.PREMIUM_ACCESS_BASE_URL || process.env.URL || '';
+const PREMIUM_ACCESS_TTL_DAYS = Number(process.env.PREMIUM_ACCESS_TTL_DAYS || 30);
 
 // Validate configuration
 if (!SMTP_USER || !SMTP_PASS || !SENDER_EMAIL) {
   console.error('❌ Missing required environment variables!');
   console.error('Required: SMTP_USER, SMTP_PASS, SENDER_EMAIL');
-  console.error('Optional (for contact tracking): AC_API_URL, AC_API_KEY');
+  console.error('Optional (for contact tracking): ACTIVECAMPAIGN_API_URL, ACTIVECAMPAIGN_API_KEY');
   process.exit(1);
 }
 
@@ -111,11 +119,14 @@ async function trackInActiveCampaign(ticket) {
     const contactResult = await contactResponse.json();
     const contactId = contactResult.contact.id;
 
+    // Resolve tag id by name, creating the tag if needed.
+    const tagId = await getOrCreateContactTagId(AC_TICKET_SENT_TAG);
+
     // Add a tag to track ticket sent
     const tagData = {
       contactTag: {
         contact: contactId,
-        tag: 'ticket-sent'
+        tag: String(tagId)
       }
     };
 
@@ -133,6 +144,85 @@ async function trackInActiveCampaign(ticket) {
     console.log(`  ⚠️  Tracking skipped: ${error.message}`);
     return null;
   }
+}
+
+async function getOrCreateContactTagId(tagName) {
+  // Search existing tags first
+  const searchResponse = await fetch(
+    `${AC_API_URL}/api/3/tags?search=${encodeURIComponent(tagName)}`,
+    {
+      headers: {
+        'Api-Token': AC_API_KEY,
+      },
+    }
+  );
+
+  if (!searchResponse.ok) {
+    throw new Error(`Tag search failed: ${searchResponse.status}`);
+  }
+
+  const searchData = await searchResponse.json();
+  const existingTag = (searchData.tags || []).find(
+    (t) => String(t.tag || '').toLowerCase() === tagName.toLowerCase()
+  );
+
+  if (existingTag && existingTag.id) {
+    return existingTag.id;
+  }
+
+  // Create tag when it does not exist
+  const createResponse = await fetch(`${AC_API_URL}/api/3/tags`, {
+    method: 'POST',
+    headers: {
+      'Api-Token': AC_API_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      tag: {
+        tag: tagName,
+        tagType: 'contact',
+      },
+    }),
+  });
+
+  if (!createResponse.ok) {
+    throw new Error(`Tag creation failed: ${createResponse.status}`);
+  }
+
+  const createData = await createResponse.json();
+  if (!createData.tag || !createData.tag.id) {
+    throw new Error('Tag creation response missing tag id');
+  }
+
+  return createData.tag.id;
+}
+
+function buildPremiumAccessSection(ticket) {
+  if (!PREMIUM_ACCESS_SECRET || !PREMIUM_ACCESS_BASE_URL) {
+    return '';
+  }
+
+  const exp = Math.floor(Date.now() / 1000) + PREMIUM_ACCESS_TTL_DAYS * 24 * 60 * 60;
+  const token = createPremiumAccessToken(
+    {
+      email: normalizeEmail(ticket.recipient_email),
+      ticketNumber: ticket.ticket_number,
+      eventName: ticket.event_name,
+      exp,
+    },
+    PREMIUM_ACCESS_SECRET
+  );
+
+  const baseUrl = PREMIUM_ACCESS_BASE_URL.replace(/\/+$/, '');
+  const accessUrl = `${baseUrl}/premium-access.html?token=${encodeURIComponent(token)}`;
+
+  return `
+    <hr style="margin: 24px 0; border: 0; border-top: 1px solid #ddd;" />
+    <h3 style="margin: 0 0 8px;">Acces offre premium securise</h3>
+    <p>Ce lien est personnel et reserve au membre premium associe a cet email.</p>
+    <p><a href="${accessUrl}" style="color:#1a56db;">Activer mon offre premium</a></p>
+    <p style="font-size:12px;color:#666;">Code de verification (a conserver): <code>${token}</code></p>
+  `;
 }
 
 /**
@@ -186,6 +276,7 @@ async function sendTicketEmail(ticket) {
 
     // Prepare email
     const emailSubject = `Votre billet pour ${event_name}`;
+    const premiumAccessSection = buildPremiumAccessSection(ticket);
     const emailBody = `
       <html>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -193,6 +284,7 @@ async function sendTicketEmail(ticket) {
           <p>Voici votre billet pour <strong>${event_name}</strong>.</p>
           <p>Vous trouverez votre billet en pièce jointe de cet email.</p>
           <p>Nous avons hâte de vous voir au spectacle!</p>
+          ${premiumAccessSection}
           <br>
           <p>Cordialement,<br>${SENDER_NAME}</p>
         </body>

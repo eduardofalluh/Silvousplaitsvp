@@ -3,7 +3,9 @@
  * No reCAPTCHA – no keys or env vars required.
  */
 
-const AC_URL = 'https://silvousplait.activehosted.com/proc.php';
+const AC_URL =
+  process.env.ACTIVECAMPAIGN_FORM_URL ||
+  'https://silvousplait.activehosted.com/proc.php';
 
 const headers = {
   'Access-Control-Allow-Origin': '*',

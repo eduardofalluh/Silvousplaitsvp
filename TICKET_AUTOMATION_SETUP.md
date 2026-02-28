@@ -77,11 +77,12 @@ For contact tracking:
    SENDER_NAME=Silvousplait
 
    # Optional (for contact tracking)
-   AC_API_URL=https://youraccountname.api-us1.com
-   AC_API_KEY=your_api_key_here
+   ACTIVECAMPAIGN_API_URL=https://youraccountname.api-us1.com
+   ACTIVECAMPAIGN_API_KEY=your_api_key_here
+   ACTIVECAMPAIGN_TICKET_SENT_TAG=ticket-sent
 
-   # CSV file path
-   CSV_FILE=tickets.csv
+   # Tickets file path
+   TICKETS_FILE=tickets.csv
    ```
 
 3. **IMPORTANT**: Never commit the `.env` file to git (it's already in `.gitignore`)
@@ -246,7 +247,7 @@ await new Promise(resolve => setTimeout(resolve, 2000)); // 2000ms = 2 seconds
 
 **Solution:**
 1. Make sure `tickets.csv` exists in the project directory
-2. Or set `CSV_FILE` in `.env` to point to your file
+2. Or set `TICKETS_FILE` in `.env` to point to your file
 3. Check the file path is correct
 
 ### Emails Not Being Received

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acces Premium Securise - Silvousplait</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .premium-access-wrap {
+      max-width: 640px;
+      margin: 80px auto;
+      padding: 24px;
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
+    .premium-access-wrap h1 {
+      margin-bottom: 10px;
+    }
+    .premium-access-wrap p {
+      margin-bottom: 16px;
+    }
+    .premium-access-wrap label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    .premium-access-wrap input {
+      width: 100%;
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      border: 1px solid #d6d6d6;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .premium-access-wrap button {
+      width: 100%;
+      padding: 12px;
+      border: 0;
+      border-radius: 8px;
+      background: #3347ca;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .premium-access-result {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      display: none;
+    }
+    .premium-access-result.ok {
+      display: block;
+      background: #e8f8ee;
+      color: #115f2b;
+    }
+    .premium-access-result.err {
+      display: block;
+      background: #fdecec;
+      color: #8b1e1e;
+    }
+  </style>
+</head>
+<body>
+  <main class="premium-access-wrap">
+    <h1>Activer mon acces premium</h1>
+    <p>Confirmez votre email premium et votre code personnel pour valider l'offre.</p>
+
+    <form id="premium-access-form">
+      <label for="email">Email premium</label>
+      <input type="email" id="email" name="email" required />
+
+      <label for="token">Code personnel</label>
+      <input type="text" id="token" name="token" required />
+
+      <button type="submit">Envoyer code OTP</button>
+    </form>
+
+    <form id="otp-form" style="display:none; margin-top: 14px;">
+      <label for="otpCode">Code OTP recu par email</label>
+      <input type="text" id="otpCode" name="otpCode" maxlength="6" minlength="6" required />
+      <button type="submit">Verifier OTP</button>
+    </form>
+
+    <div id="result" class="premium-access-result" aria-live="polite"></div>
+  </main>
+
+  <script>
+    (function () {
+      const form = document.getElementById('premium-access-form');
+      const tokenInput = document.getElementById('token');
+      const otpForm = document.getElementById('otp-form');
+      const otpInput = document.getElementById('otpCode');
+      const result = document.getElementById('result');
+      let otpToken = '';
+      const params = new URLSearchParams(window.location.search);
+      const tokenFromUrl = params.get('token');
+      if (tokenFromUrl) {
+        tokenInput.value = tokenFromUrl;
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        result.className = 'premium-access-result';
+        result.textContent = 'Envoi du code OTP...';
+        result.style.display = 'block';
+
+        const payload = {
+          email: document.getElementById('email').value.trim(),
+          token: tokenInput.value.trim(),
+        };
+
+        try {
+          const response = await fetch('/.netlify/functions/request-premium-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const data = await response.json();
+
+          if (response.ok) {
+            otpToken = data.otpToken || '';
+            otpForm.style.display = 'block';
+            otpInput.focus();
+            result.className = 'premium-access-result ok';
+            result.textContent = 'Code OTP envoye. Verifiez votre email puis entrez le code.';
+          } else {
+            result.className = 'premium-access-result err';
+            result.textContent = data.error || 'Acces refuse.';
+          }
+        } catch (err) {
+          result.className = 'premium-access-result err';
+          result.textContent = 'Erreur reseau. Reessayez.';
+        }
+      });
+
+      otpForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        result.className = 'premium-access-result';
+        result.textContent = 'Verification OTP en cours...';
+        result.style.display = 'block';
+
+        const payload = {
+          email: document.getElementById('email').value.trim(),
+          token: tokenInput.value.trim(),
+          otpCode: otpInput.value.trim(),
+          otpToken: otpToken,
+        };
+
+        try {
+          const response = await fetch('/.netlify/functions/verify-premium-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const data = await response.json();
+          if (response.ok) {
+            result.className = 'premium-access-result ok';
+            const nextUrl = data.nextUrl || '';
+            if (nextUrl) {
+              result.innerHTML = "Verification reussie. <a href=\"" + nextUrl + "\">Continuer vers le formulaire billet gratuit</a>.";
+            } else {
+              result.textContent = 'Verification reussie.';
+            }
+          } else {
+            result.className = 'premium-access-result err';
+            result.textContent = data.error || 'OTP invalide.';
+          }
+        } catch (err) {
+          result.className = 'premium-access-result err';
+          result.textContent = 'Erreur reseau. Reessayez.';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
