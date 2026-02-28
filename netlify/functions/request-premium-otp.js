@@ -124,7 +124,11 @@ exports.handler = async (event) => {
     return {
       statusCode: 403,
       headers,
-      body: JSON.stringify({ error: 'Premium membership required' }),
+      body: JSON.stringify({
+        error: 'Premium membership required',
+        subscriptionStatus: premiumStatus.subscriptionStatus || null,
+        details: premiumStatus.details || null,
+      }),
     };
   }
 
