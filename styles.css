@@ -3281,7 +3281,6 @@ body.modal-open {
 
 .premium-cta-band {
   background: var(--bg);
-  border-top: 1px solid rgba(0, 0, 0, 0.04);
   border-bottom: 1px solid rgba(0, 0, 0, 0.04);
   padding: 22px 40px;
 }
@@ -3318,7 +3317,6 @@ body.modal-open {
   font-size: 56px;
   line-height: 1;
   color: var(--blue);
-  transform: rotate(90deg);
 }
 
 .premium-trial-button {
