@@ -3280,9 +3280,9 @@ body.modal-open {
 }
 
 .premium-cta-band {
-  background: #d6d6d3;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--bg);
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
   padding: 22px 40px;
 }
 
@@ -3314,10 +3314,11 @@ body.modal-open {
 }
 
 .trial-arrow {
+  display: inline-block;
   font-size: 56px;
   line-height: 1;
   color: var(--blue);
-  transform: rotate(-20deg);
+  transform: rotate(90deg);
 }
 
 .premium-trial-button {
