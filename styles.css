@@ -3073,6 +3073,13 @@ body.modal-open {
   margin-bottom: 40px;
 }
 
+.premium-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(280px, 340px));
+  justify-content: center;
+  gap: 32px;
+}
+
 /* Premium Pricing Card */
 .premium-pricing-card {
   background: white;
@@ -3138,6 +3145,9 @@ body.modal-open {
 }
 
 .premium-card-button {
+  display: block;
+  text-align: center;
+  text-decoration: none;
   width: 100%;
   background: var(--blue);
   color: white;
@@ -3238,6 +3248,7 @@ body.modal-open {
 
 .premium-bottom-button {
   display: block;
+  text-decoration: none;
   margin: 0 auto;
   background: var(--blue);
   color: white;
@@ -3252,6 +3263,52 @@ body.modal-open {
 }
 
 .premium-bottom-button:hover {
+  background: #2839b5;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(51, 71, 202, 0.3);
+}
+
+.premium-trial-section {
+  background: var(--bg);
+  padding: 12px 40px 72px 40px;
+}
+
+.premium-trial-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-top: 36px;
+  border-top: 1px solid rgba(51, 71, 202, 0.15);
+}
+
+.premium-trial-container h2 {
+  font-family: 'Inter Display', sans-serif;
+  font-size: 50px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 8px 0;
+  line-height: 1.08;
+}
+
+.premium-trial-container p {
+  font-size: 22px;
+  color: var(--text);
+  margin: 0 0 28px 0;
+  opacity: 0.85;
+}
+
+.premium-trial-button {
+  display: inline-block;
+  text-decoration: none;
+  background: var(--blue);
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+  padding: 14px 28px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.premium-trial-button:hover {
   background: #2839b5;
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(51, 71, 202, 0.3);
@@ -3285,6 +3342,12 @@ body.modal-open {
     max-width: 320px;
   }
 
+  .premium-pricing-grid {
+    grid-template-columns: 1fr;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
   .premium-why {
     padding: 25px 32px 80px 32px;
   }
@@ -3303,6 +3366,18 @@ body.modal-open {
   }
 
   .premium-benefit-item h3 {
+    font-size: 20px;
+  }
+
+  .premium-trial-section {
+    padding: 12px 32px 62px 32px;
+  }
+
+  .premium-trial-container h2 {
+    font-size: 42px;
+  }
+
+  .premium-trial-container p {
     font-size: 20px;
   }
 }
@@ -3383,6 +3458,24 @@ body.modal-open {
   .premium-bottom-button {
     width: 100%;
     padding: 16px 32px;
+    font-size: 17px;
+  }
+
+  .premium-trial-section {
+    padding: 8px 24px 56px 24px;
+  }
+
+  .premium-trial-container h2 {
+    font-size: 34px;
+  }
+
+  .premium-trial-container p {
+    font-size: 18px;
+  }
+
+  .premium-trial-button {
+    width: 100%;
+    text-align: center;
     font-size: 17px;
   }
 }
@@ -3490,6 +3583,19 @@ body.modal-open {
     padding: 14px 28px;
     font-size: 16px;
     border-radius: 10px;
+  }
+
+  .premium-trial-section {
+    padding: 8px 16px 46px 16px;
+  }
+
+  .premium-trial-container h2 {
+    font-size: 28px;
+  }
+
+  .premium-trial-container p {
+    font-size: 17px;
+    margin-bottom: 20px;
   }
 }
 

@@ -1,0 +1,6 @@
+event_name,ticket_number,recipient_email,recipient_name,pdf_url
+Billet gratuit - spectacle X - date Y,1,REPLACE_EMAIL_1@example.com,REPLACE_NAME_1,https://drive.google.com/uc?export=download&id=1FlrGNtXmxbtSQvzuDo6n1alRgsI6vH29
+Billet gratuit - spectacle X - date Y,2,REPLACE_EMAIL_2@example.com,REPLACE_NAME_2,https://drive.google.com/uc?export=download&id=1JHhf3wjWhlp5gxKyWvZ8lk8DpDge50Wl
+Billet gratuit - spectacle X - date Y,3,REPLACE_EMAIL_3@example.com,REPLACE_NAME_3,https://drive.google.com/uc?export=download&id=1226i9_1P1TkR3XH-6alU3oWCzycrwlBY
+Billet gratuit - spectacle X - date Y,4,REPLACE_EMAIL_4@example.com,REPLACE_NAME_4,https://drive.google.com/uc?export=download&id=1Uqo8snova-xvfvJVPqmuaWeg0Zg24P0M
+Billet gratuit - spectacle X - date Y,5,REPLACE_EMAIL_5@example.com,REPLACE_NAME_5,https://drive.google.com/uc?export=download&id=1ivNQSkxKqHemTdzd_5Zx_DC0fAGiodZg
