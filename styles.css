@@ -3124,6 +3124,10 @@ body.modal-open {
   color: #888;
 }
 
+.pricing-note--spacer {
+  visibility: hidden;
+}
+
 .pricing-features {
   list-style: none;
   padding: 0;
@@ -3253,13 +3257,15 @@ body.modal-open {
   background: var(--blue);
   color: white;
   border: none;
-  padding: 18px 48px;
+  padding: 12px 48px;
   font-size: 18px;
   font-weight: 600;
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
   font-family: 'Inter', sans-serif;
+  width: min(100%, 400px);
+  text-align: center;
 }
 
 .premium-bottom-button:hover {
@@ -3270,14 +3276,19 @@ body.modal-open {
 
 .premium-trial-section {
   background: var(--bg);
-  padding: 12px 40px 72px 40px;
+  padding: 24px 40px 72px 40px;
+}
+
+.premium-cta-band {
+  background: #d6d6d3;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 22px 40px;
 }
 
 .premium-trial-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding-top: 36px;
-  border-top: 1px solid rgba(51, 71, 202, 0.15);
 }
 
 .premium-trial-container h2 {
@@ -3294,6 +3305,19 @@ body.modal-open {
   color: var(--text);
   margin: 0 0 28px 0;
   opacity: 0.85;
+}
+
+.premium-trial-action {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.trial-arrow {
+  font-size: 56px;
+  line-height: 1;
+  color: var(--blue);
+  transform: rotate(-20deg);
 }
 
 .premium-trial-button {
@@ -3370,7 +3394,11 @@ body.modal-open {
   }
 
   .premium-trial-section {
-    padding: 12px 32px 62px 32px;
+    padding: 20px 32px 62px 32px;
+  }
+
+  .premium-cta-band {
+    padding: 18px 32px;
   }
 
   .premium-trial-container h2 {
@@ -3462,7 +3490,11 @@ body.modal-open {
   }
 
   .premium-trial-section {
-    padding: 8px 24px 56px 24px;
+    padding: 18px 24px 56px 24px;
+  }
+
+  .premium-cta-band {
+    padding: 16px 24px;
   }
 
   .premium-trial-container h2 {
@@ -3477,6 +3509,16 @@ body.modal-open {
     width: 100%;
     text-align: center;
     font-size: 17px;
+  }
+
+  .premium-trial-action {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .trial-arrow {
+    font-size: 44px;
   }
 }
 
@@ -3586,7 +3628,11 @@ body.modal-open {
   }
 
   .premium-trial-section {
-    padding: 8px 16px 46px 16px;
+    padding: 16px 16px 46px 16px;
+  }
+
+  .premium-cta-band {
+    padding: 14px 16px;
   }
 
   .premium-trial-container h2 {
@@ -3596,6 +3642,10 @@ body.modal-open {
   .premium-trial-container p {
     font-size: 17px;
     margin-bottom: 20px;
+  }
+
+  .trial-arrow {
+    font-size: 40px;
   }
 }
 

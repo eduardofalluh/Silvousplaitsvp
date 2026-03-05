@@ -565,7 +565,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (premiumButton) {
     premiumButton.addEventListener('click', (e) => {
       e.preventDefault();
-      openPremiumModal();
+      window.open('https://buy.stripe.com/14AaEZ2PRgeD4Hogmkb7y00', '_blank', 'noopener,noreferrer');
     });
   }
 
