@@ -104,12 +104,8 @@ exports.handler = async (event) => {
   }
 
   const token = String(body.token || '').trim();
-  const eventName = String(body.event_name || body.eventName || '').trim();
   if (!token) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'token is required' }) };
-  }
-  if (!eventName) {
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'event_name is required' }) };
   }
 
   const tokenResult = verifyPremiumAccessToken(token, PREMIUM_ACCESS_SECRET);
@@ -149,6 +145,7 @@ exports.handler = async (event) => {
     return { statusCode: 404, headers, body: JSON.stringify({ error: 'Contact not found' }) };
   }
 
+  const eventName = String(body.event_name || body.eventName || '').trim();
   const redeemedHash = hashToken(token).slice(0, 16);
   const eventHash = eventName ? hashToken(normalizeEventKey(eventName)).slice(0, 10) : 'generic';
   const redeemedTagName = `${PREMIUM_REDEEMED_TAG_PREFIX}_${redeemedHash}_${eventHash}`;
