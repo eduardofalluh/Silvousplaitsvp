@@ -28,6 +28,14 @@ const SMTP_PASS = process.env.SMTP_PASS;
 const SENDER_EMAIL = process.env.SENDER_EMAIL;
 const SENDER_NAME = process.env.SENDER_NAME || 'Silvousplait';
 
+function normalizeEventKey(value) {
+  return String(value || '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
 async function getOrCreateTagIdByName(tagName) {
   const searchResponse = await fetch(
     `${AC_API_URL}/api/3/tags?search=${encodeURIComponent(tagName)}`,
@@ -137,8 +145,10 @@ exports.handler = async (event) => {
     return { statusCode: 404, headers, body: JSON.stringify({ error: 'Contact not found' }) };
   }
 
+  const eventName = String(body.event_name || body.eventName || '').trim();
   const redeemedHash = hashToken(token).slice(0, 16);
-  const redeemedTagName = `${PREMIUM_REDEEMED_TAG_PREFIX}_${redeemedHash}`;
+  const eventHash = eventName ? hashToken(normalizeEventKey(eventName)).slice(0, 10) : 'generic';
+  const redeemedTagName = `${PREMIUM_REDEEMED_TAG_PREFIX}_${redeemedHash}_${eventHash}`;
 
   try {
     const redeemedTagId = await getOrCreateTagIdByName(redeemedTagName);

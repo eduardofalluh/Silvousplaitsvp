@@ -19,6 +19,14 @@ const PREMIUM_ACCESS_SECRET = process.env.PREMIUM_ACCESS_SECRET;
 const PREMIUM_REDEEMED_TAG_PREFIX = process.env.PREMIUM_REDEEMED_TAG_PREFIX || 'redeemed';
 const PREMIUM_TALLY_FORM_URL = process.env.PREMIUM_TALLY_FORM_URL || 'https://tally.so/r/682j2B';
 
+function normalizeEventKey(value) {
+  return String(value || '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
 async function getOrCreateTagIdByName(tagName) {
   const searchResponse = await fetch(
     `${AC_API_URL}/api/3/tags?search=${encodeURIComponent(tagName)}`,
@@ -108,6 +116,7 @@ exports.handler = async (event) => {
   const token = String(body.token || '').trim();
   const otpCode = String(body.otpCode || '').trim();
   const otpToken = String(body.otpToken || '').trim();
+  const eventName = String(body.event_name || body.eventName || '').trim();
 
   if (!token || !otpCode || !otpToken) {
     return {
@@ -179,7 +188,8 @@ exports.handler = async (event) => {
 
   try {
     const redeemedHash = hashToken(token).slice(0, 16);
-    const redeemedTagName = `${PREMIUM_REDEEMED_TAG_PREFIX}_${redeemedHash}`;
+    const eventHash = eventName ? hashToken(normalizeEventKey(eventName)).slice(0, 10) : 'generic';
+    const redeemedTagName = `${PREMIUM_REDEEMED_TAG_PREFIX}_${redeemedHash}_${eventHash}`;
     const redeemedTagId = await getOrCreateTagIdByName(redeemedTagName);
     const contactTagIds = await getContactTagIds(contactId);
     if (contactTagIds.includes(String(redeemedTagId))) {

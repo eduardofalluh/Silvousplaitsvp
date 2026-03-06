@@ -213,6 +213,11 @@
         result.innerHTML = message;
       }
 
+      function getRedemptionEventName() {
+        if (preferredEventFromUrl) return preferredEventFromUrl;
+        return (eventFilterInput.value || '').trim();
+      }
+
       function logClaim(message) {
         const li = document.createElement('li');
         li.textContent = message;
@@ -308,6 +313,7 @@
         const payload = {
           email: emailInput.value.trim(),
           token: tokenInput.value.trim(),
+          event_name: getRedemptionEventName(),
         };
 
         try {
@@ -340,6 +346,7 @@
           token: tokenInput.value.trim(),
           otpCode: otpInput.value.trim(),
           otpToken: otpToken,
+          event_name: getRedemptionEventName(),
         };
 
         try {
