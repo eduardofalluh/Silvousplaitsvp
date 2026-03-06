@@ -59,6 +59,69 @@
       background: #fdecec;
       color: #8b1e1e;
     }
+    .premium-ticket-panel {
+      margin-top: 20px;
+      display: none;
+    }
+    .premium-ticket-panel h2 {
+      margin: 0 0 10px;
+      font-size: 20px;
+    }
+    .premium-ticket-panel input[type="search"] {
+      width: 100%;
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      border: 1px solid #d6d6d6;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .premium-event-list {
+      display: grid;
+      gap: 10px;
+    }
+    .premium-event-item {
+      border: 1px solid #e8e8e8;
+      border-radius: 10px;
+      padding: 12px;
+      background: #fafafa;
+    }
+    .premium-event-title {
+      margin: 0 0 8px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    .premium-event-meta {
+      margin: 0 0 10px;
+      color: #4b4b4b;
+      font-size: 14px;
+    }
+    .premium-event-actions button {
+      width: 100%;
+      padding: 10px 12px;
+      border: 0;
+      border-radius: 8px;
+      background: #3347ca;
+      color: #fff;
+      cursor: pointer;
+      font-size: 15px;
+    }
+    .premium-event-actions button[disabled] {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+    .premium-ticket-log {
+      margin-top: 12px;
+      padding-left: 18px;
+    }
+    .premium-ticket-log li {
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    .premium-ticket-empty {
+      font-size: 14px;
+      color: #555;
+      margin: 0;
+    }
   </style>
 </head>
 <body>
@@ -83,30 +146,167 @@
     </form>
 
     <div id="result" class="premium-access-result" aria-live="polite"></div>
+
+    <section id="ticket-panel" class="premium-ticket-panel" aria-live="polite">
+      <h2>Choisis tes billets gratuits</h2>
+      <p>Tu peux cliquer sur plus d'un billet gratuit. Chaque clic envoie le billet correspondant a l'evenement choisi.</p>
+      <input type="search" id="event-filter" placeholder="Filtrer par nom d'evenement..." />
+      <div id="event-list" class="premium-event-list"></div>
+      <ul id="ticket-log" class="premium-ticket-log"></ul>
+    </section>
   </main>
 
   <script>
     (function () {
       const form = document.getElementById('premium-access-form');
+      const emailInput = document.getElementById('email');
       const tokenInput = document.getElementById('token');
       const otpForm = document.getElementById('otp-form');
       const otpInput = document.getElementById('otpCode');
       const result = document.getElementById('result');
+      const ticketPanel = document.getElementById('ticket-panel');
+      const eventFilterInput = document.getElementById('event-filter');
+      const eventList = document.getElementById('event-list');
+      const ticketLog = document.getElementById('ticket-log');
       let otpToken = '';
+      let eventsCache = [];
       const params = new URLSearchParams(window.location.search);
       const tokenFromUrl = params.get('token');
+      const preferredEventFromUrl = (params.get('event') || '').trim();
+
+      function escapeHtml(value) {
+        return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function decodeTokenPayload(token) {
+        try {
+          const parts = String(token || '').split('.');
+          if (parts.length !== 2) return null;
+          const payloadPart = parts[0].replace(/-/g, '+').replace(/_/g, '/');
+          const padded = payloadPart + '='.repeat((4 - (payloadPart.length % 4)) % 4);
+          const json = atob(padded);
+          return JSON.parse(json);
+        } catch (_) {
+          return null;
+        }
+      }
+
       if (tokenFromUrl) {
         tokenInput.value = tokenFromUrl;
+        const payload = decodeTokenPayload(tokenFromUrl);
+        if (payload && payload.e) {
+          emailInput.value = String(payload.e).trim();
+          emailInput.readOnly = true;
+        }
       }
+
+      function setResult(kind, message) {
+        result.className = 'premium-access-result';
+        result.style.display = 'block';
+        if (kind === 'ok') result.classList.add('ok');
+        if (kind === 'err') result.classList.add('err');
+        result.innerHTML = message;
+      }
+
+      function logClaim(message) {
+        const li = document.createElement('li');
+        li.textContent = message;
+        ticketLog.prepend(li);
+      }
+
+      function renderEvents() {
+        const filter = (eventFilterInput.value || '').trim().toLowerCase();
+        const filtered = eventsCache.filter((eventData) =>
+          eventData.event_name.toLowerCase().includes(filter)
+        );
+
+        if (!filtered.length) {
+          eventList.innerHTML = '<p class="premium-ticket-empty">Aucun billet disponible pour ce filtre.</p>';
+          return;
+        }
+
+        eventList.innerHTML = filtered.map((eventData, index) => {
+          const rawEventName = String(eventData.event_name || '');
+          const eventName = escapeHtml(rawEventName);
+          const eventNameEncoded = encodeURIComponent(rawEventName);
+          const count = Number(eventData.available_count || 0);
+          const buttonId = `claim-btn-${index}`;
+          return (
+            '<article class="premium-event-item">' +
+              `<p class="premium-event-title">${eventName}</p>` +
+              `<p class="premium-event-meta">${count} billet(s) disponible(s)</p>` +
+              '<div class="premium-event-actions">' +
+                `<button type="button" data-event-name="${eventNameEncoded}" id="${buttonId}">Recevoir ce billet</button>` +
+              '</div>' +
+            '</article>'
+          );
+        }).join('');
+      }
+
+      async function loadAvailableEvents() {
+        const payload = { email: emailInput.value.trim() };
+        const response = await fetch('/.netlify/functions/list-premium-ticket-events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Impossible de charger la liste des evenements');
+        }
+        eventsCache = Array.isArray(data.events) ? data.events : [];
+        renderEvents();
+      }
+
+      async function claimTicketForEvent(eventName, buttonEl) {
+        const payload = {
+          email: emailInput.value.trim(),
+          event_name: eventName,
+        };
+        buttonEl.disabled = true;
+        buttonEl.textContent = 'Envoi en cours...';
+        try {
+          const response = await fetch('/.netlify/functions/claim-and-send-ticket', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.error || 'Echec de l envoi du billet');
+          }
+
+          setResult('ok', `Billet envoye pour <strong>${escapeHtml(data.event_name || eventName)}</strong>. Verifie ta boite email.`);
+          logClaim(`Billet envoye: ${data.event_name || eventName} (${new Date().toLocaleTimeString('fr-CA')})`);
+          await loadAvailableEvents();
+        } catch (err) {
+          setResult('err', escapeHtml(err.message || 'Erreur reseau. Reessayez.'));
+          buttonEl.disabled = false;
+          buttonEl.textContent = 'Recevoir ce billet';
+        }
+      }
+
+      eventFilterInput.addEventListener('input', renderEvents);
+      eventList.addEventListener('click', (event) => {
+        const btn = event.target.closest('button[data-event-name]');
+        if (!btn) return;
+        const encodedName = btn.getAttribute('data-event-name') || '';
+        const eventName = decodeURIComponent(encodedName);
+        if (!eventName) return;
+        claimTicketForEvent(eventName, btn);
+      });
 
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        result.className = 'premium-access-result';
-        result.textContent = 'Envoi du code OTP...';
-        result.style.display = 'block';
+        setResult('', 'Envoi du code OTP...');
 
         const payload = {
-          email: document.getElementById('email').value.trim(),
+          email: emailInput.value.trim(),
           token: tokenInput.value.trim(),
         };
 
@@ -122,26 +322,21 @@
             otpToken = data.otpToken || '';
             otpForm.style.display = 'block';
             otpInput.focus();
-            result.className = 'premium-access-result ok';
-            result.textContent = 'Code OTP envoye. Verifiez votre email puis entrez le code.';
+            setResult('ok', 'Code OTP envoye. Verifiez votre email puis entrez le code.');
           } else {
-            result.className = 'premium-access-result err';
-            result.textContent = data.error || 'Acces refuse.';
+            setResult('err', data.error || 'Acces refuse.');
           }
         } catch (err) {
-          result.className = 'premium-access-result err';
-          result.textContent = 'Erreur reseau. Reessayez.';
+          setResult('err', 'Erreur reseau. Reessayez.');
         }
       });
 
       otpForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        result.className = 'premium-access-result';
-        result.textContent = 'Verification OTP en cours...';
-        result.style.display = 'block';
+        setResult('', 'Verification OTP en cours...');
 
         const payload = {
-          email: document.getElementById('email').value.trim(),
+          email: emailInput.value.trim(),
           token: tokenInput.value.trim(),
           otpCode: otpInput.value.trim(),
           otpToken: otpToken,
@@ -155,20 +350,25 @@
           });
           const data = await response.json();
           if (response.ok) {
-            result.className = 'premium-access-result ok';
             const nextUrl = data.nextUrl || '';
+            let successMessage = 'Verification reussie.';
             if (nextUrl) {
-              result.innerHTML = "Verification reussie. <a href=\"" + nextUrl + "\">Continuer vers le formulaire billet gratuit</a>.";
-            } else {
-              result.textContent = 'Verification reussie.';
+              successMessage += ' <a href="' + escapeHtml(nextUrl) + '" target="_blank" rel="noopener noreferrer">Ouvrir le formulaire externe</a>.';
+            }
+            setResult('ok', successMessage);
+
+            ticketPanel.style.display = 'block';
+            ticketLog.innerHTML = '';
+            await loadAvailableEvents();
+            if (preferredEventFromUrl) {
+              eventFilterInput.value = preferredEventFromUrl;
+              renderEvents();
             }
           } else {
-            result.className = 'premium-access-result err';
-            result.textContent = data.error || 'OTP invalide.';
+            setResult('err', data.error || 'OTP invalide.');
           }
         } catch (err) {
-          result.className = 'premium-access-result err';
-          result.textContent = 'Erreur reseau. Reessayez.';
+          setResult('err', 'Erreur reseau. Reessayez.');
         }
       });
     })();

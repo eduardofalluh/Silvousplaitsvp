@@ -105,16 +105,22 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid JSON body' }) };
   }
 
-  const email = normalizeEmail(body.email);
   const token = String(body.token || '').trim();
   const otpCode = String(body.otpCode || '').trim();
   const otpToken = String(body.otpToken || '').trim();
 
-  if (!email || !token || !otpCode || !otpToken) {
+  if (!token || !otpCode || !otpToken) {
     return {
       statusCode: 400,
       headers,
-      body: JSON.stringify({ error: 'email, token, otpCode and otpToken are required' }),
+      body: JSON.stringify({ error: 'token, otpCode and otpToken are required' }),
+    };
+  }
+  if (!/^\d{6}$/.test(otpCode)) {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ error: 'otpCode must be a 6-digit code' }),
     };
   }
 
@@ -126,7 +132,9 @@ exports.handler = async (event) => {
       body: JSON.stringify({ error: 'Invalid or expired access token', reason: accessTokenResult.reason }),
     };
   }
-  if (normalizeEmail(accessTokenResult.payload.e) !== email) {
+  const email = normalizeEmail(accessTokenResult.payload.e);
+  const providedEmail = normalizeEmail(body.email);
+  if (providedEmail && providedEmail !== email) {
     return {
       statusCode: 403,
       headers,

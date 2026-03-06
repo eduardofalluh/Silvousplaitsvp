@@ -20,6 +20,7 @@ const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 const SENDER_EMAIL = process.env.SENDER_EMAIL;
 const SENDER_NAME = process.env.SENDER_NAME || 'Silvousplait';
+const MAX_FREE_TICKETS_PER_EMAIL = Number(process.env.MAX_FREE_TICKETS_PER_EMAIL || 1);
 
 function colToLetter(col) {
   let n = col;
@@ -45,6 +46,50 @@ async function getSheetsClient() {
 
 function normalize(str) {
   return String(str || '').trim();
+}
+
+function normalizeEventKey(str) {
+  return normalize(str)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function hasEmailAlreadyClaimed(rows, idx, email, maxTickets) {
+  const normalizedEmail = normalize(email).toLowerCase();
+  if (!normalizedEmail) return false;
+
+  let sentCount = 0;
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i] || [];
+    const rowEmail = normalize(row[idx.reserved_for_email]).toLowerCase();
+    const rowStatus = normalize(row[idx.status]).toLowerCase();
+    if (rowEmail !== normalizedEmail) continue;
+    if (rowStatus === 'sent') {
+      sentCount += 1;
+      if (sentCount >= maxTickets) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+async function updateSheetRow(sheets, range, values) {
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: GOOGLE_SHEET_ID,
+    range,
+    valueInputOption: 'RAW',
+    requestBody: { values: [values] },
+  });
+}
+
+async function getSheetRow(sheets, range) {
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: GOOGLE_SHEET_ID,
+    range,
+  });
+  return (response.data.values || [])[0] || [];
 }
 
 exports.handler = async (event) => {
@@ -88,6 +133,13 @@ exports.handler = async (event) => {
   if (!email) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'email is required' }) };
   }
+  if (!eventName) {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ error: 'event_name is required to claim a specific ticket' }),
+    };
+  }
 
   const premiumStatus = await premiumChecker.isPremiumMember(email, false);
   if (!premiumStatus.isPremium) {
@@ -98,8 +150,10 @@ exports.handler = async (event) => {
     };
   }
 
+  let sheets = null;
+  let reservationContext = null;
   try {
-    const sheets = await getSheetsClient();
+    sheets = await getSheetsClient();
     const range = `${TICKET_INVENTORY_TAB}!A:G`;
     const read = await sheets.spreadsheets.values.get({
       spreadsheetId: GOOGLE_SHEET_ID,
@@ -133,6 +187,18 @@ exports.handler = async (event) => {
       }
     }
 
+    if (MAX_FREE_TICKETS_PER_EMAIL > 0 && hasEmailAlreadyClaimed(rows, idx, email, MAX_FREE_TICKETS_PER_EMAIL)) {
+      return {
+        statusCode: 409,
+        headers,
+        body: JSON.stringify({
+          error: `Free ticket limit reached for this email (${MAX_FREE_TICKETS_PER_EMAIL})`,
+          code: 'limit_reached',
+        }),
+      };
+    }
+
+    const requestedEventKey = normalizeEventKey(eventName);
     let selectedRowIndex = -1;
     let selected = null;
     for (let i = 1; i < rows.length; i++) {
@@ -140,7 +206,7 @@ exports.handler = async (event) => {
       const rowEvent = normalize(row[idx.event_name]);
       const rowStatus = normalize(row[idx.status]).toLowerCase();
       if (rowStatus !== 'available') continue;
-      if (eventName && rowEvent !== eventName) continue;
+      if (normalizeEventKey(rowEvent) !== requestedEventKey) continue;
       selectedRowIndex = i + 1; // sheet row number (1-based)
       selected = {
         event_name: rowEvent,
@@ -154,7 +220,11 @@ exports.handler = async (event) => {
       return {
         statusCode: 409,
         headers,
-        body: JSON.stringify({ error: 'No available ticket for this event', code: 'sold_out' }),
+        body: JSON.stringify({
+          error: `No available ticket for event: ${eventName}`,
+          code: 'sold_out',
+          event_name: eventName,
+        }),
       };
     }
 
@@ -167,12 +237,24 @@ exports.handler = async (event) => {
     reserveValues[idx.reserved_for_email + 1 - minCol] = email;
     reserveValues[idx.reserved_at + 1 - minCol] = nowIso;
 
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: GOOGLE_SHEET_ID,
-      range: reserveRange,
-      valueInputOption: 'RAW',
-      requestBody: { values: [reserveValues] },
-    });
+    await updateSheetRow(sheets, reserveRange, reserveValues);
+
+    // Verify reservation still belongs to the same email to reduce race-condition risk.
+    const reservedRow = await getSheetRow(sheets, reserveRange);
+    const statusCheck = normalize(reservedRow[idx.status + 1 - minCol]).toLowerCase();
+    const emailCheck = normalize(reservedRow[idx.reserved_for_email + 1 - minCol]).toLowerCase();
+    if (statusCheck !== 'reserved' || emailCheck !== email) {
+      throw new Error('Ticket reservation conflict. Please retry.');
+    }
+
+    reservationContext = {
+      selectedRowIndex,
+      idx,
+      email,
+      reservedRange: reserveRange,
+      reservedMinCol: minCol,
+      reservedMaxCol: maxCol,
+    };
 
     const pdfResponse = await fetch(selected.pdf_url);
     if (!pdfResponse.ok) {
@@ -213,12 +295,9 @@ exports.handler = async (event) => {
     sentValues[idx.status + 1 - minColSent] = 'sent';
     sentValues[idx.sent_at + 1 - minColSent] = new Date().toISOString();
 
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: GOOGLE_SHEET_ID,
-      range: sentRange,
-      valueInputOption: 'RAW',
-      requestBody: { values: [sentValues] },
-    });
+    await updateSheetRow(sheets, sentRange, sentValues);
+
+    reservationContext = null;
 
     return {
       statusCode: 200,
@@ -232,6 +311,37 @@ exports.handler = async (event) => {
       }),
     };
   } catch (error) {
+    // Best-effort rollback only if the row is still reserved by the same email.
+    if (sheets && reservationContext) {
+      try {
+        const {
+          selectedRowIndex: rowNum,
+          idx,
+          email: reservedEmail,
+          reservedRange,
+          reservedMinCol,
+          reservedMaxCol,
+        } = reservationContext;
+        const reservedRow = await getSheetRow(sheets, reservedRange);
+        const statusCheck = normalize(reservedRow[idx.status + 1 - reservedMinCol]).toLowerCase();
+        const emailCheck = normalize(reservedRow[idx.reserved_for_email + 1 - reservedMinCol]).toLowerCase();
+
+        if (statusCheck === 'reserved' && emailCheck === reservedEmail) {
+          const rollbackValues = Array(reservedMaxCol - reservedMinCol + 1).fill('');
+          rollbackValues[idx.status + 1 - reservedMinCol] = 'available';
+          rollbackValues[idx.reserved_for_email + 1 - reservedMinCol] = '';
+          rollbackValues[idx.reserved_at + 1 - reservedMinCol] = '';
+          await updateSheetRow(
+            sheets,
+            `${TICKET_INVENTORY_TAB}!${colToLetter(reservedMinCol)}${rowNum}:${colToLetter(reservedMaxCol)}${rowNum}`,
+            rollbackValues
+          );
+        }
+      } catch (rollbackError) {
+        console.error('Rollback failed:', rollbackError.message || rollbackError);
+      }
+    }
+
     return {
       statusCode: 500,
       headers,

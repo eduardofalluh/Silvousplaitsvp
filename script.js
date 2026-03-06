@@ -439,16 +439,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // =====================================================
   // ACTIVE CAMPAIGN SIGNUP (TOP + BOTTOM FORMS)
   // =====================================================
-  let formFeedbackTimeout = null;
+  const formFeedbackTimeouts = new WeakMap();
 
   function setFormFeedback(form, message, type = 'info') {
     const feedback = form.querySelector('.form-feedback');
     if (!feedback) return;
     
-    // Clear any existing timeout
-    if (formFeedbackTimeout) {
-      clearTimeout(formFeedbackTimeout);
-      formFeedbackTimeout = null;
+    // Keep timeout state scoped per form to avoid cross-form interference
+    const existingTimeout = formFeedbackTimeouts.get(form);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+      formFeedbackTimeouts.delete(form);
     }
     
     feedback.textContent = message || '';
@@ -456,10 +457,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Auto-dismiss after 15 seconds if there's a message
     if (message) {
-      formFeedbackTimeout = setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         feedback.textContent = '';
         feedback.classList.remove('is-error');
       }, 5000);
+      formFeedbackTimeouts.set(form, timeoutId);
     }
   }
 

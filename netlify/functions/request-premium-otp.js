@@ -95,10 +95,9 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid JSON body' }) };
   }
 
-  const email = normalizeEmail(body.email);
   const token = String(body.token || '').trim();
-  if (!email || !token) {
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'email and token are required' }) };
+  if (!token) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: 'token is required' }) };
   }
 
   const tokenResult = verifyPremiumAccessToken(token, PREMIUM_ACCESS_SECRET);
@@ -111,13 +110,14 @@ exports.handler = async (event) => {
   }
 
   const tokenEmail = normalizeEmail(tokenResult.payload.e);
-  if (tokenEmail !== email) {
+  const providedEmail = normalizeEmail(body.email);
+  if (providedEmail && tokenEmail !== providedEmail) {
     return {
       statusCode: 403,
-      headers,
-      body: JSON.stringify({ error: 'This code is bound to a different email address' }),
+      headers, body: JSON.stringify({ error: 'This code is bound to a different email address' }),
     };
   }
+  const email = tokenEmail;
 
   const premiumStatus = await premiumChecker.isPremiumMember(email, false);
   if (!premiumStatus.isPremium) {

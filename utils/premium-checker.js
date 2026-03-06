@@ -7,9 +7,11 @@ const fetch = require('node-fetch');
  * @returns {Promise<Object>} - { isPremium: boolean, subscriptionStatus: string, details: object }
  */
 async function isPremiumMember(email, useMockData = false) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+
   // Mock mode for testing without AC credentials
   if (useMockData || !process.env.ACTIVECAMPAIGN_API_KEY) {
-    return getMockPremiumStatus(email);
+    return getMockPremiumStatus(normalizedEmail);
   }
 
   const AC_API_URL = process.env.ACTIVECAMPAIGN_API_URL;
@@ -19,13 +21,13 @@ async function isPremiumMember(email, useMockData = false) {
 
   if (!AC_API_URL || !AC_API_KEY) {
     console.warn('ActiveCampaign not configured. Using mock data.');
-    return getMockPremiumStatus(email);
+    return getMockPremiumStatus(normalizedEmail);
   }
 
   try {
     // Search for contact by email
     const searchResponse = await fetch(
-      `${AC_API_URL}/api/3/contacts?email=${encodeURIComponent(email)}`,
+      `${AC_API_URL}/api/3/contacts?email=${encodeURIComponent(normalizedEmail)}`,
       {
         headers: {
           'Api-Token': AC_API_KEY,
@@ -67,7 +69,7 @@ async function isPremiumMember(email, useMockData = false) {
 
       if (listResponse.ok) {
         const listData = await listResponse.json();
-        isOnPremiumList = listData.contactLists.some((cl) => {
+        isOnPremiumList = (listData.contactLists || []).some((cl) => {
           const listId = String(cl.list || '').trim();
           const status = String(cl.status || '').trim();
           return listId === String(PREMIUM_LIST_ID).trim() && status === '1';
@@ -88,27 +90,33 @@ async function isPremiumMember(email, useMockData = false) {
     let hasPremiumTag = false;
     if (tagsResponse.ok) {
       const tagsData = await tagsResponse.json();
-      // Get all tags and check for premium tag
-      const tagIds = tagsData.contactTags.map((ct) => ct.tag);
-
-      // Fetch tag details to get tag names
-      for (const tagId of tagIds) {
-        const tagResponse = await fetch(`${AC_API_URL}/api/3/tags/${tagId}`, {
-          headers: {
-            'Api-Token': AC_API_KEY,
-          },
-        });
-
-        if (tagResponse.ok) {
-          const tagData = await tagResponse.json();
-          const currentTag = String(tagData.tag.tag || '').trim().toLowerCase();
-          const expectedTag = String(PREMIUM_TAG || '').trim().toLowerCase();
-          if (currentTag === expectedTag) {
-            hasPremiumTag = true;
-            break;
+      const tagIds = [...new Set((tagsData.contactTags || []).map((ct) => ct.tag).filter(Boolean))];
+      const expectedTag = String(PREMIUM_TAG || '').trim().toLowerCase();
+      const tagResponses = await Promise.all(
+        tagIds.map((tagId) =>
+          fetch(`${AC_API_URL}/api/3/tags/${tagId}`, {
+            headers: {
+              'Api-Token': AC_API_KEY,
+            },
+          })
+        )
+      );
+      const tagPayloads = await Promise.all(
+        tagResponses.map(async (response) => {
+          if (!response.ok) return null;
+          try {
+            return await response.json();
+          } catch {
+            return null;
           }
-        }
-      }
+        })
+      );
+      hasPremiumTag = tagPayloads.some((payload) => {
+        const currentTag = String(payload && payload.tag && payload.tag.tag ? payload.tag.tag : '')
+          .trim()
+          .toLowerCase();
+        return currentTag === expectedTag;
+      });
     }
 
     // Determine premium status
@@ -121,7 +129,7 @@ async function isPremiumMember(email, useMockData = false) {
         contactId,
         isOnPremiumList,
         hasPremiumTag,
-        email: contact.email,
+        email: contact.email || normalizedEmail,
       },
     };
   } catch (error) {
