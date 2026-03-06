@@ -118,11 +118,11 @@ exports.handler = async (event) => {
   const otpToken = String(body.otpToken || '').trim();
   const eventName = String(body.event_name || body.eventName || '').trim();
 
-  if (!token || !otpCode || !otpToken) {
+  if (!token || !otpCode || !otpToken || !eventName) {
     return {
       statusCode: 400,
       headers,
-      body: JSON.stringify({ error: 'token, otpCode and otpToken are required' }),
+      body: JSON.stringify({ error: 'token, otpCode, otpToken and event_name are required' }),
     };
   }
   if (!/^\d{6}$/.test(otpCode)) {
@@ -201,7 +201,12 @@ exports.handler = async (event) => {
     }
 
     await addTagToContact(contactId, redeemedTagId);
-    const nextUrl = `${PREMIUM_TALLY_FORM_URL}${PREMIUM_TALLY_FORM_URL.includes('?') ? '&' : '?'}email=${encodeURIComponent(email)}`;
+    const query = new URLSearchParams({
+      email,
+      event_name: eventName,
+      token,
+    });
+    const nextUrl = `${PREMIUM_TALLY_FORM_URL}${PREMIUM_TALLY_FORM_URL.includes('?') ? '&' : '?'}${query.toString()}`;
 
     return {
       statusCode: 200,

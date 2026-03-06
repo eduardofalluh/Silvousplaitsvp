@@ -358,19 +358,12 @@
           const data = await response.json();
           if (response.ok) {
             const nextUrl = data.nextUrl || '';
-            let successMessage = 'Verification reussie.';
             if (nextUrl) {
-              successMessage += ' <a href="' + escapeHtml(nextUrl) + '" target="_blank" rel="noopener noreferrer">Ouvrir le formulaire externe</a>.';
+              setResult('ok', 'Verification reussie. Redirection vers le formulaire...');
+              window.location.href = nextUrl;
+              return;
             }
-            setResult('ok', successMessage);
-
-            ticketPanel.style.display = 'block';
-            ticketLog.innerHTML = '';
-            await loadAvailableEvents();
-            if (preferredEventFromUrl) {
-              eventFilterInput.value = preferredEventFromUrl;
-              renderEvents();
-            }
+            setResult('ok', 'Verification reussie.');
           } else {
             setResult('err', data.error || 'OTP invalide.');
           }
