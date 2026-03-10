@@ -2,6 +2,7 @@ const fetch = require('node-fetch');
 const nodemailer = require('nodemailer');
 const { google } = require('googleapis');
 const premiumChecker = require('../../utils/premium-checker');
+const { hashToken } = require('../../utils/premium-access-token');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -20,17 +21,19 @@ const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 const SENDER_EMAIL = process.env.SENDER_EMAIL;
 const SENDER_NAME = process.env.SENDER_NAME || 'Silvousplait';
-const MAX_FREE_TICKETS_PER_EMAIL = Number(process.env.MAX_FREE_TICKETS_PER_EMAIL || 1);
+const AC_API_URL = process.env.ACTIVECAMPAIGN_API_URL;
+const AC_API_KEY = process.env.ACTIVECAMPAIGN_API_KEY;
+const PREMIUM_EVENT_CLAIM_TAG_PREFIX = process.env.PREMIUM_EVENT_CLAIM_TAG_PREFIX || 'claimed_event';
 
-function colToLetter(col) {
-  let n = col;
-  let s = '';
-  while (n > 0) {
-    const m = (n - 1) % 26;
-    s = String.fromCharCode(65 + m) + s;
-    n = Math.floor((n - m) / 26);
-  }
-  return s;
+function normalize(value) {
+  return String(value || '').trim();
+}
+
+function normalizeEventKey(value) {
+  return normalize(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
 }
 
 async function getSheetsClient() {
@@ -44,52 +47,87 @@ async function getSheetsClient() {
   return google.sheets({ version: 'v4', auth });
 }
 
-function normalize(str) {
-  return String(str || '').trim();
-}
-
-function normalizeEventKey(str) {
-  return normalize(str)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
-
-function hasEmailAlreadyClaimed(rows, idx, email, maxTickets) {
-  const normalizedEmail = normalize(email).toLowerCase();
-  if (!normalizedEmail) return false;
-
-  let sentCount = 0;
-  for (let i = 1; i < rows.length; i++) {
-    const row = rows[i] || [];
-    const rowEmail = normalize(row[idx.reserved_for_email]).toLowerCase();
-    const rowStatus = normalize(row[idx.status]).toLowerCase();
-    if (rowEmail !== normalizedEmail) continue;
-    if (rowStatus === 'sent') {
-      sentCount += 1;
-      if (sentCount >= maxTickets) {
-        return true;
-      }
-    }
+async function getOrCreateTagIdByName(tagName) {
+  const searchResponse = await fetch(
+    `${AC_API_URL}/api/3/tags?search=${encodeURIComponent(tagName)}`,
+    { headers: { 'Api-Token': AC_API_KEY } }
+  );
+  if (!searchResponse.ok) {
+    throw new Error(`Tag search failed (${searchResponse.status})`);
   }
-  return false;
+  const searchData = await searchResponse.json();
+  const existing = (searchData.tags || []).find(
+    (tag) => String(tag.tag || '').toLowerCase() === tagName.toLowerCase()
+  );
+  if (existing && existing.id) return String(existing.id);
+
+  const createResponse = await fetch(`${AC_API_URL}/api/3/tags`, {
+    method: 'POST',
+    headers: {
+      'Api-Token': AC_API_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      tag: { tag: tagName, tagType: 'contact' },
+    }),
+  });
+  if (!createResponse.ok) {
+    throw new Error(`Tag creation failed (${createResponse.status})`);
+  }
+  const createData = await createResponse.json();
+  return String(createData.tag.id);
 }
 
-async function updateSheetRow(sheets, range, values) {
-  await sheets.spreadsheets.values.update({
-    spreadsheetId: GOOGLE_SHEET_ID,
-    range,
-    valueInputOption: 'RAW',
-    requestBody: { values: [values] },
+async function getContactTagIds(contactId) {
+  const response = await fetch(`${AC_API_URL}/api/3/contacts/${contactId}/contactTags`, {
+    headers: { 'Api-Token': AC_API_KEY },
   });
+  if (!response.ok) {
+    throw new Error(`Contact tags fetch failed (${response.status})`);
+  }
+  const data = await response.json();
+  return (data.contactTags || []).map((ct) => String(ct.tag));
 }
 
-async function getSheetRow(sheets, range) {
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: GOOGLE_SHEET_ID,
-    range,
+async function addTagToContact(contactId, tagId) {
+  const response = await fetch(`${AC_API_URL}/api/3/contactTags`, {
+    method: 'POST',
+    headers: {
+      'Api-Token': AC_API_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      contactTag: {
+        contact: String(contactId),
+        tag: String(tagId),
+      },
+    }),
   });
-  return (response.data.values || [])[0] || [];
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Add tag failed (${response.status}): ${err}`);
+  }
+}
+
+function extractDiscountCodeRow(rows) {
+  if (!rows.length) return null;
+  const header = rows[0].map((h) => normalize(h).toLowerCase());
+
+  const idx = {
+    event_name: header.indexOf('event_name'),
+    discount_code: header.indexOf('discount_code'),
+  };
+
+  // Backward-compatible aliases
+  if (idx.discount_code === -1) idx.discount_code = header.indexOf('code');
+  if (idx.discount_code === -1) idx.discount_code = header.indexOf('promo_code');
+  if (idx.discount_code === -1) idx.discount_code = header.indexOf('coupon_code');
+
+  if (idx.event_name === -1 || idx.discount_code === -1) {
+    return { error: 'Missing required columns: event_name and discount_code' };
+  }
+
+  return { idx };
 }
 
 exports.handler = async (event) => {
@@ -137,7 +175,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 400,
       headers,
-      body: JSON.stringify({ error: 'event_name is required to claim a specific ticket' }),
+      body: JSON.stringify({ error: 'event_name is required to claim a specific offer' }),
     };
   }
 
@@ -149,69 +187,48 @@ exports.handler = async (event) => {
       body: JSON.stringify({ error: 'Premium membership required' }),
     };
   }
+  const contactId = premiumStatus.details && premiumStatus.details.contactId;
+  if (!contactId) {
+    return { statusCode: 404, headers, body: JSON.stringify({ error: 'Contact not found' }) };
+  }
+  if (!AC_API_URL || !AC_API_KEY) {
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: 'ActiveCampaign config missing for per-event claim lock' }),
+    };
+  }
 
-  let sheets = null;
-  let reservationContext = null;
   try {
-    sheets = await getSheetsClient();
-    const range = `${TICKET_INVENTORY_TAB}!A:G`;
+    const sheets = await getSheetsClient();
     const read = await sheets.spreadsheets.values.get({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range,
+      range: `${TICKET_INVENTORY_TAB}!A:Z`,
     });
 
     const rows = read.data.values || [];
     if (rows.length < 2) {
-      return { statusCode: 409, headers, body: JSON.stringify({ error: 'No ticket inventory found' }) };
+      return { statusCode: 409, headers, body: JSON.stringify({ error: 'No discount-code data found' }) };
     }
 
-    const header = rows[0].map((h) => String(h || '').trim().toLowerCase());
-    const idx = {
-      event_name: header.indexOf('event_name'),
-      ticket_number: header.indexOf('ticket_number'),
-      pdf_url: header.indexOf('pdf_url'),
-      status: header.indexOf('status'),
-      reserved_for_email: header.indexOf('reserved_for_email'),
-      reserved_at: header.indexOf('reserved_at'),
-      sent_at: header.indexOf('sent_at'),
-    };
-
-    const required = ['event_name', 'ticket_number', 'pdf_url', 'status', 'reserved_for_email', 'reserved_at', 'sent_at'];
-    for (const key of required) {
-      if (idx[key] === -1) {
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({ error: `Missing column in sheet header: ${key}` }),
-        };
-      }
-    }
-
-    if (MAX_FREE_TICKETS_PER_EMAIL > 0 && hasEmailAlreadyClaimed(rows, idx, email, MAX_FREE_TICKETS_PER_EMAIL)) {
-      return {
-        statusCode: 409,
-        headers,
-        body: JSON.stringify({
-          error: `Free ticket limit reached for this email (${MAX_FREE_TICKETS_PER_EMAIL})`,
-          code: 'limit_reached',
-        }),
-      };
+    const extracted = extractDiscountCodeRow(rows);
+    if (extracted.error) {
+      return { statusCode: 500, headers, body: JSON.stringify({ error: extracted.error }) };
     }
 
     const requestedEventKey = normalizeEventKey(eventName);
-    let selectedRowIndex = -1;
     let selected = null;
+
     for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-      const rowEvent = normalize(row[idx.event_name]);
-      const rowStatus = normalize(row[idx.status]).toLowerCase();
-      if (rowStatus !== 'available') continue;
+      const row = rows[i] || [];
+      const rowEvent = normalize(row[extracted.idx.event_name]);
+      const rowCode = normalize(row[extracted.idx.discount_code]);
+      if (!rowEvent || !rowCode) continue;
       if (normalizeEventKey(rowEvent) !== requestedEventKey) continue;
-      selectedRowIndex = i + 1; // sheet row number (1-based)
+
       selected = {
         event_name: rowEvent,
-        ticket_number: normalize(row[idx.ticket_number]),
-        pdf_url: normalize(row[idx.pdf_url]),
+        discount_code: rowCode,
       };
       break;
     }
@@ -221,46 +238,29 @@ exports.handler = async (event) => {
         statusCode: 409,
         headers,
         body: JSON.stringify({
-          error: `No available ticket for event: ${eventName}`,
-          code: 'sold_out',
+          error: `No discount code found for event: ${eventName}`,
+          code: 'event_not_found',
           event_name: eventName,
         }),
       };
     }
 
-    const nowIso = new Date().toISOString();
-    const minCol = Math.min(idx.status, idx.reserved_for_email, idx.reserved_at) + 1;
-    const maxCol = Math.max(idx.status, idx.reserved_for_email, idx.reserved_at) + 1;
-    const reserveRange = `${TICKET_INVENTORY_TAB}!${colToLetter(minCol)}${selectedRowIndex}:${colToLetter(maxCol)}${selectedRowIndex}`;
-    const reserveValues = Array(maxCol - minCol + 1).fill('');
-    reserveValues[idx.status + 1 - minCol] = 'reserved';
-    reserveValues[idx.reserved_for_email + 1 - minCol] = email;
-    reserveValues[idx.reserved_at + 1 - minCol] = nowIso;
-
-    await updateSheetRow(sheets, reserveRange, reserveValues);
-
-    // Verify reservation still belongs to the same email to reduce race-condition risk.
-    const reservedRow = await getSheetRow(sheets, reserveRange);
-    const statusCheck = normalize(reservedRow[idx.status + 1 - minCol]).toLowerCase();
-    const emailCheck = normalize(reservedRow[idx.reserved_for_email + 1 - minCol]).toLowerCase();
-    if (statusCheck !== 'reserved' || emailCheck !== email) {
-      throw new Error('Ticket reservation conflict. Please retry.');
+    // One-time claim per user + event
+    const eventHash = hashToken(normalizeEventKey(selected.event_name)).slice(0, 12);
+    const claimTagName = `${PREMIUM_EVENT_CLAIM_TAG_PREFIX}_${eventHash}`;
+    const claimTagId = await getOrCreateTagIdByName(claimTagName);
+    const contactTagIds = await getContactTagIds(contactId);
+    if (contactTagIds.includes(String(claimTagId))) {
+      return {
+        statusCode: 409,
+        headers,
+        body: JSON.stringify({
+          error: `Discount code already claimed for event: ${selected.event_name}`,
+          code: 'already_claimed_for_event',
+          event_name: selected.event_name,
+        }),
+      };
     }
-
-    reservationContext = {
-      selectedRowIndex,
-      idx,
-      email,
-      reservedRange: reserveRange,
-      reservedMinCol: minCol,
-      reservedMaxCol: maxCol,
-    };
-
-    const pdfResponse = await fetch(selected.pdf_url);
-    if (!pdfResponse.ok) {
-      throw new Error(`Failed to download PDF (${pdfResponse.status})`);
-    }
-    const pdfBuffer = await pdfResponse.buffer();
 
     const transporter = nodemailer.createTransport({
       host: SMTP_HOST,
@@ -272,32 +272,18 @@ exports.handler = async (event) => {
     const message = await transporter.sendMail({
       from: `"${SENDER_NAME}" <${SENDER_EMAIL}>`,
       to: email,
-      subject: `Votre billet gratuit pour ${selected.event_name}`,
+      subject: `Votre code promo 100% pour ${selected.event_name}`,
       html: `
         <p>Bonjour ${fullName},</p>
-        <p>Votre billet gratuit est confirme pour <strong>${selected.event_name}</strong>.</p>
-        <p>Le billet est en piece jointe.</p>
+        <p>Voici votre code promo pour <strong>${selected.event_name}</strong>:</p>
+        <p style="font-size:24px;font-weight:700;letter-spacing:1px;">${selected.discount_code}</p>
+        <p>Utilisez ce code au moment du paiement pour obtenir 100% de rabais.</p>
         <p>Cordialement,<br/>${SENDER_NAME}</p>
       `,
-      attachments: [
-        {
-          filename: `Billet-${selected.ticket_number}.pdf`,
-          content: pdfBuffer,
-          contentType: 'application/pdf',
-        },
-      ],
     });
 
-    const minColSent = Math.min(idx.status, idx.sent_at) + 1;
-    const maxColSent = Math.max(idx.status, idx.sent_at) + 1;
-    const sentRange = `${TICKET_INVENTORY_TAB}!${colToLetter(minColSent)}${selectedRowIndex}:${colToLetter(maxColSent)}${selectedRowIndex}`;
-    const sentValues = Array(maxColSent - minColSent + 1).fill('');
-    sentValues[idx.status + 1 - minColSent] = 'sent';
-    sentValues[idx.sent_at + 1 - minColSent] = new Date().toISOString();
-
-    await updateSheetRow(sheets, sentRange, sentValues);
-
-    reservationContext = null;
+    // Mark as claimed only after successful email delivery.
+    await addTagToContact(contactId, claimTagId);
 
     return {
       statusCode: 200,
@@ -306,46 +292,15 @@ exports.handler = async (event) => {
         success: true,
         email,
         event_name: selected.event_name,
-        ticket_number: selected.ticket_number,
+        discount_code: selected.discount_code,
         messageId: message.messageId,
       }),
     };
   } catch (error) {
-    // Best-effort rollback only if the row is still reserved by the same email.
-    if (sheets && reservationContext) {
-      try {
-        const {
-          selectedRowIndex: rowNum,
-          idx,
-          email: reservedEmail,
-          reservedRange,
-          reservedMinCol,
-          reservedMaxCol,
-        } = reservationContext;
-        const reservedRow = await getSheetRow(sheets, reservedRange);
-        const statusCheck = normalize(reservedRow[idx.status + 1 - reservedMinCol]).toLowerCase();
-        const emailCheck = normalize(reservedRow[idx.reserved_for_email + 1 - reservedMinCol]).toLowerCase();
-
-        if (statusCheck === 'reserved' && emailCheck === reservedEmail) {
-          const rollbackValues = Array(reservedMaxCol - reservedMinCol + 1).fill('');
-          rollbackValues[idx.status + 1 - reservedMinCol] = 'available';
-          rollbackValues[idx.reserved_for_email + 1 - reservedMinCol] = '';
-          rollbackValues[idx.reserved_at + 1 - reservedMinCol] = '';
-          await updateSheetRow(
-            sheets,
-            `${TICKET_INVENTORY_TAB}!${colToLetter(reservedMinCol)}${rowNum}:${colToLetter(reservedMaxCol)}${rowNum}`,
-            rollbackValues
-          );
-        }
-      } catch (rollbackError) {
-        console.error('Rollback failed:', rollbackError.message || rollbackError);
-      }
-    }
-
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: error.message || 'Failed to claim/send ticket' }),
+      body: JSON.stringify({ error: error.message || 'Failed to send discount code' }),
     };
   }
 };
