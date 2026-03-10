@@ -118,11 +118,11 @@ exports.handler = async (event) => {
   const otpToken = String(body.otpToken || '').trim();
   const eventName = String(body.event_name || body.eventName || '').trim();
 
-  if (!token || !otpCode || !otpToken) {
+  if (!token || !otpCode || !otpToken || !eventName) {
     return {
       statusCode: 400,
       headers,
-      body: JSON.stringify({ error: 'token, otpCode and otpToken are required' }),
+      body: JSON.stringify({ error: 'token, otpCode, otpToken and event_name are required' }),
     };
   }
   if (!/^\d{6}$/.test(otpCode)) {
@@ -187,9 +187,10 @@ exports.handler = async (event) => {
   }
 
   try {
-    const redeemedHash = hashToken(token).slice(0, 16);
-    const eventHash = eventName ? hashToken(normalizeEventKey(eventName)).slice(0, 10) : 'generic';
-    const redeemedTagName = `${PREMIUM_REDEEMED_TAG_PREFIX}_${redeemedHash}_${eventHash}`;
+    // Must match request-premium-otp redemption identity
+    const redemptionKey = `${email}|${normalizeEventKey(eventName)}`;
+    const redeemedHash = hashToken(redemptionKey).slice(0, 20);
+    const redeemedTagName = `${PREMIUM_REDEEMED_TAG_PREFIX}_${redeemedHash}`;
     const redeemedTagId = await getOrCreateTagIdByName(redeemedTagName);
     const contactTagIds = await getContactTagIds(contactId);
     if (contactTagIds.includes(String(redeemedTagId))) {

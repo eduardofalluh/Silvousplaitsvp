@@ -146,9 +146,10 @@ exports.handler = async (event) => {
   }
 
   const eventName = String(body.event_name || body.eventName || '').trim();
-  const redeemedHash = hashToken(token).slice(0, 16);
-  const eventHash = eventName ? hashToken(normalizeEventKey(eventName)).slice(0, 10) : 'generic';
-  const redeemedTagName = `${PREMIUM_REDEEMED_TAG_PREFIX}_${redeemedHash}_${eventHash}`;
+  // Redemption identity is email+event (stable across newsletter URL/token refreshes)
+  const redemptionKey = `${email}|${normalizeEventKey(eventName)}`;
+  const redeemedHash = hashToken(redemptionKey).slice(0, 20);
+  const redeemedTagName = `${PREMIUM_REDEEMED_TAG_PREFIX}_${redeemedHash}`;
 
   try {
     const redeemedTagId = await getOrCreateTagIdByName(redeemedTagName);
