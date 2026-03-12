@@ -47,6 +47,20 @@ function normalizeEventKey(value) {
     .toLowerCase();
 }
 
+function sanitizeIncomingToken(rawToken) {
+  let token = String(rawToken || '').trim();
+  if (!token) return '';
+
+  // Defensive: if URL builder accidentally concatenates event into token.
+  const accidentalEventIndex = token.toLowerCase().indexOf('event=');
+  if (accidentalEventIndex > 0) {
+    token = token.slice(0, accidentalEventIndex);
+  }
+
+  token = token.split('&')[0].split('#')[0];
+  return token.trim();
+}
+
 async function getOrCreateTagIdByName(tagName) {
   const searchResponse = await fetch(
     `${AC_API_URL}/api/3/tags?search=${encodeURIComponent(tagName)}`,
@@ -133,7 +147,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid JSON body' }) };
   }
 
-  const token = String(body.token || '').trim();
+  const token = sanitizeIncomingToken(body.token);
   const otpCode = String(body.otpCode || '').trim();
   const otpToken = String(body.otpToken || '').trim();
   const eventName = String(body.event_name || body.eventName || '').trim();
