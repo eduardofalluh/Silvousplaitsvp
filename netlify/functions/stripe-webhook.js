@@ -1,5 +1,6 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const fetch = require('node-fetch');
+const PREMIUM_TAG = process.env.ACTIVECAMPAIGN_PREMIUM_TAG || 'premium_active';
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -105,7 +106,8 @@ async function handleSubscriptionCreated(subscription) {
 
   // Add premium tag in ActiveCampaign
   if (process.env.ACTIVECAMPAIGN_API_KEY && customerEmail) {
-    await addPremiumTag(customerEmail, 'premium_active');
+    await addPremiumTag(customerEmail, PREMIUM_TAG);
+    await addContactToPremiumList(customerEmail);
   }
 }
 
@@ -120,9 +122,11 @@ async function handleSubscriptionUpdated(subscription) {
 
   // Update status based on subscription status
   if (subscription.status === 'active') {
-    await addPremiumTag(customerEmail, 'premium_active');
+    await addPremiumTag(customerEmail, PREMIUM_TAG);
+    await addContactToPremiumList(customerEmail);
   } else if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
-    await removePremiumTag(customerEmail, 'premium_active');
+    await removePremiumTag(customerEmail, PREMIUM_TAG);
+    await removeContactFromPremiumList(customerEmail);
   }
 }
 
@@ -135,7 +139,8 @@ async function handleSubscriptionDeleted(subscription) {
 
   // Remove premium status
   if (process.env.ACTIVECAMPAIGN_API_KEY && customerEmail) {
-    await removePremiumTag(customerEmail, 'premium_active');
+    await removePremiumTag(customerEmail, PREMIUM_TAG);
+    await removeContactFromPremiumList(customerEmail);
   }
 }
 
@@ -253,6 +258,81 @@ async function getContactTagAssignments(contactId) {
   }
   const data = await response.json();
   return data.contactTags || [];
+}
+
+async function upsertContactListStatus(contactId, listId, status) {
+  const lookup = await acFetch(`/api/3/contacts/${contactId}/contactLists`);
+  if (!lookup.ok) {
+    const text = await lookup.text();
+    throw new Error(`Contact lists lookup failed (${lookup.status}): ${text}`);
+  }
+  const data = await lookup.json();
+  const existing = (data.contactLists || []).find(
+    (item) => String(item.list) === String(listId)
+  );
+
+  if (existing && existing.id) {
+    const update = await acFetch(`/api/3/contactLists/${existing.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        contactList: {
+          list: String(listId),
+          contact: String(contactId),
+          status: Number(status),
+        },
+      }),
+    });
+    if (!update.ok) {
+      const text = await update.text();
+      throw new Error(`Contact list update failed (${update.status}): ${text}`);
+    }
+    return;
+  }
+
+  const create = await acFetch('/api/3/contactLists', {
+    method: 'POST',
+    body: JSON.stringify({
+      contactList: {
+        list: String(listId),
+        contact: String(contactId),
+        status: Number(status),
+      },
+    }),
+  });
+  if (!create.ok && create.status !== 409) {
+    const text = await create.text();
+    throw new Error(`Contact list create failed (${create.status}): ${text}`);
+  }
+}
+
+async function addContactToPremiumList(email) {
+  const normalizedEmail = normalizeEmail(email);
+  const { premiumListId } = getACConfig();
+  if (!normalizedEmail || !premiumListId) return;
+
+  try {
+    const contact = await findContactByEmail(normalizedEmail);
+    if (!contact || !contact.id) return;
+    await upsertContactListStatus(contact.id, premiumListId, 1);
+    console.log(`Premium list status set active for ${normalizedEmail}`);
+  } catch (error) {
+    console.error('Add to premium list error:', error);
+  }
+}
+
+async function removeContactFromPremiumList(email) {
+  const normalizedEmail = normalizeEmail(email);
+  const { premiumListId } = getACConfig();
+  if (!normalizedEmail || !premiumListId) return;
+
+  try {
+    const contact = await findContactByEmail(normalizedEmail);
+    if (!contact || !contact.id) return;
+    await upsertContactListStatus(contact.id, premiumListId, 2);
+    console.log(`Premium list status set inactive for ${normalizedEmail}`);
+  } catch (error) {
+    console.error('Remove from premium list error:', error);
+  }
 }
 
 // Add contact to ActiveCampaign premium list
