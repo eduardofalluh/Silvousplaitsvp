@@ -1102,6 +1102,14 @@ footer {
   text-align: justify;
 }
 
+.price-note.price-note--tax {
+  font-size: 13px;
+  margin-top: -2px;
+  margin-bottom: 8px;
+  min-height: 0;
+  opacity: 0.8;
+}
+
 .price-card ul {
   list-style: none;
   padding: 0;
@@ -3122,6 +3130,12 @@ body.modal-open {
 .pricing-note {
   font-size: 14px;
   color: #888;
+}
+
+.pricing-note.pricing-note--tax {
+  font-size: 12px;
+  margin-top: -2px;
+  opacity: 0.85;
 }
 
 .pricing-note--spacer {
