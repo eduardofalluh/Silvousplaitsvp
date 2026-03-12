@@ -16,8 +16,28 @@ const headers = {
 const AC_API_URL = process.env.ACTIVECAMPAIGN_API_URL;
 const AC_API_KEY = process.env.ACTIVECAMPAIGN_API_KEY;
 const PREMIUM_ACCESS_SECRET = process.env.PREMIUM_ACCESS_SECRET;
+const PREMIUM_ACCESS_SECRET_LEGACY = process.env.PREMIUM_ACCESS_SECRET_LEGACY || '';
 const PREMIUM_REDEEMED_TAG_PREFIX = process.env.PREMIUM_REDEEMED_TAG_PREFIX || 'redeemed';
 const PREMIUM_TALLY_FORM_URL = process.env.PREMIUM_TALLY_FORM_URL || 'https://tally.so/r/682j2B';
+
+function getAccessSecrets() {
+  const legacy = PREMIUM_ACCESS_SECRET_LEGACY
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return [PREMIUM_ACCESS_SECRET, ...legacy].filter(Boolean);
+}
+
+function verifyAccessTokenAgainstKnownSecrets(token) {
+  const secrets = getAccessSecrets();
+  for (const secret of secrets) {
+    const result = verifyPremiumAccessToken(token, secret);
+    if (result.valid) {
+      return { ...result, secretUsed: secret };
+    }
+  }
+  return { valid: false, reason: 'invalid_or_expired' };
+}
 
 function normalizeEventKey(value) {
   return String(value || '')
@@ -133,7 +153,7 @@ exports.handler = async (event) => {
     };
   }
 
-  const accessTokenResult = verifyPremiumAccessToken(token, PREMIUM_ACCESS_SECRET);
+  const accessTokenResult = verifyAccessTokenAgainstKnownSecrets(token);
   if (!accessTokenResult.valid) {
     return {
       statusCode: 401,
