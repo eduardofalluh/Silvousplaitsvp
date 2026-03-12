@@ -3138,6 +3138,11 @@ body.modal-open {
   opacity: 0.85;
 }
 
+/* Keep bullet copy natural in pricing cards across all breakpoints. */
+.price-card ul li {
+  text-align: left !important;
+}
+
 .pricing-note--spacer {
   visibility: hidden;
 }
