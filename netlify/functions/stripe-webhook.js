@@ -2,6 +2,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const fetch = require('node-fetch');
 const PREMIUM_TAG = process.env.ACTIVECAMPAIGN_PREMIUM_TAG || 'premium_active';
 const SUBSCRIPTION_TYPE_FIELD_ID = process.env.ACTIVECAMPAIGN_SUBSCRIPTION_TYPE_FIELD_ID || '';
+const POSTAL_CODE_FIELD_ID = process.env.ACTIVECAMPAIGN_POSTAL_CODE_FIELD_ID || '';
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -86,6 +87,7 @@ exports.handler = async (event) => {
 async function handleCheckoutCompleted(session) {
   console.log('Checkout completed:', session.id);
   const customerEmail = session.customer_email;
+  const postalCode = extractPostalCodeFromSession(session);
 
   // Add to ActiveCampaign premium list
   if (process.env.ACTIVECAMPAIGN_API_KEY && customerEmail) {
@@ -93,6 +95,7 @@ async function handleCheckoutCompleted(session) {
     if (session.subscription) {
       await updateSubscriptionTypeField(customerEmail, await resolveSubscriptionType(session.subscription));
     }
+    await updatePostalCodeField(customerEmail, postalCode);
   }
 
   // Log the new premium member
@@ -113,6 +116,7 @@ async function handleSubscriptionCreated(subscription) {
     await addPremiumTag(customerEmail, PREMIUM_TAG);
     await addContactToPremiumList(customerEmail);
     await updateSubscriptionTypeField(customerEmail, await resolveSubscriptionType(subscription));
+    await updatePostalCodeField(customerEmail, await resolvePostalCode(subscription));
   }
 }
 
@@ -130,6 +134,7 @@ async function handleSubscriptionUpdated(subscription) {
     await addPremiumTag(customerEmail, PREMIUM_TAG);
     await addContactToPremiumList(customerEmail);
     await updateSubscriptionTypeField(customerEmail, await resolveSubscriptionType(subscription));
+    await updatePostalCodeField(customerEmail, await resolvePostalCode(subscription));
   } else if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
     await removePremiumTag(customerEmail, PREMIUM_TAG);
     await removeContactFromPremiumList(customerEmail);
@@ -155,7 +160,12 @@ async function handleSubscriptionDeleted(subscription) {
 // Handle successful payment
 async function handlePaymentSucceeded(invoice) {
   console.log('Payment succeeded:', invoice.id);
-  // Additional logic if needed (e.g., send receipt)
+  const customerId = invoice.customer;
+  if (!customerId) return;
+  const customer = await stripe.customers.retrieve(customerId);
+  const customerEmail = customer.email;
+  if (!customerEmail) return;
+  await updatePostalCodeField(customerEmail, await resolvePostalCode(invoice));
 }
 
 // Handle failed payment
@@ -178,6 +188,7 @@ function getACConfig() {
     apiKey: process.env.ACTIVECAMPAIGN_API_KEY,
     premiumListId: process.env.ACTIVECAMPAIGN_PREMIUM_LIST_ID,
     subscriptionTypeFieldId: SUBSCRIPTION_TYPE_FIELD_ID,
+    postalCodeFieldId: POSTAL_CODE_FIELD_ID,
   };
 }
 
@@ -228,6 +239,56 @@ async function resolveSubscriptionType(subscriptionOrId) {
     return extractSubscriptionTypeFromObject(full);
   } catch (error) {
     console.error('Unable to resolve subscription type from Stripe:', error);
+    return '';
+  }
+}
+
+function normalizePostalCode(value) {
+  return String(value || '').trim();
+}
+
+function extractPostalCodeFromSession(session) {
+  const fromCustomerDetails =
+    session &&
+    session.customer_details &&
+    session.customer_details.address &&
+    session.customer_details.address.postal_code;
+  if (fromCustomerDetails) return normalizePostalCode(fromCustomerDetails);
+  const fromShipping =
+    session && session.shipping_details && session.shipping_details.address && session.shipping_details.address.postal_code;
+  if (fromShipping) return normalizePostalCode(fromShipping);
+  return '';
+}
+
+function extractPostalCodeFromCustomer(customer) {
+  if (!customer) return '';
+  const fromAddress = customer.address && customer.address.postal_code;
+  if (fromAddress) return normalizePostalCode(fromAddress);
+  const fromShipping = customer.shipping && customer.shipping.address && customer.shipping.address.postal_code;
+  if (fromShipping) return normalizePostalCode(fromShipping);
+  return '';
+}
+
+async function resolvePostalCode(source) {
+  if (!source) return '';
+
+  if (source.object === 'checkout.session') {
+    const direct = extractPostalCodeFromSession(source);
+    if (direct) return direct;
+  }
+
+  const customerId =
+    (typeof source.customer === 'string' && source.customer) ||
+    (source.customer && source.customer.id) ||
+    '';
+
+  if (!customerId) return '';
+
+  try {
+    const customer = await stripe.customers.retrieve(customerId);
+    return extractPostalCodeFromCustomer(customer);
+  } catch (error) {
+    console.error('Unable to resolve postal code from Stripe customer:', error);
     return '';
   }
 }
@@ -382,6 +443,28 @@ async function updateSubscriptionTypeField(email, subscriptionTypeValue) {
     console.log(`Subscription type updated for ${normalizedEmail}: ${subscriptionTypeValue || '(empty)'}`);
   } catch (error) {
     console.error('Subscription type field update error:', error);
+  }
+}
+
+async function updatePostalCodeField(email, postalCodeValue) {
+  const normalizedEmail = normalizeEmail(email);
+  const { postalCodeFieldId } = getACConfig();
+  const value = normalizePostalCode(postalCodeValue);
+  if (!normalizedEmail || !postalCodeFieldId || !value) return;
+
+  try {
+    const contact = await findContactByEmail(normalizedEmail);
+    if (!contact || !contact.id) return;
+
+    const existing = await getExistingFieldValue(contact.id, postalCodeFieldId);
+    if (existing && existing.id) {
+      await updateFieldValue(existing.id, contact.id, postalCodeFieldId, value);
+    } else {
+      await createFieldValue(contact.id, postalCodeFieldId, value);
+    }
+    console.log(`Postal code updated for ${normalizedEmail}: ${value}`);
+  } catch (error) {
+    console.error('Postal code field update error:', error);
   }
 }
 
