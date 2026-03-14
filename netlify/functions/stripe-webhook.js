@@ -1,6 +1,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const fetch = require('node-fetch');
 const PREMIUM_TAG = process.env.ACTIVECAMPAIGN_PREMIUM_TAG || 'premium_active';
+const SUBSCRIPTION_TYPE_FIELD_ID = process.env.ACTIVECAMPAIGN_SUBSCRIPTION_TYPE_FIELD_ID || '';
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -89,6 +90,9 @@ async function handleCheckoutCompleted(session) {
   // Add to ActiveCampaign premium list
   if (process.env.ACTIVECAMPAIGN_API_KEY && customerEmail) {
     await addToPremiumList(customerEmail, session.customer);
+    if (session.subscription) {
+      await updateSubscriptionTypeField(customerEmail, await resolveSubscriptionType(session.subscription));
+    }
   }
 
   // Log the new premium member
@@ -108,6 +112,7 @@ async function handleSubscriptionCreated(subscription) {
   if (process.env.ACTIVECAMPAIGN_API_KEY && customerEmail) {
     await addPremiumTag(customerEmail, PREMIUM_TAG);
     await addContactToPremiumList(customerEmail);
+    await updateSubscriptionTypeField(customerEmail, await resolveSubscriptionType(subscription));
   }
 }
 
@@ -124,9 +129,11 @@ async function handleSubscriptionUpdated(subscription) {
   if (subscription.status === 'active') {
     await addPremiumTag(customerEmail, PREMIUM_TAG);
     await addContactToPremiumList(customerEmail);
+    await updateSubscriptionTypeField(customerEmail, await resolveSubscriptionType(subscription));
   } else if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
     await removePremiumTag(customerEmail, PREMIUM_TAG);
     await removeContactFromPremiumList(customerEmail);
+    await updateSubscriptionTypeField(customerEmail, '');
   }
 }
 
@@ -141,6 +148,7 @@ async function handleSubscriptionDeleted(subscription) {
   if (process.env.ACTIVECAMPAIGN_API_KEY && customerEmail) {
     await removePremiumTag(customerEmail, PREMIUM_TAG);
     await removeContactFromPremiumList(customerEmail);
+    await updateSubscriptionTypeField(customerEmail, '');
   }
 }
 
@@ -169,7 +177,59 @@ function getACConfig() {
     apiUrl: process.env.ACTIVECAMPAIGN_API_URL,
     apiKey: process.env.ACTIVECAMPAIGN_API_KEY,
     premiumListId: process.env.ACTIVECAMPAIGN_PREMIUM_LIST_ID,
+    subscriptionTypeFieldId: SUBSCRIPTION_TYPE_FIELD_ID,
   };
+}
+
+function normalizeSubscriptionType(interval, intervalCount) {
+  const normalizedInterval = String(interval || '').trim().toLowerCase();
+  const count = Number(intervalCount || 1);
+  if (!normalizedInterval) return '';
+  if (normalizedInterval === 'month' && count === 1) return 'monthly';
+  if (normalizedInterval === 'year' && count === 1) return 'yearly';
+  return count > 1 ? `${normalizedInterval}_${count}` : normalizedInterval;
+}
+
+function extractSubscriptionTypeFromObject(subscription) {
+  const firstItem = subscription &&
+    subscription.items &&
+    Array.isArray(subscription.items.data) &&
+    subscription.items.data.length > 0
+      ? subscription.items.data[0]
+      : null;
+
+  const recurring =
+    (firstItem && firstItem.price && firstItem.price.recurring) ||
+    (firstItem && firstItem.plan && firstItem.plan.interval
+      ? { interval: firstItem.plan.interval, interval_count: firstItem.plan.interval_count }
+      : null);
+
+  if (!recurring) return '';
+  return normalizeSubscriptionType(recurring.interval, recurring.interval_count);
+}
+
+async function resolveSubscriptionType(subscriptionOrId) {
+  if (!subscriptionOrId) return '';
+
+  if (typeof subscriptionOrId === 'object') {
+    const fromPayload = extractSubscriptionTypeFromObject(subscriptionOrId);
+    if (fromPayload) return fromPayload;
+    if (!subscriptionOrId.id) return '';
+  }
+
+  const subscriptionId =
+    typeof subscriptionOrId === 'string' ? subscriptionOrId : String(subscriptionOrId.id || '');
+  if (!subscriptionId) return '';
+
+  try {
+    const full = await stripe.subscriptions.retrieve(subscriptionId, {
+      expand: ['items.data.price'],
+    });
+    return extractSubscriptionTypeFromObject(full);
+  } catch (error) {
+    console.error('Unable to resolve subscription type from Stripe:', error);
+    return '';
+  }
 }
 
 async function acFetch(path, options = {}) {
@@ -258,6 +318,71 @@ async function getContactTagAssignments(contactId) {
   }
   const data = await response.json();
   return data.contactTags || [];
+}
+
+async function getExistingFieldValue(contactId, fieldId) {
+  const response = await acFetch(`/api/3/contacts/${contactId}/fieldValues`);
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Field values lookup failed (${response.status}): ${text}`);
+  }
+  const data = await response.json();
+  return (data.fieldValues || []).find((fv) => String(fv.field) === String(fieldId)) || null;
+}
+
+async function createFieldValue(contactId, fieldId, value) {
+  const response = await acFetch('/api/3/fieldValues', {
+    method: 'POST',
+    body: JSON.stringify({
+      fieldValue: {
+        contact: String(contactId),
+        field: String(fieldId),
+        value: String(value || ''),
+      },
+    }),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Field value create failed (${response.status}): ${text}`);
+  }
+}
+
+async function updateFieldValue(fieldValueId, contactId, fieldId, value) {
+  const response = await acFetch(`/api/3/fieldValues/${fieldValueId}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      fieldValue: {
+        contact: String(contactId),
+        field: String(fieldId),
+        value: String(value || ''),
+      },
+    }),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Field value update failed (${response.status}): ${text}`);
+  }
+}
+
+async function updateSubscriptionTypeField(email, subscriptionTypeValue) {
+  const normalizedEmail = normalizeEmail(email);
+  const { subscriptionTypeFieldId } = getACConfig();
+  if (!normalizedEmail || !subscriptionTypeFieldId) return;
+
+  try {
+    const contact = await findContactByEmail(normalizedEmail);
+    if (!contact || !contact.id) return;
+
+    const existing = await getExistingFieldValue(contact.id, subscriptionTypeFieldId);
+    if (existing && existing.id) {
+      await updateFieldValue(existing.id, contact.id, subscriptionTypeFieldId, subscriptionTypeValue);
+    } else {
+      await createFieldValue(contact.id, subscriptionTypeFieldId, subscriptionTypeValue);
+    }
+    console.log(`Subscription type updated for ${normalizedEmail}: ${subscriptionTypeValue || '(empty)'}`);
+  } catch (error) {
+    console.error('Subscription type field update error:', error);
+  }
 }
 
 async function upsertContactListStatus(contactId, listId, status) {
