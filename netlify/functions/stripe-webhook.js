@@ -162,12 +162,24 @@ async function handleSubscriptionDeleted(subscription) {
 // Handle successful payment
 async function handlePaymentSucceeded(invoice) {
   console.log('Payment succeeded:', invoice.id);
-  const customerEmail = await resolveCustomerEmail(invoice);
-  if (!customerEmail) return;
+  const expandedInvoice = await resolveExpandedInvoice(invoice);
+  const customerEmail = await resolveCustomerEmail(expandedInvoice);
+  const subscriptionType = await resolveSubscriptionType(expandedInvoice.subscription);
+  const postalCode = await resolvePostalCode(expandedInvoice);
+
+  if (!customerEmail) {
+    console.log(`Payment succeeded but customer email could not be resolved for invoice ${invoice.id}`);
+    return;
+  }
+
+  console.log(
+    `Payment sync context for ${customerEmail}: subscription_type=${subscriptionType || '(empty)'}, postal_code=${postalCode || '(empty)'}`
+  );
+
   await addPremiumTag(customerEmail, PREMIUM_TAG);
   await addContactToPremiumList(customerEmail);
-  await updateSubscriptionTypeField(customerEmail, await resolveSubscriptionType(invoice.subscription));
-  await updatePostalCodeField(customerEmail, await resolvePostalCode(invoice));
+  await updateSubscriptionTypeField(customerEmail, subscriptionType);
+  await updatePostalCodeField(customerEmail, postalCode);
 }
 
 // Handle failed payment
@@ -176,6 +188,18 @@ async function handlePaymentFailed(invoice) {
   const customerEmail = await resolveCustomerEmail(invoice);
   // Optionally notify customer via email or AC automation
   console.log(`Payment failed for: ${customerEmail || 'unknown-email'}`);
+}
+
+async function resolveExpandedInvoice(invoiceLike) {
+  if (!invoiceLike || !invoiceLike.id) return invoiceLike;
+  try {
+    return await stripe.invoices.retrieve(String(invoiceLike.id), {
+      expand: ['customer', 'subscription.items.data.price'],
+    });
+  } catch (error) {
+    console.error('Unable to retrieve expanded Stripe invoice:', error);
+    return invoiceLike;
+  }
 }
 
 function normalizeEmail(email) {
@@ -296,6 +320,7 @@ async function resolveCustomerEmail(source) {
 
   const direct =
     source.customer_email ||
+    (source.customer && source.customer.email) ||
     (source.customer_details && source.customer_details.email) ||
     source.receipt_email ||
     (source.billing_details && source.billing_details.email) ||
