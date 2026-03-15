@@ -3,6 +3,7 @@ const fetch = require('node-fetch');
 const PREMIUM_TAG = process.env.ACTIVECAMPAIGN_PREMIUM_TAG || 'premium_active';
 const SUBSCRIPTION_TYPE_FIELD_ID = process.env.ACTIVECAMPAIGN_SUBSCRIPTION_TYPE_FIELD_ID || '';
 const POSTAL_CODE_FIELD_ID = process.env.ACTIVECAMPAIGN_POSTAL_CODE_FIELD_ID || '';
+const FREE_LIST_ID = process.env.ACTIVECAMPAIGN_FREE_LIST_ID || '';
 const fieldIdCache = {
   subscriptionType: null,
   postalCode: null,
@@ -142,6 +143,7 @@ async function handleSubscriptionUpdated(subscription) {
   } else if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
     await removePremiumTag(customerEmail, PREMIUM_TAG);
     await removeContactFromPremiumList(customerEmail);
+    await removeContactFromFreeList(customerEmail);
     await updateSubscriptionTypeField(customerEmail, '');
   }
 }
@@ -155,6 +157,7 @@ async function handleSubscriptionDeleted(subscription) {
   if (process.env.ACTIVECAMPAIGN_API_KEY && customerEmail) {
     await removePremiumTag(customerEmail, PREMIUM_TAG);
     await removeContactFromPremiumList(customerEmail);
+    await removeContactFromFreeList(customerEmail);
     await updateSubscriptionTypeField(customerEmail, '');
   }
 }
@@ -698,6 +701,20 @@ async function removeContactFromPremiumList(email) {
     console.log(`Premium list status set inactive for ${normalizedEmail}`);
   } catch (error) {
     console.error('Remove from premium list error:', error);
+  }
+}
+
+async function removeContactFromFreeList(email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail || !FREE_LIST_ID) return;
+
+  try {
+    const contact = await findContactByEmail(normalizedEmail);
+    if (!contact || !contact.id) return;
+    await upsertContactListStatus(contact.id, FREE_LIST_ID, 2);
+    console.log(`Free list status set inactive for ${normalizedEmail}`);
+  } catch (error) {
+    console.error('Remove from free list error:', error);
   }
 }
 
