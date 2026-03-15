@@ -3,6 +3,10 @@ const fetch = require('node-fetch');
 const PREMIUM_TAG = process.env.ACTIVECAMPAIGN_PREMIUM_TAG || 'premium_active';
 const SUBSCRIPTION_TYPE_FIELD_ID = process.env.ACTIVECAMPAIGN_SUBSCRIPTION_TYPE_FIELD_ID || '';
 const POSTAL_CODE_FIELD_ID = process.env.ACTIVECAMPAIGN_POSTAL_CODE_FIELD_ID || '';
+const fieldIdCache = {
+  subscriptionType: null,
+  postalCode: null,
+};
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -98,9 +102,7 @@ async function handleCheckoutCompleted(session) {
     await addToPremiumList(customerEmail, session.customer);
     await addPremiumTag(customerEmail, PREMIUM_TAG);
     await addContactToPremiumList(customerEmail);
-    if (session.subscription) {
-      await updateSubscriptionTypeField(customerEmail, await resolveSubscriptionType(session.subscription));
-    }
+    await updateSubscriptionTypeField(customerEmail, await resolveSubscriptionTypeForCheckoutSession(session));
     await updatePostalCodeField(customerEmail, postalCode);
   } else {
     console.log(`Checkout completed but no resolvable customer email for session ${session.id}`);
@@ -217,6 +219,17 @@ function extractSubscriptionTypeFromObject(subscription) {
   return normalizeSubscriptionType(recurring.interval, recurring.interval_count);
 }
 
+function extractSubscriptionTypeFromLineItems(lineItems) {
+  const firstItem =
+    Array.isArray(lineItems) && lineItems.length > 0 ? lineItems[0] : null;
+  const recurring =
+    firstItem &&
+    firstItem.price &&
+    firstItem.price.recurring;
+  if (!recurring) return '';
+  return normalizeSubscriptionType(recurring.interval, recurring.interval_count);
+}
+
 async function resolveSubscriptionType(subscriptionOrId) {
   if (!subscriptionOrId) return '';
 
@@ -237,6 +250,39 @@ async function resolveSubscriptionType(subscriptionOrId) {
     return extractSubscriptionTypeFromObject(full);
   } catch (error) {
     console.error('Unable to resolve subscription type from Stripe:', error);
+    return '';
+  }
+}
+
+async function resolveSubscriptionTypeForCheckoutSession(session) {
+  if (!session) return '';
+
+  if (session.subscription) {
+    const fromSubscription = await resolveSubscriptionType(session.subscription);
+    if (fromSubscription) return fromSubscription;
+  }
+
+  const fromSessionItems = extractSubscriptionTypeFromLineItems(
+    session &&
+      session.line_items &&
+      Array.isArray(session.line_items.data)
+      ? session.line_items.data
+      : null
+  );
+  if (fromSessionItems) return fromSessionItems;
+
+  if (!session.id) return '';
+  try {
+    const expanded = await stripe.checkout.sessions.retrieve(String(session.id), {
+      expand: ['line_items.data.price'],
+    });
+    return extractSubscriptionTypeFromLineItems(
+      expanded && expanded.line_items && Array.isArray(expanded.line_items.data)
+        ? expanded.line_items.data
+        : null
+    );
+  } catch (error) {
+    console.error('Unable to resolve subscription type from checkout session:', error);
     return '';
   }
 }
@@ -419,6 +465,63 @@ async function getExistingFieldValue(contactId, fieldId) {
   return (data.fieldValues || []).find((fv) => String(fv.field) === String(fieldId)) || null;
 }
 
+async function listActiveCampaignFields() {
+  const response = await acFetch('/api/3/fields');
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Fields lookup failed (${response.status}): ${text}`);
+  }
+  const data = await response.json();
+  return Array.isArray(data.fields) ? data.fields : [];
+}
+
+function normalizeFieldToken(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, '');
+}
+
+async function resolveFieldId(kind) {
+  if (kind === 'subscriptionType') {
+    if (SUBSCRIPTION_TYPE_FIELD_ID) return String(SUBSCRIPTION_TYPE_FIELD_ID);
+    if (fieldIdCache.subscriptionType) return fieldIdCache.subscriptionType;
+  }
+  if (kind === 'postalCode') {
+    if (POSTAL_CODE_FIELD_ID) return String(POSTAL_CODE_FIELD_ID);
+    if (fieldIdCache.postalCode) return fieldIdCache.postalCode;
+  }
+
+  const fields = await listActiveCampaignFields();
+  const candidates = fields.map((field) => ({
+    id: String(field.id || ''),
+    title: normalizeFieldToken(field.title),
+    perstag: normalizeFieldToken(field.perstag),
+  }));
+
+  const matchOne = (matcher) => candidates.find(matcher);
+  let match = null;
+
+  if (kind === 'subscriptionType') {
+    match =
+      matchOne((f) => f.title === 'subscriptiontype' || f.perstag === 'subscriptiontype') ||
+      matchOne((f) => f.title.includes('subscription') && f.title.includes('type')) ||
+      matchOne((f) => f.perstag.includes('subscription') && f.perstag.includes('type'));
+    if (match && match.id) fieldIdCache.subscriptionType = match.id;
+  }
+
+  if (kind === 'postalCode') {
+    match =
+      matchOne((f) => f.title === 'postalcode' || f.perstag === 'postalcode') ||
+      matchOne((f) => f.title === 'postal_code' || f.perstag === 'postal_code') ||
+      matchOne((f) => f.title.includes('postal') && f.title.includes('code')) ||
+      matchOne((f) => f.perstag.includes('postal') && f.perstag.includes('code'));
+    if (match && match.id) fieldIdCache.postalCode = match.id;
+  }
+
+  return match && match.id ? match.id : '';
+}
+
 async function createFieldValue(contactId, fieldId, value) {
   const response = await acFetch('/api/3/fieldValues', {
     method: 'POST',
@@ -455,7 +558,8 @@ async function updateFieldValue(fieldValueId, contactId, fieldId, value) {
 
 async function updateSubscriptionTypeField(email, subscriptionTypeValue) {
   const normalizedEmail = normalizeEmail(email);
-  const { subscriptionTypeFieldId } = getACConfig();
+  const configuredFieldId = getACConfig().subscriptionTypeFieldId;
+  const subscriptionTypeFieldId = configuredFieldId || (await resolveFieldId('subscriptionType'));
   if (!normalizedEmail || !subscriptionTypeFieldId) return;
 
   try {
@@ -476,7 +580,8 @@ async function updateSubscriptionTypeField(email, subscriptionTypeValue) {
 
 async function updatePostalCodeField(email, postalCodeValue) {
   const normalizedEmail = normalizeEmail(email);
-  const { postalCodeFieldId } = getACConfig();
+  const configuredFieldId = getACConfig().postalCodeFieldId;
+  const postalCodeFieldId = configuredFieldId || (await resolveFieldId('postalCode'));
   const value = normalizePostalCode(postalCodeValue);
   if (!normalizedEmail || !postalCodeFieldId || !value) return;
 
