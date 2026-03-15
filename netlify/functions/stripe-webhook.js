@@ -62,6 +62,10 @@ exports.handler = async (event) => {
         await handlePaymentSucceeded(stripeEvent.data.object);
         break;
 
+      case 'invoice.paid':
+        await handlePaymentSucceeded(stripeEvent.data.object);
+        break;
+
       case 'invoice.payment_failed':
         await handlePaymentFailed(stripeEvent.data.object);
         break;
@@ -86,16 +90,20 @@ exports.handler = async (event) => {
 // Handle successful checkout
 async function handleCheckoutCompleted(session) {
   console.log('Checkout completed:', session.id);
-  const customerEmail = session.customer_email;
+  const customerEmail = await resolveCustomerEmail(session);
   const postalCode = extractPostalCodeFromSession(session);
 
   // Add to ActiveCampaign premium list
   if (process.env.ACTIVECAMPAIGN_API_KEY && customerEmail) {
     await addToPremiumList(customerEmail, session.customer);
+    await addPremiumTag(customerEmail, PREMIUM_TAG);
+    await addContactToPremiumList(customerEmail);
     if (session.subscription) {
       await updateSubscriptionTypeField(customerEmail, await resolveSubscriptionType(session.subscription));
     }
     await updatePostalCodeField(customerEmail, postalCode);
+  } else {
+    console.log(`Checkout completed but no resolvable customer email for session ${session.id}`);
   }
 
   // Log the new premium member
@@ -105,11 +113,7 @@ async function handleCheckoutCompleted(session) {
 // Handle subscription created
 async function handleSubscriptionCreated(subscription) {
   console.log('Subscription created:', subscription.id);
-  const customerId = subscription.customer;
-
-  // Get customer email
-  const customer = await stripe.customers.retrieve(customerId);
-  const customerEmail = customer.email;
+  const customerEmail = await resolveCustomerEmail(subscription);
 
   // Add premium tag in ActiveCampaign
   if (process.env.ACTIVECAMPAIGN_API_KEY && customerEmail) {
@@ -123,9 +127,7 @@ async function handleSubscriptionCreated(subscription) {
 // Handle subscription updated
 async function handleSubscriptionUpdated(subscription) {
   console.log('Subscription updated:', subscription.id);
-  const customerId = subscription.customer;
-  const customer = await stripe.customers.retrieve(customerId);
-  const customerEmail = customer.email;
+  const customerEmail = await resolveCustomerEmail(subscription);
 
   if (!customerEmail) return;
 
@@ -145,9 +147,7 @@ async function handleSubscriptionUpdated(subscription) {
 // Handle subscription canceled/deleted
 async function handleSubscriptionDeleted(subscription) {
   console.log('Subscription deleted:', subscription.id);
-  const customerId = subscription.customer;
-  const customer = await stripe.customers.retrieve(customerId);
-  const customerEmail = customer.email;
+  const customerEmail = await resolveCustomerEmail(subscription);
 
   // Remove premium status
   if (process.env.ACTIVECAMPAIGN_API_KEY && customerEmail) {
@@ -160,22 +160,20 @@ async function handleSubscriptionDeleted(subscription) {
 // Handle successful payment
 async function handlePaymentSucceeded(invoice) {
   console.log('Payment succeeded:', invoice.id);
-  const customerId = invoice.customer;
-  if (!customerId) return;
-  const customer = await stripe.customers.retrieve(customerId);
-  const customerEmail = customer.email;
+  const customerEmail = await resolveCustomerEmail(invoice);
   if (!customerEmail) return;
+  await addPremiumTag(customerEmail, PREMIUM_TAG);
+  await addContactToPremiumList(customerEmail);
+  await updateSubscriptionTypeField(customerEmail, await resolveSubscriptionType(invoice.subscription));
   await updatePostalCodeField(customerEmail, await resolvePostalCode(invoice));
 }
 
 // Handle failed payment
 async function handlePaymentFailed(invoice) {
   console.log('Payment failed:', invoice.id);
-  const customerId = invoice.customer;
-  const customer = await stripe.customers.retrieve(customerId);
-
+  const customerEmail = await resolveCustomerEmail(invoice);
   // Optionally notify customer via email or AC automation
-  console.log(`Payment failed for: ${customer.email}`);
+  console.log(`Payment failed for: ${customerEmail || 'unknown-email'}`);
 }
 
 function normalizeEmail(email) {
@@ -247,6 +245,32 @@ function normalizePostalCode(value) {
   return String(value || '').trim();
 }
 
+async function resolveCustomerEmail(source) {
+  if (!source) return '';
+
+  const direct =
+    source.customer_email ||
+    (source.customer_details && source.customer_details.email) ||
+    source.receipt_email ||
+    (source.billing_details && source.billing_details.email) ||
+    (source.metadata && (source.metadata.customer_email || source.metadata.email));
+  if (direct) return normalizeEmail(direct);
+
+  const customerId =
+    (typeof source.customer === 'string' && source.customer) ||
+    (source.customer && source.customer.id) ||
+    '';
+  if (!customerId) return '';
+
+  try {
+    const customer = await stripe.customers.retrieve(customerId);
+    return normalizeEmail(customer && customer.email);
+  } catch (error) {
+    console.error('Unable to resolve customer email from Stripe customer:', error);
+    return '';
+  }
+}
+
 function extractPostalCodeFromSession(session) {
   const fromCustomerDetails =
     session &&
@@ -275,6 +299,10 @@ async function resolvePostalCode(source) {
   if (source.object === 'checkout.session') {
     const direct = extractPostalCodeFromSession(source);
     if (direct) return direct;
+  }
+  if (source.object === 'invoice') {
+    const fromInvoiceAddress = source.customer_address && source.customer_address.postal_code;
+    if (fromInvoiceAddress) return normalizePostalCode(fromInvoiceAddress);
   }
 
   const customerId =
