@@ -134,17 +134,29 @@ async function handleSubscriptionUpdated(subscription) {
 
   if (!customerEmail) return;
 
+  const status = String(subscription.status || '').toLowerCase();
+  const cancelAtPeriodEnd = Boolean(subscription.cancel_at_period_end);
+  const shouldRevokePremium =
+    cancelAtPeriodEnd ||
+    status === 'canceled' ||
+    status === 'unpaid' ||
+    status === 'incomplete_expired';
+
   // Update status based on subscription status
-  if (subscription.status === 'active') {
+  if (status === 'active' && !cancelAtPeriodEnd) {
     await addPremiumTag(customerEmail, PREMIUM_TAG);
     await addContactToPremiumList(customerEmail);
     await updateSubscriptionTypeField(customerEmail, await resolveSubscriptionType(subscription));
     await updatePostalCodeField(customerEmail, await resolvePostalCode(subscription));
-  } else if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
+  } else if (shouldRevokePremium) {
+    console.log(
+      `Revoking premium access for ${customerEmail} (status=${status}, cancel_at_period_end=${cancelAtPeriodEnd})`
+    );
     await removePremiumTag(customerEmail, PREMIUM_TAG);
     await removeContactFromPremiumList(customerEmail);
     await removeContactFromFreeList(customerEmail);
     await updateSubscriptionTypeField(customerEmail, '');
+    await updatePostalCodeField(customerEmail, '');
   }
 }
 
