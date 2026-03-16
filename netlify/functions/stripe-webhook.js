@@ -1,6 +1,8 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const fetch = require('node-fetch');
 const PREMIUM_TAG = process.env.ACTIVECAMPAIGN_PREMIUM_TAG || 'premium_active';
+const MONTHLY_TAG = process.env.ACTIVECAMPAIGN_MONTHLY_TAG || 'monthly';
+const YEARLY_TAG = process.env.ACTIVECAMPAIGN_YEARLY_TAG || 'yearly';
 const SUBSCRIPTION_TYPE_FIELD_ID = process.env.ACTIVECAMPAIGN_SUBSCRIPTION_TYPE_FIELD_ID || '';
 const POSTAL_CODE_FIELD_ID = process.env.ACTIVECAMPAIGN_POSTAL_CODE_FIELD_ID || '';
 const FREE_LIST_ID = process.env.ACTIVECAMPAIGN_FREE_LIST_ID || '';
@@ -97,13 +99,15 @@ async function handleCheckoutCompleted(session) {
   console.log('Checkout completed:', session.id);
   const customerEmail = await resolveCustomerEmail(session);
   const postalCode = extractPostalCodeFromSession(session);
+  const subscriptionType = await resolveSubscriptionTypeForCheckoutSession(session);
 
   // Add to ActiveCampaign premium list
   if (process.env.ACTIVECAMPAIGN_API_KEY && customerEmail) {
     await addToPremiumList(customerEmail, session.customer);
     await addPremiumTag(customerEmail, PREMIUM_TAG);
     await addContactToPremiumList(customerEmail);
-    await updateSubscriptionTypeField(customerEmail, await resolveSubscriptionTypeForCheckoutSession(session));
+    await updateSubscriptionTypeField(customerEmail, subscriptionType);
+    await syncSubscriptionTypeTags(customerEmail, subscriptionType);
     await updatePostalCodeField(customerEmail, postalCode);
   } else {
     console.log(`Checkout completed but no resolvable customer email for session ${session.id}`);
@@ -117,12 +121,14 @@ async function handleCheckoutCompleted(session) {
 async function handleSubscriptionCreated(subscription) {
   console.log('Subscription created:', subscription.id);
   const customerEmail = await resolveCustomerEmail(subscription);
+  const subscriptionType = await resolveSubscriptionType(subscription);
 
   // Add premium tag in ActiveCampaign
   if (process.env.ACTIVECAMPAIGN_API_KEY && customerEmail) {
     await addPremiumTag(customerEmail, PREMIUM_TAG);
     await addContactToPremiumList(customerEmail);
-    await updateSubscriptionTypeField(customerEmail, await resolveSubscriptionType(subscription));
+    await updateSubscriptionTypeField(customerEmail, subscriptionType);
+    await syncSubscriptionTypeTags(customerEmail, subscriptionType);
     await updatePostalCodeField(customerEmail, await resolvePostalCode(subscription));
   }
 }
@@ -144,9 +150,11 @@ async function handleSubscriptionUpdated(subscription) {
 
   // Update status based on subscription status
   if (status === 'active' && !cancelAtPeriodEnd) {
+    const subscriptionType = await resolveSubscriptionType(subscription);
     await addPremiumTag(customerEmail, PREMIUM_TAG);
     await addContactToPremiumList(customerEmail);
-    await updateSubscriptionTypeField(customerEmail, await resolveSubscriptionType(subscription));
+    await updateSubscriptionTypeField(customerEmail, subscriptionType);
+    await syncSubscriptionTypeTags(customerEmail, subscriptionType);
     await updatePostalCodeField(customerEmail, await resolvePostalCode(subscription));
   } else if (shouldRevokePremium) {
     console.log(
@@ -156,6 +164,7 @@ async function handleSubscriptionUpdated(subscription) {
     await removeContactFromPremiumList(customerEmail);
     await removeContactFromFreeList(customerEmail);
     await updateSubscriptionTypeField(customerEmail, '');
+    await syncSubscriptionTypeTags(customerEmail, '');
     await updatePostalCodeField(customerEmail, '');
   }
 }
@@ -171,6 +180,7 @@ async function handleSubscriptionDeleted(subscription) {
     await removeContactFromPremiumList(customerEmail);
     await removeContactFromFreeList(customerEmail);
     await updateSubscriptionTypeField(customerEmail, '');
+    await syncSubscriptionTypeTags(customerEmail, '');
   }
 }
 
@@ -194,6 +204,7 @@ async function handlePaymentSucceeded(invoice) {
   await addPremiumTag(customerEmail, PREMIUM_TAG);
   await addContactToPremiumList(customerEmail);
   await updateSubscriptionTypeField(customerEmail, subscriptionType);
+  await syncSubscriptionTypeTags(customerEmail, subscriptionType);
   await updatePostalCodeField(customerEmail, postalCode);
 }
 
@@ -638,6 +649,45 @@ async function updatePostalCodeField(email, postalCodeValue) {
     console.log(`Postal code updated for ${normalizedEmail}: ${value}`);
   } catch (error) {
     console.error('Postal code field update error:', error);
+  }
+}
+
+function getSubscriptionTypeTagName(subscriptionTypeValue) {
+  const normalized = String(subscriptionTypeValue || '').trim().toLowerCase();
+  if (normalized === 'monthly') return String(MONTHLY_TAG || '').trim();
+  if (normalized === 'yearly') return String(YEARLY_TAG || '').trim();
+  return '';
+}
+
+async function syncSubscriptionTypeTags(email, subscriptionTypeValue) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return;
+
+  const monthlyTagName = String(MONTHLY_TAG || '').trim();
+  const yearlyTagName = String(YEARLY_TAG || '').trim();
+  const activeTagName = getSubscriptionTypeTagName(subscriptionTypeValue);
+
+  if (!monthlyTagName && !yearlyTagName) return;
+
+  if (activeTagName && activeTagName === monthlyTagName) {
+    await addPremiumTag(normalizedEmail, monthlyTagName);
+    if (yearlyTagName && yearlyTagName !== monthlyTagName) {
+      await removePremiumTag(normalizedEmail, yearlyTagName);
+    }
+    return;
+  }
+
+  if (activeTagName && activeTagName === yearlyTagName) {
+    await addPremiumTag(normalizedEmail, yearlyTagName);
+    if (monthlyTagName && monthlyTagName !== yearlyTagName) {
+      await removePremiumTag(normalizedEmail, monthlyTagName);
+    }
+    return;
+  }
+
+  if (monthlyTagName) await removePremiumTag(normalizedEmail, monthlyTagName);
+  if (yearlyTagName && yearlyTagName !== monthlyTagName) {
+    await removePremiumTag(normalizedEmail, yearlyTagName);
   }
 }
 
