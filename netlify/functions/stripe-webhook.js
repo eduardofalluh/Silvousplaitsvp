@@ -534,21 +534,38 @@ function normalizeFieldToken(value) {
 }
 
 async function resolveFieldId(kind) {
-  if (kind === 'subscriptionType') {
-    if (SUBSCRIPTION_TYPE_FIELD_ID) return String(SUBSCRIPTION_TYPE_FIELD_ID);
-    if (fieldIdCache.subscriptionType) return fieldIdCache.subscriptionType;
-  }
-  if (kind === 'postalCode') {
-    if (POSTAL_CODE_FIELD_ID) return String(POSTAL_CODE_FIELD_ID);
-    if (fieldIdCache.postalCode) return fieldIdCache.postalCode;
-  }
-
   const fields = await listActiveCampaignFields();
   const candidates = fields.map((field) => ({
     id: String(field.id || ''),
     title: normalizeFieldToken(field.title),
     perstag: normalizeFieldToken(field.perstag),
   }));
+
+  const configuredId = kind === 'subscriptionType'
+    ? String(SUBSCRIPTION_TYPE_FIELD_ID || '')
+    : String(POSTAL_CODE_FIELD_ID || '');
+  const configuredExists = configuredId
+    ? candidates.some((candidate) => candidate.id === configuredId)
+    : false;
+
+  if (kind === 'subscriptionType') {
+    if (configuredExists) return configuredId;
+    if (configuredId && !configuredExists) {
+      console.warn(
+        `Configured ACTIVECAMPAIGN_SUBSCRIPTION_TYPE_FIELD_ID=${configuredId} was not found. Falling back to autodetect.`
+      );
+    }
+    if (fieldIdCache.subscriptionType) return fieldIdCache.subscriptionType;
+  }
+  if (kind === 'postalCode') {
+    if (configuredExists) return configuredId;
+    if (configuredId && !configuredExists) {
+      console.warn(
+        `Configured ACTIVECAMPAIGN_POSTAL_CODE_FIELD_ID=${configuredId} was not found. Falling back to autodetect.`
+      );
+    }
+    if (fieldIdCache.postalCode) return fieldIdCache.postalCode;
+  }
 
   const matchOne = (matcher) => candidates.find(matcher);
   let match = null;
@@ -609,8 +626,7 @@ async function updateFieldValue(fieldValueId, contactId, fieldId, value) {
 
 async function updateSubscriptionTypeField(email, subscriptionTypeValue) {
   const normalizedEmail = normalizeEmail(email);
-  const configuredFieldId = getACConfig().subscriptionTypeFieldId;
-  const subscriptionTypeFieldId = configuredFieldId || (await resolveFieldId('subscriptionType'));
+  const subscriptionTypeFieldId = await resolveFieldId('subscriptionType');
   if (!normalizedEmail || !subscriptionTypeFieldId) return;
 
   try {
@@ -631,8 +647,7 @@ async function updateSubscriptionTypeField(email, subscriptionTypeValue) {
 
 async function updatePostalCodeField(email, postalCodeValue) {
   const normalizedEmail = normalizeEmail(email);
-  const configuredFieldId = getACConfig().postalCodeFieldId;
-  const postalCodeFieldId = configuredFieldId || (await resolveFieldId('postalCode'));
+  const postalCodeFieldId = await resolveFieldId('postalCode');
   const value = normalizePostalCode(postalCodeValue);
   if (!normalizedEmail || !postalCodeFieldId || !value) return;
 
