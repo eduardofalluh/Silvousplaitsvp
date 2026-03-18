@@ -533,6 +533,28 @@ function normalizeFieldToken(value) {
     .replace(/[\s_]+/g, '');
 }
 
+function isSubscriptionTypeCandidate(candidate) {
+  if (!candidate) return false;
+  return (
+    candidate.title === 'subscriptiontype' ||
+    candidate.perstag === 'subscriptiontype' ||
+    (candidate.title.includes('subscription') && candidate.title.includes('type')) ||
+    (candidate.perstag.includes('subscription') && candidate.perstag.includes('type'))
+  );
+}
+
+function isPostalCodeCandidate(candidate) {
+  if (!candidate) return false;
+  return (
+    candidate.title === 'postalcode' ||
+    candidate.perstag === 'postalcode' ||
+    candidate.title === 'postal_code' ||
+    candidate.perstag === 'postal_code' ||
+    (candidate.title.includes('postal') && candidate.title.includes('code')) ||
+    (candidate.perstag.includes('postal') && candidate.perstag.includes('code'))
+  );
+}
+
 async function resolveFieldId(kind) {
   const fields = await listActiveCampaignFields();
   const candidates = fields.map((field) => ({
@@ -544,13 +566,23 @@ async function resolveFieldId(kind) {
   const configuredId = kind === 'subscriptionType'
     ? String(SUBSCRIPTION_TYPE_FIELD_ID || '')
     : String(POSTAL_CODE_FIELD_ID || '');
-  const configuredExists = configuredId
-    ? candidates.some((candidate) => candidate.id === configuredId)
+  const configuredCandidate = configuredId
+    ? candidates.find((candidate) => candidate.id === configuredId)
+    : null;
+  const configuredMatchesKind = configuredCandidate
+    ? (kind === 'subscriptionType'
+      ? isSubscriptionTypeCandidate(configuredCandidate)
+      : isPostalCodeCandidate(configuredCandidate))
     : false;
 
   if (kind === 'subscriptionType') {
-    if (configuredExists) return configuredId;
-    if (configuredId && !configuredExists) {
+    if (configuredMatchesKind) return configuredId;
+    if (configuredId && configuredCandidate && !configuredMatchesKind) {
+      console.warn(
+        `Configured ACTIVECAMPAIGN_SUBSCRIPTION_TYPE_FIELD_ID=${configuredId} does not look like subscription_type. Falling back to autodetect.`
+      );
+    }
+    if (configuredId && !configuredCandidate) {
       console.warn(
         `Configured ACTIVECAMPAIGN_SUBSCRIPTION_TYPE_FIELD_ID=${configuredId} was not found. Falling back to autodetect.`
       );
@@ -558,8 +590,13 @@ async function resolveFieldId(kind) {
     if (fieldIdCache.subscriptionType) return fieldIdCache.subscriptionType;
   }
   if (kind === 'postalCode') {
-    if (configuredExists) return configuredId;
-    if (configuredId && !configuredExists) {
+    if (configuredMatchesKind) return configuredId;
+    if (configuredId && configuredCandidate && !configuredMatchesKind) {
+      console.warn(
+        `Configured ACTIVECAMPAIGN_POSTAL_CODE_FIELD_ID=${configuredId} does not look like postal_code. Falling back to autodetect.`
+      );
+    }
+    if (configuredId && !configuredCandidate) {
       console.warn(
         `Configured ACTIVECAMPAIGN_POSTAL_CODE_FIELD_ID=${configuredId} was not found. Falling back to autodetect.`
       );
@@ -572,18 +609,13 @@ async function resolveFieldId(kind) {
 
   if (kind === 'subscriptionType') {
     match =
-      matchOne((f) => f.title === 'subscriptiontype' || f.perstag === 'subscriptiontype') ||
-      matchOne((f) => f.title.includes('subscription') && f.title.includes('type')) ||
-      matchOne((f) => f.perstag.includes('subscription') && f.perstag.includes('type'));
+      matchOne((f) => isSubscriptionTypeCandidate(f));
     if (match && match.id) fieldIdCache.subscriptionType = match.id;
   }
 
   if (kind === 'postalCode') {
     match =
-      matchOne((f) => f.title === 'postalcode' || f.perstag === 'postalcode') ||
-      matchOne((f) => f.title === 'postal_code' || f.perstag === 'postal_code') ||
-      matchOne((f) => f.title.includes('postal') && f.title.includes('code')) ||
-      matchOne((f) => f.perstag.includes('postal') && f.perstag.includes('code'));
+      matchOne((f) => isPostalCodeCandidate(f));
     if (match && match.id) fieldIdCache.postalCode = match.id;
   }
 
