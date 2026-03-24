@@ -6,6 +6,38 @@ const PLAN_PRICE_IDS = {
   trial: process.env.STRIPE_PREMIUM_TRIAL_PRICE_ID || '',
 };
 
+const PLAN_DEFINITIONS = {
+  monthly: {
+    mode: 'subscription',
+    lineItem: {
+      price_data: {
+        currency: 'cad',
+        unit_amount: 800,
+        recurring: { interval: 'month' },
+        product_data: {
+          name: 'Silvousplait Premium 8$',
+        },
+      },
+      quantity: 1,
+    },
+  },
+  yearly: {
+    mode: 'subscription',
+    lineItem: {
+      price_data: {
+        currency: 'cad',
+        unit_amount: 6000,
+        recurring: { interval: 'year' },
+        product_data: {
+          name: 'Silvousplait Premium annuel',
+          description: 'Equivalent a 5$ / mois, facture annuellement.',
+        },
+      },
+      quantity: 1,
+    },
+  },
+};
+
 function resolvePriceId(planKey, explicitPriceId) {
   if (explicitPriceId) {
     return String(explicitPriceId).trim();
@@ -19,6 +51,35 @@ function resolvePriceId(planKey, explicitPriceId) {
   return PLAN_PRICE_IDS[normalizedPlan] || '';
 }
 
+function resolveLineItem(planKey, explicitPriceId) {
+  const resolvedPriceId = resolvePriceId(planKey, explicitPriceId);
+  if (resolvedPriceId) {
+    return {
+      lineItem: {
+        price: resolvedPriceId,
+        quantity: 1,
+      },
+      mode: 'subscription',
+      source: 'price_id',
+    };
+  }
+
+  const normalizedPlan = String(planKey || '').trim().toLowerCase();
+  if (PLAN_DEFINITIONS[normalizedPlan]) {
+    return {
+      lineItem: PLAN_DEFINITIONS[normalizedPlan].lineItem,
+      mode: PLAN_DEFINITIONS[normalizedPlan].mode,
+      source: 'inline_price_data',
+    };
+  }
+
+  return {
+    lineItem: null,
+    mode: 'subscription',
+    source: 'missing',
+  };
+}
+
 exports.handler = async (event) => {
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
@@ -30,13 +91,16 @@ exports.handler = async (event) => {
 
   try {
     const { email, priceId, planKey } = JSON.parse(event.body);
-    const resolvedPriceId = resolvePriceId(planKey, priceId);
+    const resolvedCheckout = resolveLineItem(planKey, priceId);
 
     // Validate input
-    if (!resolvedPriceId) {
+    if (!resolvedCheckout.lineItem) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'A valid Stripe price configuration is required' })
+        body: JSON.stringify({
+          error: 'A valid Stripe price configuration is required',
+          planKey: String(planKey || '').trim().toLowerCase() || null,
+        })
       };
     }
 
@@ -45,21 +109,20 @@ exports.handler = async (event) => {
     // Create Stripe Checkout Session
     const sessionConfig = {
       payment_method_types: ['card'],
-      mode: 'subscription',
+      mode: resolvedCheckout.mode,
       line_items: [
-        {
-          price: resolvedPriceId,
-          quantity: 1,
-        },
+        resolvedCheckout.lineItem,
       ],
       success_url: `${successBaseUrl}/premium-confirmation.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${successBaseUrl}/premium.html?canceled=true`,
       metadata: {
         selected_plan: String(planKey || '').trim().toLowerCase() || 'custom',
+        checkout_price_source: resolvedCheckout.source,
       },
       subscription_data: {
         metadata: {
           selected_plan: String(planKey || '').trim().toLowerCase() || 'custom',
+          checkout_price_source: resolvedCheckout.source,
         },
       },
     };

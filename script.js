@@ -567,6 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function startStripeCheckout(button) {
     const planKey = button?.getAttribute('data-stripe-plan');
+    const fallbackUrl = button?.getAttribute('data-stripe-fallback-url');
     if (!planKey) return;
 
     const originalLabel = button.dataset.originalLabel || button.textContent;
@@ -589,6 +590,10 @@ document.addEventListener('DOMContentLoaded', () => {
       window.location.href = data.url;
     } catch (error) {
       console.error('Stripe checkout error:', error);
+      if (fallbackUrl) {
+        window.location.href = fallbackUrl;
+        return;
+      }
       button.disabled = false;
       button.textContent = originalLabel;
       window.alert("Le paiement ne peut pas etre lance pour le moment. Reessaie dans quelques instants.");
