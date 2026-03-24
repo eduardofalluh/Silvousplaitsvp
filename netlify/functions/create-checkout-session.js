@@ -110,6 +110,10 @@ exports.handler = async (event) => {
     const sessionConfig = {
       payment_method_types: ['card'],
       mode: resolvedCheckout.mode,
+      billing_address_collection: 'required',
+      automatic_tax: {
+        enabled: true,
+      },
       line_items: [
         resolvedCheckout.lineItem,
       ],
