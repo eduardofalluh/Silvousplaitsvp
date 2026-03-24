@@ -591,11 +591,11 @@ document.addEventListener('DOMContentLoaded', () => {
       window.location.href = data.url;
     } catch (error) {
       console.error('Stripe checkout error:', error);
-      sessionStorage.removeItem('stripeCheckoutPending');
       if (fallbackUrl) {
         window.location.href = fallbackUrl;
         return;
       }
+      sessionStorage.removeItem('stripeCheckoutPending');
       button.disabled = false;
       button.textContent = originalLabel;
       window.alert("Le paiement ne peut pas etre lance pour le moment. Reessaie dans quelques instants.");
