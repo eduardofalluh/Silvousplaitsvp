@@ -574,6 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
     button.dataset.originalLabel = originalLabel;
     button.disabled = true;
     button.textContent = 'Redirection...';
+    sessionStorage.setItem('stripeCheckoutPending', '1');
 
     try {
       const response = await fetch('/.netlify/functions/create-checkout-session', {
@@ -590,6 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
       window.location.href = data.url;
     } catch (error) {
       console.error('Stripe checkout error:', error);
+      sessionStorage.removeItem('stripeCheckoutPending');
       if (fallbackUrl) {
         window.location.href = fallbackUrl;
         return;
@@ -598,6 +600,12 @@ document.addEventListener('DOMContentLoaded', () => {
       button.textContent = originalLabel;
       window.alert("Le paiement ne peut pas etre lance pour le moment. Reessaie dans quelques instants.");
     }
+  }
+
+  function refreshAfterStripeReturn() {
+    if (sessionStorage.getItem('stripeCheckoutPending') !== '1') return;
+    sessionStorage.removeItem('stripeCheckoutPending');
+    window.location.reload();
   }
 
   if (premiumButton) {
@@ -647,6 +655,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape' && premiumModal?.classList.contains('open')) {
       closePremiumModal();
     }
+  });
+
+  window.addEventListener('pageshow', refreshAfterStripeReturn);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refreshAfterStripeReturn();
   });
 });
 
