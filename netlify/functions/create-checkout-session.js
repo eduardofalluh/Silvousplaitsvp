@@ -1,5 +1,24 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+const PLAN_PRICE_IDS = {
+  monthly: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID || '',
+  yearly: process.env.STRIPE_PREMIUM_YEARLY_PRICE_ID || process.env.STRIPE_PREMIUM_PRICE_ID || '',
+  trial: process.env.STRIPE_PREMIUM_TRIAL_PRICE_ID || '',
+};
+
+function resolvePriceId(planKey, explicitPriceId) {
+  if (explicitPriceId) {
+    return String(explicitPriceId).trim();
+  }
+
+  const normalizedPlan = String(planKey || '').trim().toLowerCase();
+  if (!normalizedPlan) {
+    return '';
+  }
+
+  return PLAN_PRICE_IDS[normalizedPlan] || '';
+}
+
 exports.handler = async (event) => {
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
@@ -10,38 +29,48 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { email, priceId } = JSON.parse(event.body);
+    const { email, priceId, planKey } = JSON.parse(event.body);
+    const resolvedPriceId = resolvePriceId(planKey, priceId);
 
     // Validate input
-    if (!email || !priceId) {
+    if (!resolvedPriceId) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Email and priceId are required' })
+        body: JSON.stringify({ error: 'A valid Stripe price configuration is required' })
       };
     }
 
+    const successBaseUrl = process.env.URL || 'https://silvousplaitsvp.com';
+
     // Create Stripe Checkout Session
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig = {
       payment_method_types: ['card'],
       mode: 'subscription',
-      customer_email: email,
       line_items: [
         {
-          price: priceId, // e.g., 'price_xxxxxxxxxxxxx'
+          price: resolvedPriceId,
           quantity: 1,
         },
       ],
-      success_url: `${process.env.URL}/premium.html?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.URL}/premium.html?canceled=true`,
+      success_url: `${successBaseUrl}/premium-confirmation.html?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${successBaseUrl}/premium.html?canceled=true`,
       metadata: {
-        customer_email: email,
+        selected_plan: String(planKey || '').trim().toLowerCase() || 'custom',
       },
       subscription_data: {
         metadata: {
-          customer_email: email,
+          selected_plan: String(planKey || '').trim().toLowerCase() || 'custom',
         },
       },
-    });
+    };
+
+    if (email) {
+      sessionConfig.customer_email = email;
+      sessionConfig.metadata.customer_email = email;
+      sessionConfig.subscription_data.metadata.customer_email = email;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     return {
       statusCode: 200,

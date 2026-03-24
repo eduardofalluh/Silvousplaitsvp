@@ -543,12 +543,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // =====================================================
-  // PREMIUM MODAL
+  // PREMIUM CHECKOUT
   // =====================================================
   const premiumButton = document.getElementById('premium-button');
   const premiumModal = document.getElementById('premium-modal');
   const premiumClose = premiumModal?.querySelector('.modal-close');
   const premiumModalSignup = document.getElementById('premium-modal-signup');
+  const premiumCheckoutButtons = Array.from(document.querySelectorAll('[data-stripe-plan]'));
 
   function openPremiumModal() {
     if (!premiumModal) return;
@@ -564,12 +565,50 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.remove('modal-open');
   }
 
+  async function startStripeCheckout(button) {
+    const planKey = button?.getAttribute('data-stripe-plan');
+    if (!planKey) return;
+
+    const originalLabel = button.dataset.originalLabel || button.textContent;
+    button.dataset.originalLabel = originalLabel;
+    button.disabled = true;
+    button.textContent = 'Redirection...';
+
+    try {
+      const response = await fetch('/.netlify/functions/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planKey }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.url) {
+        throw new Error(data.error || data.details || 'Impossible de lancer le paiement.');
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Stripe checkout error:', error);
+      button.disabled = false;
+      button.textContent = originalLabel;
+      window.alert("Le paiement ne peut pas etre lance pour le moment. Reessaie dans quelques instants.");
+    }
+  }
+
   if (premiumButton) {
     premiumButton.addEventListener('click', (e) => {
       e.preventDefault();
-      window.open('https://buy.stripe.com/14AaEZ2PRgeD4Hogmkb7y00', '_blank', 'noopener,noreferrer');
+      startStripeCheckout(premiumButton);
     });
   }
+
+  premiumCheckoutButtons.forEach((button) => {
+    if (button === premiumButton) return;
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      startStripeCheckout(button);
+    });
+  });
 
   if (premiumClose) {
     premiumClose.addEventListener('click', closePremiumModal);
