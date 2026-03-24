@@ -60,5 +60,28 @@
 
   <script src="script.js"></script>
   <script>if (typeof window.initScrollReveal === 'function') window.initScrollReveal();</script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var sessionId = params.get('session_id');
+      if (!sessionId || typeof window.fbq !== 'function') return;
+
+      fetch('/.netlify/functions/get-checkout-session?session_id=' + encodeURIComponent(sessionId))
+        .then(function (response) {
+          if (!response.ok) throw new Error('Unable to load checkout session');
+          return response.json();
+        })
+        .then(function (data) {
+          if (!data || typeof data.amountTotal !== 'number' || !data.currency) return;
+          fbq('track', 'Purchase', {
+            value: data.amountTotal,
+            currency: data.currency
+          });
+        })
+        .catch(function (error) {
+          console.error('Meta Purchase tracking error:', error);
+        });
+    })();
+  </script>
 </body>
 </html>
