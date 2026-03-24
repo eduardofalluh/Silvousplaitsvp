@@ -107,6 +107,8 @@ exports.handler = async (event) => {
     const successBaseUrl = process.env.URL || 'https://silvousplaitsvp.com';
 
     // Create Stripe Checkout Session
+    const normalizedPlanKey = String(planKey || '').trim().toLowerCase() || 'custom';
+
     const sessionConfig = {
       payment_method_types: ['card'],
       mode: resolvedCheckout.mode,
@@ -117,15 +119,15 @@ exports.handler = async (event) => {
       line_items: [
         resolvedCheckout.lineItem,
       ],
-      success_url: `${successBaseUrl}/premium-confirmation.html?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${successBaseUrl}/premium-confirmation.html?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(normalizedPlanKey)}`,
       cancel_url: `${successBaseUrl}/premium.html?canceled=true`,
       metadata: {
-        selected_plan: String(planKey || '').trim().toLowerCase() || 'custom',
+        selected_plan: normalizedPlanKey,
         checkout_price_source: resolvedCheckout.source,
       },
       subscription_data: {
         metadata: {
-          selected_plan: String(planKey || '').trim().toLowerCase() || 'custom',
+          selected_plan: normalizedPlanKey,
           checkout_price_source: resolvedCheckout.source,
         },
       },

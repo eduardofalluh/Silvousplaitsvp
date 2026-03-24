@@ -64,7 +64,49 @@
     (function () {
       var params = new URLSearchParams(window.location.search);
       var sessionId = params.get('session_id');
-      if (!sessionId || typeof window.fbq !== 'function') return;
+      var plan = (params.get('plan') || '').trim().toLowerCase();
+      if (typeof window.fbq !== 'function') return;
+
+      var hasTrackedPurchase = false;
+      var fallbackTimer = null;
+
+      function getFallbackPayload(planKey) {
+        if (planKey === 'monthly') {
+          return { value: 9.20, currency: 'CAD' };
+        }
+        if (planKey === 'yearly') {
+          return { value: 69.00, currency: 'CAD' };
+        }
+        if (planKey === 'trial') {
+          return { value: 0.00, currency: 'CAD' };
+        }
+        return null;
+      }
+
+      function trackPurchase(payload) {
+        if (hasTrackedPurchase || !payload) return;
+        hasTrackedPurchase = true;
+        if (fallbackTimer) {
+          clearTimeout(fallbackTimer);
+          fallbackTimer = null;
+        }
+        fbq('track', 'Purchase', {
+          value: payload.value,
+          currency: payload.currency
+        });
+      }
+
+      var fallbackPayload = getFallbackPayload(plan);
+      if (fallbackPayload) {
+        fallbackTimer = setTimeout(function () {
+          trackPurchase(fallbackPayload);
+        }, 1500);
+      }
+
+      if (!sessionId) {
+        trackPurchase(fallbackPayload);
+        return;
+      }
 
       fetch('/.netlify/functions/get-checkout-session?session_id=' + encodeURIComponent(sessionId))
         .then(function (response) {
@@ -72,14 +114,18 @@
           return response.json();
         })
         .then(function (data) {
-          if (!data || typeof data.amountTotal !== 'number' || !data.currency) return;
-          fbq('track', 'Purchase', {
+          if (!data || typeof data.amountTotal !== 'number' || !data.currency) {
+            trackPurchase(fallbackPayload);
+            return;
+          }
+          trackPurchase({
             value: data.amountTotal,
             currency: data.currency
           });
         })
         .catch(function (error) {
           console.error('Meta Purchase tracking error:', error);
+          trackPurchase(fallbackPayload);
         });
     })();
   </script>
