@@ -117,6 +117,10 @@ exports.handler = async (event) => {
   try {
     const { email, priceId, planKey, returnPath } = JSON.parse(event.body);
     const resolvedCheckout = resolveLineItem(planKey, priceId);
+    const successBaseUrl = process.env.URL || 'https://silvousplaitsvp.com';
+    const isProductionCheckout =
+      /^https:\/\//.test(successBaseUrl) &&
+      !/localhost|127\.0\.0\.1/i.test(successBaseUrl);
 
     // Validate input
     if (!resolvedCheckout.lineItem) {
@@ -129,7 +133,16 @@ exports.handler = async (event) => {
       };
     }
 
-    const successBaseUrl = process.env.URL || 'https://silvousplaitsvp.com';
+    if (isProductionCheckout && resolvedCheckout.source !== 'price_id') {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          error: 'A live Stripe Price ID is required for this checkout flow',
+          planKey: String(planKey || '').trim().toLowerCase() || null,
+          checkoutSource: resolvedCheckout.source,
+        })
+      };
+    }
 
     // Create Stripe Checkout Session
     const normalizedPlanKey = String(planKey || '').trim().toLowerCase() || 'custom';
