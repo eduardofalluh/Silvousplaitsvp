@@ -602,10 +602,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function resetPremiumCheckoutButtons() {
+    premiumCheckoutButtons.forEach((button) => {
+      const originalLabel = button.dataset.originalLabel || button.textContent;
+      button.disabled = false;
+      button.textContent = originalLabel;
+    });
+  }
+
   function refreshAfterStripeReturn() {
     if (sessionStorage.getItem('stripeCheckoutPending') !== '1') return;
+
+    const currentUrl = new URL(window.location.href);
+    const wasCanceledCheckout = currentUrl.searchParams.get('canceled') === 'true';
+    const isPremiumPage = currentUrl.pathname.endsWith('/premium.html') || currentUrl.pathname.endsWith('premium.html');
+    const isPremiumConfirmationPage =
+      currentUrl.pathname.endsWith('/premium-confirmation.html') ||
+      currentUrl.pathname.endsWith('premium-confirmation.html');
+
+    if (!wasCanceledCheckout && !isPremiumPage && !isPremiumConfirmationPage) return;
+
     sessionStorage.removeItem('stripeCheckoutPending');
-    window.location.reload();
+    resetPremiumCheckoutButtons();
+
+    if (wasCanceledCheckout) {
+      currentUrl.searchParams.delete('canceled');
+      window.history.replaceState({}, document.title, currentUrl.pathname + currentUrl.search + currentUrl.hash);
+    }
   }
 
   if (premiumButton) {
