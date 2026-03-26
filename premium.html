@@ -31,15 +31,13 @@
     (function () {
       try {
         var params = new URLSearchParams(window.location.search);
-        var navigationEntry = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || null;
-        var isBackForward = navigationEntry && navigationEntry.type === 'back_forward';
         var currentPath = window.location.pathname === '/' ? '/index.html' : window.location.pathname;
         var storedReturnPath = sessionStorage.getItem('stripeCheckoutReturnPath') || '';
         var shouldMaskStripeReturn =
           sessionStorage.getItem('stripeCheckoutPending') === '1' &&
           sessionStorage.getItem('stripeCheckoutReloaded') !== '1' &&
           storedReturnPath === currentPath &&
-          (params.get('canceled') === 'true' || isBackForward);
+          params.get('canceled') === 'true';
 
         if (shouldMaskStripeReturn) {
           document.documentElement.classList.add('stripe-return-reload-pending');

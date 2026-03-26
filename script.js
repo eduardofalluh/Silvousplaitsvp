@@ -602,11 +602,13 @@ document.addEventListener('DOMContentLoaded', () => {
       window.location.href = data.url;
     } catch (error) {
       console.error('Stripe checkout error:', error);
+      sessionStorage.removeItem('stripeCheckoutPending');
+      sessionStorage.removeItem('stripeCheckoutReloaded');
+      sessionStorage.removeItem('stripeCheckoutReturnPath');
       if (fallbackUrl) {
         window.location.href = fallbackUrl;
         return;
       }
-      sessionStorage.removeItem('stripeCheckoutPending');
       button.disabled = false;
       button.textContent = originalLabel;
       window.alert("Le paiement ne peut pas etre lance pour le moment. Reessaie dans quelques instants.");
@@ -631,8 +633,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const isPremiumConfirmationPage =
       currentUrl.pathname.endsWith('/premium-confirmation.html') ||
       currentUrl.pathname.endsWith('premium-confirmation.html');
-    const navigationEntry = performance.getEntriesByType('navigation')[0];
-    const isBackForwardNavigation = navigationEntry?.type === 'back_forward';
     const isStripeReturnPage = storedReturnPath === currentPath;
 
     if (!wasCanceledCheckout && !isPremiumConfirmationPage && !isStripeReturnPage) return;
@@ -640,7 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isStripeReturnPage) {
       const hasReloadedAfterStripeReturn = sessionStorage.getItem('stripeCheckoutReloaded') === '1';
 
-      if (!hasReloadedAfterStripeReturn && (wasCanceledCheckout || isBackForwardNavigation)) {
+      if (!hasReloadedAfterStripeReturn && wasCanceledCheckout) {
         sessionStorage.setItem('stripeCheckoutReloaded', '1');
         document.documentElement.classList.add('stripe-return-reload-pending');
         document.body.classList.add('page-exiting');
