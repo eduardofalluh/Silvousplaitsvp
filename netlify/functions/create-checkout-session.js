@@ -80,6 +80,31 @@ function resolveLineItem(planKey, explicitPriceId) {
   };
 }
 
+function normalizeReturnPath(inputPath) {
+  const normalizedPath = String(inputPath || '').trim();
+
+  if (!normalizedPath) {
+    return '/premium.html';
+  }
+
+  if (normalizedPath === '/' || normalizedPath === '/index.html') {
+    return '/index.html';
+  }
+
+  if (normalizedPath === '/premium.html') {
+    return normalizedPath;
+  }
+
+  return '/premium.html';
+}
+
+function buildCancelUrl(baseUrl, returnPath) {
+  const normalizedReturnPath = normalizeReturnPath(returnPath);
+  const cancelUrl = new URL(normalizedReturnPath, baseUrl);
+  cancelUrl.searchParams.set('canceled', 'true');
+  return cancelUrl.toString();
+}
+
 exports.handler = async (event) => {
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
@@ -90,7 +115,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { email, priceId, planKey } = JSON.parse(event.body);
+    const { email, priceId, planKey, returnPath } = JSON.parse(event.body);
     const resolvedCheckout = resolveLineItem(planKey, priceId);
 
     // Validate input
@@ -121,7 +146,7 @@ exports.handler = async (event) => {
         resolvedCheckout.lineItem,
       ],
       success_url: `${successBaseUrl}/premium-confirmation.html?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(normalizedPlanKey)}`,
-      cancel_url: `${successBaseUrl}/premium.html?canceled=true`,
+      cancel_url: buildCancelUrl(successBaseUrl, returnPath),
       metadata: {
         selected_plan: normalizedPlanKey,
         checkout_price_source: resolvedCheckout.source,

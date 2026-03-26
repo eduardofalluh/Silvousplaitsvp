@@ -551,6 +551,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const premiumModalSignup = document.getElementById('premium-modal-signup');
   const premiumCheckoutButtons = Array.from(document.querySelectorAll('[data-stripe-plan]'));
 
+  function normalizeStripeReturnPath(pathname) {
+    if (pathname === '/' || pathname === '/index.html') return '/index.html';
+    if (pathname === '/premium.html') return pathname;
+    return '/premium.html';
+  }
+
   function openPremiumModal() {
     if (!premiumModal) return;
     premiumModal.classList.add('open');
@@ -575,13 +581,17 @@ document.addEventListener('DOMContentLoaded', () => {
     button.disabled = true;
     button.textContent = 'Redirection...';
     sessionStorage.setItem('stripeCheckoutPending', '1');
+    sessionStorage.setItem('stripeCheckoutReturnPath', normalizeStripeReturnPath(window.location.pathname));
     sessionStorage.removeItem('stripeCheckoutReloaded');
 
     try {
       const response = await fetch('/.netlify/functions/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planKey }),
+        body: JSON.stringify({
+          planKey,
+          returnPath: normalizeStripeReturnPath(window.location.pathname),
+        }),
       });
 
       const data = await response.json().catch(() => ({}));
@@ -615,17 +625,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sessionStorage.getItem('stripeCheckoutPending') !== '1') return;
 
     const currentUrl = new URL(window.location.href);
+    const currentPath = normalizeStripeReturnPath(currentUrl.pathname);
+    const storedReturnPath = normalizeStripeReturnPath(sessionStorage.getItem('stripeCheckoutReturnPath') || '');
     const wasCanceledCheckout = currentUrl.searchParams.get('canceled') === 'true';
-    const isPremiumPage = currentUrl.pathname.endsWith('/premium.html') || currentUrl.pathname.endsWith('premium.html');
     const isPremiumConfirmationPage =
       currentUrl.pathname.endsWith('/premium-confirmation.html') ||
       currentUrl.pathname.endsWith('premium-confirmation.html');
     const navigationEntry = performance.getEntriesByType('navigation')[0];
     const isBackForwardNavigation = navigationEntry?.type === 'back_forward';
+    const isStripeReturnPage = storedReturnPath === currentPath;
 
-    if (!wasCanceledCheckout && !isPremiumPage && !isPremiumConfirmationPage) return;
+    if (!wasCanceledCheckout && !isPremiumConfirmationPage && !isStripeReturnPage) return;
 
-    if (isPremiumPage) {
+    if (isStripeReturnPage) {
       const hasReloadedAfterStripeReturn = sessionStorage.getItem('stripeCheckoutReloaded') === '1';
 
       if (!hasReloadedAfterStripeReturn && (wasCanceledCheckout || isBackForwardNavigation)) {
@@ -638,9 +650,9 @@ document.addEventListener('DOMContentLoaded', () => {
           overlay.classList.add('active');
         }
 
-        const cleanPremiumUrl = currentUrl.pathname + currentUrl.hash;
+        const cleanReturnUrl = storedReturnPath + currentUrl.hash;
         window.setTimeout(() => {
-          window.location.replace(cleanPremiumUrl);
+          window.location.replace(cleanReturnUrl);
         }, prefersReducedMotion ? 0 : 180);
         return;
       }
@@ -648,6 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     sessionStorage.removeItem('stripeCheckoutPending');
     sessionStorage.removeItem('stripeCheckoutReloaded');
+    sessionStorage.removeItem('stripeCheckoutReturnPath');
     document.documentElement.classList.remove('stripe-return-reload-pending');
     resetPremiumCheckoutButtons();
 

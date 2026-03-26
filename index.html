@@ -27,6 +27,29 @@
   <meta name="twitter:description" content="Une infolettre culturelle hebdomadaire pour découvrir des spectacles à petit prix. Inscription gratuite." />
   <meta name="twitter:image" content="https://silvousplaitsvp.com/assets/favicon.jpg" />
 
+  <script>
+    (function () {
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var navigationEntry = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || null;
+        var isBackForward = navigationEntry && navigationEntry.type === 'back_forward';
+        var currentPath = window.location.pathname === '/' ? '/index.html' : window.location.pathname;
+        var storedReturnPath = sessionStorage.getItem('stripeCheckoutReturnPath') || '';
+        var shouldMaskStripeReturn =
+          sessionStorage.getItem('stripeCheckoutPending') === '1' &&
+          sessionStorage.getItem('stripeCheckoutReloaded') !== '1' &&
+          storedReturnPath === currentPath &&
+          (params.get('canceled') === 'true' || isBackForward);
+
+        if (shouldMaskStripeReturn) {
+          document.documentElement.classList.add('stripe-return-reload-pending');
+        }
+      } catch (error) {
+        console.error('Stripe return preload error:', error);
+      }
+    })();
+  </script>
+
   <link rel="stylesheet" href="styles.css" />
   <style>@import url(https://fonts.bunny.net/css?family=ibm-plex-sans:400,600);</style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
