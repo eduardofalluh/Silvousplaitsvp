@@ -3379,8 +3379,8 @@ body.modal-open {
 .premium-confirmation-page {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top, rgba(51, 71, 202, 0.14), transparent 40%),
-    linear-gradient(180deg, #fffdf4 0%, #f6f1e3 100%);
+    radial-gradient(circle at top, rgba(223, 243, 95, 0.38), transparent 40%),
+    linear-gradient(180deg, #fbfedf 0%, #f2f8c3 100%);
 }
 
 .premium-confirmation {
