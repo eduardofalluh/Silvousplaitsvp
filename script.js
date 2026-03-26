@@ -576,10 +576,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const fallbackUrl = button?.getAttribute('data-stripe-fallback-url');
     if (!planKey) return;
 
-    const originalLabel = button.dataset.originalLabel || button.textContent;
-    button.dataset.originalLabel = originalLabel;
-    button.disabled = true;
-    button.textContent = 'Redirection...';
     sessionStorage.setItem('stripeCheckoutPending', '1');
     sessionStorage.setItem('stripeCheckoutReturnPath', normalizeStripeReturnPath(window.location.pathname));
     sessionStorage.removeItem('stripeCheckoutReloaded');
@@ -609,17 +605,13 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = fallbackUrl;
         return;
       }
-      button.disabled = false;
-      button.textContent = originalLabel;
       window.alert("Le paiement ne peut pas etre lance pour le moment. Reessaie dans quelques instants.");
     }
   }
 
   function resetPremiumCheckoutButtons() {
     premiumCheckoutButtons.forEach((button) => {
-      const originalLabel = button.dataset.originalLabel || button.textContent;
       button.disabled = false;
-      button.textContent = originalLabel;
     });
   }
 
