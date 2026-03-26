@@ -623,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function refreshAfterStripeReturn() {
+  function refreshAfterStripeReturn(event) {
     if (sessionStorage.getItem('stripeCheckoutPending') !== '1') return;
 
     const currentUrl = new URL(window.location.href);
@@ -634,25 +634,35 @@ document.addEventListener('DOMContentLoaded', () => {
       currentUrl.pathname.endsWith('/premium-confirmation.html') ||
       currentUrl.pathname.endsWith('premium-confirmation.html');
     const isStripeReturnPage = storedReturnPath === currentPath;
+    const navigationEntry =
+      typeof performance.getEntriesByType === 'function'
+        ? performance.getEntriesByType('navigation')[0]
+        : null;
+    const isBackForwardNavigation =
+      event?.persisted === true || navigationEntry?.type === 'back_forward';
 
-    if (!wasCanceledCheckout && !isPremiumConfirmationPage && !isStripeReturnPage) return;
+    if (!wasCanceledCheckout && !isPremiumConfirmationPage && !isStripeReturnPage && !isBackForwardNavigation) return;
 
     if (isStripeReturnPage) {
       const hasReloadedAfterStripeReturn = sessionStorage.getItem('stripeCheckoutReloaded') === '1';
 
-      if (!hasReloadedAfterStripeReturn && wasCanceledCheckout) {
+      if (!hasReloadedAfterStripeReturn && (wasCanceledCheckout || isBackForwardNavigation)) {
         sessionStorage.setItem('stripeCheckoutReloaded', '1');
         document.documentElement.classList.add('stripe-return-reload-pending');
         document.body.classList.add('page-exiting');
+        resetPremiumCheckoutButtons();
 
         if (overlay && !prefersReducedMotion) {
           overlay.classList.remove('exit');
           overlay.classList.add('active');
         }
 
-        const cleanReturnUrl = storedReturnPath + currentUrl.hash;
         window.setTimeout(() => {
-          window.location.replace(cleanReturnUrl);
+          if (wasCanceledCheckout) {
+            window.location.replace(storedReturnPath + currentUrl.hash);
+            return;
+          }
+          window.location.reload();
         }, prefersReducedMotion ? 0 : 180);
         return;
       }
