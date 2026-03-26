@@ -623,61 +623,55 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function refreshAfterStripeReturn(event) {
-    if (sessionStorage.getItem('stripeCheckoutPending') !== '1') return;
-
-    const currentUrl = new URL(window.location.href);
-    const currentPath = normalizeStripeReturnPath(currentUrl.pathname);
-    const storedReturnPath = normalizeStripeReturnPath(sessionStorage.getItem('stripeCheckoutReturnPath') || '');
-    const wasCanceledCheckout = currentUrl.searchParams.get('canceled') === 'true';
-    const isPremiumConfirmationPage =
-      currentUrl.pathname.endsWith('/premium-confirmation.html') ||
-      currentUrl.pathname.endsWith('premium-confirmation.html');
-    const isStripeReturnPage = storedReturnPath === currentPath;
-    const navigationEntry =
-      typeof performance.getEntriesByType === 'function'
-        ? performance.getEntriesByType('navigation')[0]
-        : null;
-    const isBackForwardNavigation =
-      event?.persisted === true || navigationEntry?.type === 'back_forward';
-
-    if (!wasCanceledCheckout && !isPremiumConfirmationPage && !isStripeReturnPage && !isBackForwardNavigation) return;
-
-    if (isStripeReturnPage) {
-      const hasReloadedAfterStripeReturn = sessionStorage.getItem('stripeCheckoutReloaded') === '1';
-
-      if (!hasReloadedAfterStripeReturn && (wasCanceledCheckout || isBackForwardNavigation)) {
-        sessionStorage.setItem('stripeCheckoutReloaded', '1');
-        document.documentElement.classList.add('stripe-return-reload-pending');
-        document.body.classList.add('page-exiting');
-        resetPremiumCheckoutButtons();
-
-        if (overlay && !prefersReducedMotion) {
-          overlay.classList.remove('exit');
-          overlay.classList.add('active');
-        }
-
-        window.setTimeout(() => {
-          if (wasCanceledCheckout) {
-            window.location.replace(storedReturnPath + currentUrl.hash);
-            return;
-          }
-          window.location.reload();
-        }, prefersReducedMotion ? 0 : 180);
-        return;
-      }
-    }
-
+  function completeStripeReturnCleanup(currentUrl) {
+    const url = currentUrl || new URL(window.location.href);
     sessionStorage.removeItem('stripeCheckoutPending');
     sessionStorage.removeItem('stripeCheckoutReloaded');
     sessionStorage.removeItem('stripeCheckoutReturnPath');
     document.documentElement.classList.remove('stripe-return-reload-pending');
     resetPremiumCheckoutButtons();
 
-    if (wasCanceledCheckout) {
-      currentUrl.searchParams.delete('canceled');
-      window.history.replaceState({}, document.title, currentUrl.pathname + currentUrl.search + currentUrl.hash);
+    if (url.searchParams.get('canceled') === 'true') {
+      url.searchParams.delete('canceled');
+      window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
     }
+  }
+
+  function triggerSmoothStripeReload() {
+    if (sessionStorage.getItem('stripeCheckoutPending') !== '1') return;
+
+    const currentUrl = new URL(window.location.href);
+    const currentPath = normalizeStripeReturnPath(currentUrl.pathname);
+    const storedReturnPath = normalizeStripeReturnPath(sessionStorage.getItem('stripeCheckoutReturnPath') || '');
+    const isPremiumConfirmationPage =
+      currentUrl.pathname.endsWith('/premium-confirmation.html') ||
+      currentUrl.pathname.endsWith('premium-confirmation.html');
+    const shouldReloadSourcePage = storedReturnPath === currentPath && !isPremiumConfirmationPage;
+    const hasReloadedAfterStripeReturn = sessionStorage.getItem('stripeCheckoutReloaded') === '1';
+
+    if (!shouldReloadSourcePage) {
+      completeStripeReturnCleanup(currentUrl);
+      return;
+    }
+
+    if (hasReloadedAfterStripeReturn) {
+      completeStripeReturnCleanup(currentUrl);
+      return;
+    }
+
+    sessionStorage.setItem('stripeCheckoutReloaded', '1');
+    document.documentElement.classList.add('stripe-return-reload-pending');
+    document.body.classList.add('page-exiting');
+    resetPremiumCheckoutButtons();
+
+    if (overlay && !prefersReducedMotion) {
+      overlay.classList.remove('exit');
+      overlay.classList.add('active');
+    }
+
+    window.setTimeout(() => {
+      window.location.reload();
+    }, prefersReducedMotion ? 0 : 180);
   }
 
   if (premiumButton) {
@@ -729,10 +723,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  window.addEventListener('pageshow', refreshAfterStripeReturn);
+  window.addEventListener('pageshow', triggerSmoothStripeReload);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') refreshAfterStripeReturn();
+    if (document.visibilityState === 'visible') triggerSmoothStripeReload();
   });
+  window.addEventListener('focus', triggerSmoothStripeReload);
 });
 
 // =====================================================
