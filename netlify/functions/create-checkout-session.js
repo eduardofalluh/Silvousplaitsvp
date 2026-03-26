@@ -112,6 +112,7 @@ exports.handler = async (event) => {
     const sessionConfig = {
       payment_method_types: ['card'],
       mode: resolvedCheckout.mode,
+      allow_promotion_codes: true,
       billing_address_collection: 'required',
       automatic_tax: {
         enabled: true,
