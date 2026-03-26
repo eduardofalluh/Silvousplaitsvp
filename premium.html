@@ -27,6 +27,26 @@
   <meta name="twitter:description" content="Des spectacles exclusifs et des avantages premium pour les passionnés de culture." />
   <meta name="twitter:image" content="https://silvousplaitsvp.com/assets/premium_image.avif" />
 
+  <script>
+    (function () {
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var navigationEntry = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || null;
+        var isBackForward = navigationEntry && navigationEntry.type === 'back_forward';
+        var shouldMaskStripeReturn =
+          sessionStorage.getItem('stripeCheckoutPending') === '1' &&
+          sessionStorage.getItem('stripeCheckoutReloaded') !== '1' &&
+          (params.get('canceled') === 'true' || isBackForward);
+
+        if (shouldMaskStripeReturn) {
+          document.documentElement.classList.add('stripe-return-reload-pending');
+        }
+      } catch (error) {
+        console.error('Stripe return preload error:', error);
+      }
+    })();
+  </script>
+
   <link rel="stylesheet" href="styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

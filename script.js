@@ -575,6 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
     button.disabled = true;
     button.textContent = 'Redirection...';
     sessionStorage.setItem('stripeCheckoutPending', '1');
+    sessionStorage.removeItem('stripeCheckoutReloaded');
 
     try {
       const response = await fetch('/.netlify/functions/create-checkout-session', {
@@ -619,10 +620,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const isPremiumConfirmationPage =
       currentUrl.pathname.endsWith('/premium-confirmation.html') ||
       currentUrl.pathname.endsWith('premium-confirmation.html');
+    const navigationEntry = performance.getEntriesByType('navigation')[0];
+    const isBackForwardNavigation = navigationEntry?.type === 'back_forward';
 
     if (!wasCanceledCheckout && !isPremiumPage && !isPremiumConfirmationPage) return;
 
+    if (isPremiumPage) {
+      const hasReloadedAfterStripeReturn = sessionStorage.getItem('stripeCheckoutReloaded') === '1';
+
+      if (!hasReloadedAfterStripeReturn && (wasCanceledCheckout || isBackForwardNavigation)) {
+        sessionStorage.setItem('stripeCheckoutReloaded', '1');
+        document.documentElement.classList.add('stripe-return-reload-pending');
+        document.body.classList.add('page-exiting');
+
+        if (overlay && !prefersReducedMotion) {
+          overlay.classList.remove('exit');
+          overlay.classList.add('active');
+        }
+
+        const cleanPremiumUrl = currentUrl.pathname + currentUrl.hash;
+        window.setTimeout(() => {
+          window.location.replace(cleanPremiumUrl);
+        }, prefersReducedMotion ? 0 : 180);
+        return;
+      }
+    }
+
     sessionStorage.removeItem('stripeCheckoutPending');
+    sessionStorage.removeItem('stripeCheckoutReloaded');
+    document.documentElement.classList.remove('stripe-return-reload-pending');
     resetPremiumCheckoutButtons();
 
     if (wasCanceledCheckout) {

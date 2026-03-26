@@ -135,6 +135,19 @@ body.page-entering {
   transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+html.stripe-return-reload-pending body {
+  overflow: hidden;
+}
+
+html.stripe-return-reload-pending body > *:not(.page-transition-overlay) {
+  opacity: 0 !important;
+}
+
+html.stripe-return-reload-pending .page-transition-overlay {
+  transform: translateX(0) translateZ(0);
+  pointer-events: all;
+}
+
 /* =====================================================
    PAGE INTRO – 3s white screen, title + trompette, then fade in rest
    ===================================================== */
