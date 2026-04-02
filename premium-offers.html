@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offres Premium - Silvousplait</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    :root {
+      --offers-accent: #dff35f;
+      --offers-ink: #14213d;
+      --offers-blue: #3347ca;
+      --offers-bg: #f7f6ef;
+      --offers-card: rgba(255, 255, 255, 0.92);
+    }
+    body.premium-offers-page {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(223, 243, 95, 0.35), transparent 28%),
+        radial-gradient(circle at 80% 18%, rgba(51, 71, 202, 0.16), transparent 26%),
+        linear-gradient(180deg, #fffef5 0%, #f5f3e6 100%);
+      color: var(--offers-ink);
+      font-family: 'Inter', sans-serif;
+    }
+    .offers-shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 64px;
+    }
+    .offers-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .offers-topbar a,
+    .offers-logout {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      border: 1px solid rgba(20, 33, 61, 0.12);
+      background: rgba(255, 255, 255, 0.85);
+      color: var(--offers-ink);
+      text-decoration: none;
+      padding: 12px 18px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .offers-hero {
+      margin-bottom: 28px;
+      padding: 28px;
+      border-radius: 28px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.86), rgba(255,255,255,0.62));
+      border: 1px solid rgba(20, 33, 61, 0.08);
+      box-shadow: 0 30px 70px rgba(20, 33, 61, 0.08);
+    }
+    .offers-hero h1 {
+      margin: 0 0 12px;
+      font-size: clamp(40px, 7vw, 76px);
+      line-height: 0.95;
+      letter-spacing: -0.05em;
+    }
+    .offers-hero p {
+      margin: 0;
+      max-width: 58ch;
+      font-size: 18px;
+      line-height: 1.5;
+    }
+    .offers-auth,
+    .offers-app {
+      background: var(--offers-card);
+      border-radius: 28px;
+      border: 1px solid rgba(20, 33, 61, 0.08);
+      box-shadow: 0 22px 50px rgba(20, 33, 61, 0.08);
+      padding: 24px;
+    }
+    .offers-auth {
+      max-width: 620px;
+    }
+    .offers-auth h2,
+    .offers-panel-title {
+      margin: 0 0 10px;
+      font-size: 28px;
+    }
+    .offers-auth p {
+      margin: 0 0 18px;
+      line-height: 1.5;
+    }
+    .offers-form-grid {
+      display: grid;
+      gap: 12px;
+    }
+    .offers-form-grid input,
+    .offers-filters input,
+    .offers-filters select {
+      width: 100%;
+      border: 1px solid rgba(20, 33, 61, 0.14);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 16px;
+      box-sizing: border-box;
+      background: #fff;
+    }
+    .offers-button {
+      border: 0;
+      border-radius: 14px;
+      padding: 14px 18px;
+      background: var(--offers-blue);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .offers-secondary {
+      background: #eef2ff;
+      color: var(--offers-blue);
+    }
+    .offers-message {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      display: none;
+      line-height: 1.45;
+    }
+    .offers-message.ok {
+      display: block;
+      background: #e9f8db;
+      color: #234313;
+    }
+    .offers-message.err {
+      display: block;
+      background: #fdeaea;
+      color: #8f1f1f;
+    }
+    .offers-app[hidden],
+    .offers-auth[hidden],
+    #otp-step[hidden] {
+      display: none;
+    }
+    .offers-filters {
+      display: grid;
+      grid-template-columns: 1.2fr 0.9fr;
+      gap: 12px;
+      margin: 18px 0 22px;
+    }
+    .offers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 18px;
+    }
+    .offer-card {
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+      background: #fff;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 14px 34px rgba(20, 33, 61, 0.08);
+      border: 1px solid rgba(20, 33, 61, 0.06);
+    }
+    .offer-card img {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+      background: linear-gradient(135deg, #e9edf7, #f4f5ef);
+    }
+    .offer-card-body {
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+    }
+    .offer-region {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(223, 243, 95, 0.55);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .offer-card h3 {
+      margin: 0;
+      font-size: 25px;
+      line-height: 1.05;
+    }
+    .offer-meta,
+    .offer-desc {
+      margin: 0;
+      color: rgba(20, 33, 61, 0.82);
+      line-height: 1.5;
+    }
+    .offer-card button {
+      margin-top: 6px;
+    }
+    .offers-empty {
+      margin: 0;
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.72);
+    }
+    .offer-modal[hidden] {
+      display: none;
+    }
+    .offer-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(18, 24, 44, 0.52);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 50;
+    }
+    .offer-modal-card {
+      width: min(720px, 100%);
+      max-height: min(92vh, 920px);
+      overflow: auto;
+      background: #fff;
+      border-radius: 26px;
+      box-shadow: 0 30px 80px rgba(12, 17, 36, 0.28);
+    }
+    .offer-modal-card img {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      display: block;
+    }
+    .offer-modal-body {
+      padding: 24px;
+      display: grid;
+      gap: 14px;
+    }
+    .offer-code {
+      border-radius: 18px;
+      padding: 16px 18px;
+      background: #f4f7d7;
+    }
+    .offer-code strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .offer-code span {
+      font-size: clamp(22px, 5vw, 36px);
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      color: var(--offers-blue);
+      word-break: break-word;
+    }
+    .offer-modal-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .offers-footer-link {
+      margin-top: 24px;
+      text-align: center;
+      opacity: 0.7;
+    }
+    .offers-footer-link a {
+      color: var(--offers-ink);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    @media (max-width: 700px) {
+      .offers-topbar,
+      .offers-filters {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+      .offers-shell {
+        width: min(100% - 20px, 1180px);
+        padding-top: 18px;
+      }
+      .offers-hero,
+      .offers-auth,
+      .offers-app {
+        border-radius: 22px;
+        padding: 20px;
+      }
+      .offer-modal-body {
+        padding: 18px;
+      }
+    }
+  </style>
+</head>
+<body class="premium-offers-page">
+  <main class="offers-shell">
+    <div class="offers-topbar">
+      <a href="index.html">Retour au site</a>
+      <button id="logout-button" class="offers-logout" hidden>Fermer ma session</button>
+    </div>
+
+    <section class="offers-hero">
+      <h1>Offres Premium</h1>
+      <p>Consulte les offres exclusives par region, ouvre la fiche d’un show et retrouve directement le code promo ou le lien de reservation.</p>
+    </section>
+
+    <section id="auth-panel" class="offers-auth">
+      <h2>Acces reserve aux membres premium</h2>
+      <p>Entre ton email premium. On t’envoie un code de connexion par courriel. L’acces est verifie via ActiveCampaign.</p>
+
+      <form id="email-step" class="offers-form-grid">
+        <input type="email" id="premium-email" placeholder="ton@email.com" required />
+        <button class="offers-button" type="submit">Recevoir mon code</button>
+      </form>
+
+      <form id="otp-step" class="offers-form-grid" hidden>
+        <input type="text" id="premium-otp" placeholder="Code a 6 chiffres" inputmode="numeric" maxlength="6" required />
+        <button class="offers-button" type="submit">Ouvrir les offres premium</button>
+      </form>
+
+      <div id="auth-message" class="offers-message" aria-live="polite"></div>
+    </section>
+
+    <section id="offers-app" class="offers-app" hidden>
+      <h2 class="offers-panel-title">Catalogue premium</h2>
+      <p id="member-state"></p>
+
+      <div class="offers-filters">
+        <input type="search" id="search-input" placeholder="Rechercher un show, lieu ou mot-cle..." />
+        <select id="region-filter">
+          <option value="">Toutes les regions</option>
+          <option value="Montreal">Montreal</option>
+          <option value="Quebec">Quebec</option>
+          <option value="Sherbrooke">Sherbrooke</option>
+          <option value="Trois-Rivieres">Trois-Rivieres</option>
+        </select>
+      </div>
+
+      <div id="offers-grid" class="offers-grid"></div>
+    </section>
+
+    <div class="offers-footer-link">
+      <a href="premium-offers-admin.html">Espace admin</a>
+    </div>
+  </main>
+
+  <div id="offer-modal" class="offer-modal" hidden>
+    <div class="offer-modal-card">
+      <img id="modal-image" alt="" />
+      <div class="offer-modal-body">
+        <div class="offer-region" id="modal-region"></div>
+        <h3 id="modal-title"></h3>
+        <p id="modal-meta" class="offer-meta"></p>
+        <p id="modal-desc" class="offer-desc"></p>
+        <div class="offer-code">
+          <strong>Code promo</strong>
+          <span id="modal-code"></span>
+        </div>
+        <div class="offer-modal-actions">
+          <a id="modal-link" class="offers-button" href="#" target="_blank" rel="noopener noreferrer">Voir le site du show</a>
+          <button id="close-modal" class="offers-button offers-secondary" type="button">Fermer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const REGIONS = ['Montreal', 'Quebec', 'Sherbrooke', 'Trois-Rivieres'];
+      const authPanel = document.getElementById('auth-panel');
+      const offersApp = document.getElementById('offers-app');
+      const emailForm = document.getElementById('email-step');
+      const otpForm = document.getElementById('otp-step');
+      const emailInput = document.getElementById('premium-email');
+      const otpInput = document.getElementById('premium-otp');
+      const authMessage = document.getElementById('auth-message');
+      const logoutButton = document.getElementById('logout-button');
+      const memberState = document.getElementById('member-state');
+      const searchInput = document.getElementById('search-input');
+      const regionFilter = document.getElementById('region-filter');
+      const offersGrid = document.getElementById('offers-grid');
+      const offerModal = document.getElementById('offer-modal');
+      const modalImage = document.getElementById('modal-image');
+      const modalRegion = document.getElementById('modal-region');
+      const modalTitle = document.getElementById('modal-title');
+      const modalMeta = document.getElementById('modal-meta');
+      const modalDesc = document.getElementById('modal-desc');
+      const modalCode = document.getElementById('modal-code');
+      const modalLink = document.getElementById('modal-link');
+      const closeModal = document.getElementById('close-modal');
+      const STORAGE_KEY = 'silvousplaitPremiumOffersSession';
+
+      let otpToken = '';
+      let signedEmail = '';
+      let offers = [];
+
+      function setMessage(kind, message) {
+        authMessage.className = 'offers-message';
+        if (kind) authMessage.classList.add(kind);
+        authMessage.textContent = message || '';
+      }
+
+      function escapeHtml(value) {
+        return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function getSession() {
+        try {
+          return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+        } catch (_) {
+          return null;
+        }
+      }
+
+      function setSession(session) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+      }
+
+      function clearSession() {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+
+      function openOffers(session) {
+        authPanel.hidden = true;
+        offersApp.hidden = false;
+        logoutButton.hidden = false;
+        memberState.textContent = 'Session active pour ' + session.email;
+      }
+
+      function closeOffers() {
+        offersApp.hidden = true;
+        logoutButton.hidden = true;
+        authPanel.hidden = false;
+        otpForm.hidden = true;
+      }
+
+      function normalizeRegion(value) {
+        const raw = String(value || '').trim();
+        return REGIONS.includes(raw) ? raw : raw;
+      }
+
+      function renderOffers() {
+        const search = String(searchInput.value || '').trim().toLowerCase();
+        const region = regionFilter.value;
+
+        const filtered = offers.filter((offer) => {
+          const regionMatch = !region || offer.region === region;
+          const text = [offer.title, offer.venue, offer.description, offer.region].join(' ').toLowerCase();
+          const searchMatch = !search || text.includes(search);
+          return regionMatch && searchMatch;
+        });
+
+        if (!filtered.length) {
+          offersGrid.innerHTML = '<p class="offers-empty">Aucune offre premium ne correspond a ce filtre pour le moment.</p>';
+          return;
+        }
+
+        offersGrid.innerHTML = filtered.map((offer) => `
+          <article class="offer-card">
+            <img src="${escapeHtml(offer.image_url || 'assets/premium_image.avif')}" alt="${escapeHtml(offer.title)}" />
+            <div class="offer-card-body">
+              <div class="offer-region">${escapeHtml(normalizeRegion(offer.region))}</div>
+              <h3>${escapeHtml(offer.title)}</h3>
+              <p class="offer-meta">${escapeHtml([offer.venue, offer.event_date].filter(Boolean).join(' · '))}</p>
+              <p class="offer-desc">${escapeHtml(offer.description || '')}</p>
+              <button class="offers-button" type="button" data-offer-id="${escapeHtml(offer.id)}">Voir l'offre</button>
+            </div>
+          </article>
+        `).join('');
+
+        offersGrid.querySelectorAll('[data-offer-id]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const offer = offers.find((item) => item.id === button.getAttribute('data-offer-id'));
+            if (!offer) return;
+            modalImage.src = offer.image_url || 'assets/premium_image.avif';
+            modalImage.alt = offer.title || 'Show premium';
+            modalRegion.textContent = normalizeRegion(offer.region);
+            modalTitle.textContent = offer.title || '';
+            modalMeta.textContent = [offer.venue, offer.event_date].filter(Boolean).join(' · ');
+            modalDesc.textContent = offer.description || '';
+            modalCode.textContent = offer.promo_code || 'Code a venir';
+            if (offer.ticket_url) {
+              modalLink.href = offer.ticket_url;
+              modalLink.hidden = false;
+            } else {
+              modalLink.hidden = true;
+            }
+            offerModal.hidden = false;
+          });
+        });
+      }
+
+      async function loadOffers() {
+        const session = getSession();
+        if (!session || !session.accessToken) return;
+
+        const response = await fetch('/.netlify/functions/list-premium-offers', {
+          headers: {
+            Authorization: 'Bearer ' + session.accessToken,
+          },
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          clearSession();
+          closeOffers();
+          setMessage('err', data.error || 'Impossible de charger les offres premium.');
+          return;
+        }
+
+        offers = Array.isArray(data.offers) ? data.offers : [];
+        openOffers(session);
+        renderOffers();
+      }
+
+      emailForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        setMessage('', '');
+        otpForm.hidden = true;
+
+        const email = String(emailInput.value || '').trim();
+        if (!email) return;
+
+        const response = await fetch('/.netlify/functions/request-premium-offers-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          setMessage('err', data.error || 'Impossible d’envoyer le code.');
+          return;
+        }
+
+        signedEmail = email;
+        otpToken = data.otpToken || '';
+        otpForm.hidden = false;
+        setMessage('ok', 'Code envoye. Verifie ton courriel premium puis entre le code ci-dessous.');
+        otpInput.focus();
+      });
+
+      otpForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        setMessage('', '');
+
+        const response = await fetch('/.netlify/functions/verify-premium-offers-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: signedEmail,
+            otpCode: String(otpInput.value || '').trim(),
+            otpToken,
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          setMessage('err', data.error || 'Code invalide.');
+          return;
+        }
+
+        setSession({
+          email: data.email,
+          accessToken: data.accessToken,
+        });
+        await loadOffers();
+      });
+
+      searchInput.addEventListener('input', renderOffers);
+      regionFilter.addEventListener('change', renderOffers);
+      logoutButton.addEventListener('click', () => {
+        clearSession();
+        offers = [];
+        closeOffers();
+        setMessage('', '');
+      });
+      closeModal.addEventListener('click', () => {
+        offerModal.hidden = true;
+      });
+      offerModal.addEventListener('click', (event) => {
+        if (event.target === offerModal) {
+          offerModal.hidden = true;
+        }
+      });
+
+      loadOffers();
+    })();
+  </script>
+</body>
+</html>

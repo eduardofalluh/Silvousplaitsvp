@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Offres Premium - Silvousplait</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, #fffef6, #f2f3e7);
+      color: #16203b;
+    }
+    .admin-shell {
+      width: min(1120px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 28px 0 56px;
+    }
+    .admin-card {
+      background: rgba(255,255,255,0.94);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 22px 50px rgba(18, 24, 42, 0.08);
+      border: 1px solid rgba(18, 24, 42, 0.08);
+      margin-bottom: 20px;
+    }
+    h1, h2 {
+      margin-top: 0;
+    }
+    form {
+      display: grid;
+      gap: 12px;
+    }
+    input, select, textarea, button {
+      font: inherit;
+    }
+    input, select, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid rgba(18, 24, 42, 0.14);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: #fff;
+    }
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 16px;
+      background: #3347ca;
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .button-secondary {
+      background: #e9ecfb;
+      color: #3347ca;
+    }
+    .button-danger {
+      background: #fce7e7;
+      color: #8a1d1d;
+    }
+    .admin-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 18px;
+    }
+    .admin-message {
+      padding: 12px 14px;
+      border-radius: 14px;
+      display: none;
+    }
+    .admin-message.ok {
+      display: block;
+      background: #e9f8db;
+      color: #244415;
+    }
+    .admin-message.err {
+      display: block;
+      background: #fdeaea;
+      color: #8f1f1f;
+    }
+    .offer-list {
+      display: grid;
+      gap: 12px;
+    }
+    .offer-admin-item {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid rgba(18, 24, 42, 0.08);
+    }
+    .offer-admin-item img {
+      width: 100%;
+      aspect-ratio: 16 / 8;
+      object-fit: cover;
+      border-radius: 14px;
+      background: #eef1f7;
+    }
+    .offer-admin-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    #admin-app[hidden],
+    #admin-login[hidden] {
+      display: none;
+    }
+    @media (max-width: 900px) {
+      .admin-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="admin-shell">
+    <div class="admin-card">
+      <a href="premium-offers.html">Retour aux offres premium</a>
+    </div>
+
+    <section id="admin-login" class="admin-card">
+      <h1>Admin Offres Premium</h1>
+      <p>Entre le mot de passe admin pour gerer les shows, images et codes promos.</p>
+      <form id="admin-login-form">
+        <input type="password" id="admin-password" placeholder="Mot de passe admin" required />
+        <button type="submit">Ouvrir l'admin</button>
+      </form>
+      <div id="admin-login-message" class="admin-message" aria-live="polite"></div>
+    </section>
+
+    <section id="admin-app" hidden>
+      <div class="admin-grid">
+        <div class="admin-card">
+          <h2>Ajouter ou modifier une offre</h2>
+          <form id="offer-form">
+            <input type="hidden" id="offer-id" />
+            <input type="text" id="offer-title" placeholder="Titre du show" required />
+            <select id="offer-region" required>
+              <option value="">Choisir une region</option>
+              <option value="Montreal">Montreal</option>
+              <option value="Quebec">Quebec</option>
+              <option value="Sherbrooke">Sherbrooke</option>
+              <option value="Trois-Rivieres">Trois-Rivieres</option>
+            </select>
+            <input type="text" id="offer-venue" placeholder="Salle / lieu" />
+            <input type="date" id="offer-date" />
+            <input type="url" id="offer-image" placeholder="URL de l'image du show" />
+            <textarea id="offer-description" placeholder="Description de l'offre premium"></textarea>
+            <input type="text" id="offer-code" placeholder="Code promo" />
+            <input type="url" id="offer-link" placeholder="Lien vers la billetterie / page du show" />
+            <select id="offer-active">
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+            <div class="form-actions">
+              <button type="submit">Enregistrer l'offre</button>
+              <button type="button" id="reset-form" class="button-secondary">Vider le formulaire</button>
+            </div>
+          </form>
+          <div id="admin-form-message" class="admin-message" aria-live="polite"></div>
+        </div>
+
+        <div class="admin-card">
+          <h2>Offres existantes</h2>
+          <div id="offer-list" class="offer-list"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = 'silvousplaitPremiumOffersAdminSession';
+      const loginPanel = document.getElementById('admin-login');
+      const appPanel = document.getElementById('admin-app');
+      const loginForm = document.getElementById('admin-login-form');
+      const passwordInput = document.getElementById('admin-password');
+      const loginMessage = document.getElementById('admin-login-message');
+      const form = document.getElementById('offer-form');
+      const formMessage = document.getElementById('admin-form-message');
+      const offerList = document.getElementById('offer-list');
+      const resetFormButton = document.getElementById('reset-form');
+
+      const fieldMap = {
+        id: document.getElementById('offer-id'),
+        title: document.getElementById('offer-title'),
+        region: document.getElementById('offer-region'),
+        venue: document.getElementById('offer-venue'),
+        event_date: document.getElementById('offer-date'),
+        image_url: document.getElementById('offer-image'),
+        description: document.getElementById('offer-description'),
+        promo_code: document.getElementById('offer-code'),
+        ticket_url: document.getElementById('offer-link'),
+        is_active: document.getElementById('offer-active'),
+      };
+
+      let offers = [];
+
+      function getSession() {
+        try {
+          return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+        } catch (_) {
+          return null;
+        }
+      }
+
+      function setSession(session) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+      }
+
+      function clearSession() {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+
+      function setMessage(target, kind, message) {
+        target.className = 'admin-message';
+        if (kind) target.classList.add(kind);
+        target.textContent = message || '';
+      }
+
+      function openApp() {
+        loginPanel.hidden = true;
+        appPanel.hidden = false;
+      }
+
+      function closeApp() {
+        appPanel.hidden = true;
+        loginPanel.hidden = false;
+      }
+
+      function resetForm() {
+        form.reset();
+        fieldMap.id.value = '';
+        fieldMap.is_active.value = 'true';
+      }
+
+      async function authFetch(url, options) {
+        const session = getSession();
+        const headers = Object.assign({}, options && options.headers, {
+          Authorization: 'Bearer ' + (session && session.accessToken ? session.accessToken : ''),
+        });
+        return fetch(url, Object.assign({}, options || {}, { headers }));
+      }
+
+      function renderOffers() {
+        if (!offers.length) {
+          offerList.innerHTML = '<p>Aucune offre pour le moment.</p>';
+          return;
+        }
+
+        offerList.innerHTML = offers.map((offer) => `
+          <article class="offer-admin-item">
+            <img src="${offer.image_url || 'assets/premium_image.avif'}" alt="${offer.title || ''}" />
+            <strong>${offer.title || ''}</strong>
+            <span>${[offer.region, offer.venue, offer.event_date].filter(Boolean).join(' · ')}</span>
+            <span>${offer.is_active ? 'Active' : 'Inactive'}</span>
+            <div class="offer-admin-actions">
+              <button type="button" data-edit="${offer.id}" class="button-secondary">Modifier</button>
+              <button type="button" data-delete="${offer.id}" class="button-danger">Supprimer</button>
+            </div>
+          </article>
+        `).join('');
+
+        offerList.querySelectorAll('[data-edit]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const offer = offers.find((item) => item.id === button.getAttribute('data-edit'));
+            if (!offer) return;
+            Object.keys(fieldMap).forEach((key) => {
+              fieldMap[key].value = key === 'is_active' ? String(offer[key]) : (offer[key] || '');
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        });
+
+        offerList.querySelectorAll('[data-delete]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            if (!window.confirm('Supprimer cette offre premium ?')) return;
+
+            const response = await authFetch('/.netlify/functions/delete-premium-offer', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: button.getAttribute('data-delete') }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              setMessage(formMessage, 'err', data.error || 'Suppression impossible.');
+              return;
+            }
+            setMessage(formMessage, 'ok', 'Offre supprimee.');
+            await loadOffers();
+            resetForm();
+          });
+        });
+      }
+
+      async function loadOffers() {
+        const response = await authFetch('/.netlify/functions/list-premium-offers-admin');
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          clearSession();
+          closeApp();
+          setMessage(loginMessage, 'err', data.error || 'Session admin invalide.');
+          return;
+        }
+        offers = Array.isArray(data.offers) ? data.offers : [];
+        renderOffers();
+      }
+
+      loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const response = await fetch('/.netlify/functions/admin-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: passwordInput.value }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setMessage(loginMessage, 'err', data.error || 'Connexion admin impossible.');
+          return;
+        }
+        setSession({ accessToken: data.accessToken });
+        openApp();
+        setMessage(loginMessage, '', '');
+        await loadOffers();
+      });
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const payload = Object.keys(fieldMap).reduce((acc, key) => {
+          acc[key] = fieldMap[key].value;
+          return acc;
+        }, {});
+
+        const response = await authFetch('/.netlify/functions/save-premium-offer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setMessage(formMessage, 'err', data.error || 'Enregistrement impossible.');
+          return;
+        }
+
+        setMessage(formMessage, 'ok', 'Offre enregistree avec succes.');
+        resetForm();
+        await loadOffers();
+      });
+
+      resetFormButton.addEventListener('click', resetForm);
+      resetForm();
+
+      if (getSession()) {
+        openApp();
+        loadOffers();
+      }
+    })();
+  </script>
+</body>
+</html>
