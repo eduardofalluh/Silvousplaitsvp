@@ -2,7 +2,7 @@ const { google } = require('googleapis');
 
 const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 const GOOGLE_PRIVATE_KEY = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
-const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
+const PREMIUM_OFFERS_SHEET_ID = process.env.PREMIUM_OFFERS_SHEET_ID || process.env.GOOGLE_SHEET_ID;
 const PREMIUM_OFFERS_TAB = process.env.PREMIUM_OFFERS_TAB || 'premium_offers';
 
 const OFFER_HEADERS = [
@@ -33,7 +33,7 @@ function getMissingSheetEnvVars() {
   const missing = [];
   if (!GOOGLE_SERVICE_ACCOUNT_EMAIL) missing.push('GOOGLE_SERVICE_ACCOUNT_EMAIL');
   if (!GOOGLE_PRIVATE_KEY) missing.push('GOOGLE_PRIVATE_KEY');
-  if (!GOOGLE_SHEET_ID) missing.push('GOOGLE_SHEET_ID');
+  if (!PREMIUM_OFFERS_SHEET_ID) missing.push('PREMIUM_OFFERS_SHEET_ID');
   return missing;
 }
 
@@ -49,14 +49,14 @@ async function getSheetsClient() {
 }
 
 async function ensurePremiumOffersSheet(sheets) {
-  const meta = await sheets.spreadsheets.get({ spreadsheetId: GOOGLE_SHEET_ID });
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: PREMIUM_OFFERS_SHEET_ID });
   const existing = (meta.data.sheets || []).find(
     (sheet) => String(sheet.properties && sheet.properties.title) === PREMIUM_OFFERS_TAB
   );
 
   if (!existing) {
     await sheets.spreadsheets.batchUpdate({
-      spreadsheetId: GOOGLE_SHEET_ID,
+      spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
       requestBody: {
         requests: [
           {
@@ -72,7 +72,7 @@ async function ensurePremiumOffersSheet(sheets) {
   }
 
   const read = await sheets.spreadsheets.values.get({
-    spreadsheetId: GOOGLE_SHEET_ID,
+    spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
     range: `${PREMIUM_OFFERS_TAB}!A1:L2`,
   });
   const rows = read.data.values || [];
@@ -83,7 +83,7 @@ async function ensurePremiumOffersSheet(sheets) {
 
   if (!matches) {
     await sheets.spreadsheets.values.update({
-      spreadsheetId: GOOGLE_SHEET_ID,
+      spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
       range: `${PREMIUM_OFFERS_TAB}!A1:L1`,
       valueInputOption: 'RAW',
       requestBody: {
@@ -120,7 +120,7 @@ async function listPremiumOffers({ includeInactive = false } = {}) {
   const sheets = await getSheetsClient();
   await ensurePremiumOffersSheet(sheets);
   const read = await sheets.spreadsheets.values.get({
-    spreadsheetId: GOOGLE_SHEET_ID,
+    spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
     range: `${PREMIUM_OFFERS_TAB}!A:L`,
   });
 
@@ -194,7 +194,7 @@ async function savePremiumOffer(offer) {
 
   if (existingOffer) {
     await sheets.spreadsheets.values.update({
-      spreadsheetId: GOOGLE_SHEET_ID,
+      spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
       range: `${PREMIUM_OFFERS_TAB}!A${existingOffer.rowNumber}:L${existingOffer.rowNumber}`,
       valueInputOption: 'RAW',
       requestBody: { values },
@@ -203,7 +203,7 @@ async function savePremiumOffer(offer) {
   }
 
   await sheets.spreadsheets.values.append({
-    spreadsheetId: GOOGLE_SHEET_ID,
+    spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
     range: `${PREMIUM_OFFERS_TAB}!A:L`,
     valueInputOption: 'RAW',
     insertDataOption: 'INSERT_ROWS',
@@ -221,7 +221,7 @@ async function deletePremiumOffer(id) {
 
   const sheets = await getSheetsClient();
   await ensurePremiumOffersSheet(sheets);
-  const meta = await sheets.spreadsheets.get({ spreadsheetId: GOOGLE_SHEET_ID });
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: PREMIUM_OFFERS_SHEET_ID });
   const targetSheet = (meta.data.sheets || []).find(
     (sheet) => String(sheet.properties && sheet.properties.title) === PREMIUM_OFFERS_TAB
   );
@@ -236,7 +236,7 @@ async function deletePremiumOffer(id) {
   }
 
   await sheets.spreadsheets.batchUpdate({
-    spreadsheetId: GOOGLE_SHEET_ID,
+    spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
     requestBody: {
       requests: [
         {
