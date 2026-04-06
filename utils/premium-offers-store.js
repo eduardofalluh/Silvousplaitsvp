@@ -48,33 +48,62 @@ async function getSheetsClient() {
   return google.sheets({ version: 'v4', auth });
 }
 
+function formatSheetsError(error, stage) {
+  const apiMessage =
+    error &&
+    error.response &&
+    error.response.data &&
+    error.response.data.error &&
+    error.response.data.error.message;
+  const message = apiMessage || (error && error.message) || 'Unknown Google Sheets error';
+  const sheetId = PREMIUM_OFFERS_SHEET_ID || '';
+  const sheetIdHint = sheetId ? `${sheetId.slice(0, 6)}...${sheetId.slice(-6)}` : 'missing';
+  return new Error(
+    `Google Sheets ${stage} failed for sheet ${sheetIdHint} tab ${PREMIUM_OFFERS_TAB}: ${message}`
+  );
+}
+
 async function ensurePremiumOffersSheet(sheets) {
-  const meta = await sheets.spreadsheets.get({ spreadsheetId: PREMIUM_OFFERS_SHEET_ID });
+  let meta;
+  try {
+    meta = await sheets.spreadsheets.get({ spreadsheetId: PREMIUM_OFFERS_SHEET_ID });
+  } catch (error) {
+    throw formatSheetsError(error, 'spreadsheet lookup');
+  }
   const existing = (meta.data.sheets || []).find(
     (sheet) => String(sheet.properties && sheet.properties.title) === PREMIUM_OFFERS_TAB
   );
 
   if (!existing) {
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
-      requestBody: {
-        requests: [
-          {
-            addSheet: {
-              properties: {
-                title: PREMIUM_OFFERS_TAB,
+    try {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
+        requestBody: {
+          requests: [
+            {
+              addSheet: {
+                properties: {
+                  title: PREMIUM_OFFERS_TAB,
+                },
               },
             },
-          },
-        ],
-      },
-    });
+          ],
+        },
+      });
+    } catch (error) {
+      throw formatSheetsError(error, 'tab creation');
+    }
   }
 
-  const read = await sheets.spreadsheets.values.get({
-    spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
-    range: `${PREMIUM_OFFERS_TAB}!A1:L2`,
-  });
+  let read;
+  try {
+    read = await sheets.spreadsheets.values.get({
+      spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
+      range: `${PREMIUM_OFFERS_TAB}!A1:L2`,
+    });
+  } catch (error) {
+    throw formatSheetsError(error, 'header read');
+  }
   const rows = read.data.values || [];
   const headerRow = rows[0] || [];
   const matches =
@@ -82,14 +111,18 @@ async function ensurePremiumOffersSheet(sheets) {
     OFFER_HEADERS.every((header, index) => String(headerRow[index] || '').trim() === header);
 
   if (!matches) {
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
-      range: `${PREMIUM_OFFERS_TAB}!A1:L1`,
-      valueInputOption: 'RAW',
-      requestBody: {
-        values: [OFFER_HEADERS],
-      },
-    });
+    try {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
+        range: `${PREMIUM_OFFERS_TAB}!A1:L1`,
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: [OFFER_HEADERS],
+        },
+      });
+    } catch (error) {
+      throw formatSheetsError(error, 'header write');
+    }
   }
 }
 
@@ -119,10 +152,15 @@ function mapOfferRow(row, rowNumber) {
 async function listPremiumOffers({ includeInactive = false } = {}) {
   const sheets = await getSheetsClient();
   await ensurePremiumOffersSheet(sheets);
-  const read = await sheets.spreadsheets.values.get({
-    spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
-    range: `${PREMIUM_OFFERS_TAB}!A:L`,
-  });
+  let read;
+  try {
+    read = await sheets.spreadsheets.values.get({
+      spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
+      range: `${PREMIUM_OFFERS_TAB}!A:L`,
+    });
+  } catch (error) {
+    throw formatSheetsError(error, 'offers read');
+  }
 
   const rows = read.data.values || [];
   if (rows.length < 2) return [];
