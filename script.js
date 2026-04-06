@@ -163,6 +163,20 @@ function initPageTransitions() {
 initPageTransitions();
 
 document.addEventListener('DOMContentLoaded', () => {
+  // =====================================================
+  // COMING SOON LINKS
+  // =====================================================
+  const comingSoonLinks = document.querySelectorAll('[data-coming-soon-message]');
+
+  comingSoonLinks.forEach((link) => {
+    link.addEventListener('click', (event) => {
+      event.preventDefault();
+      const message =
+        link.getAttribute('data-coming-soon-message') ||
+        'Cette fonctionnalite sera disponible prochainement.';
+      window.alert(message);
+    });
+  });
 
   // =====================================================
   // MOBILE MENU
