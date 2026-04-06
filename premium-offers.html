@@ -137,8 +137,7 @@
       color: #8f1f1f;
     }
     .offers-app[hidden],
-    .offers-auth[hidden],
-    #otp-step[hidden] {
+    .offers-auth[hidden] {
       display: none;
     }
     .offers-filters {
@@ -308,16 +307,11 @@
 
     <section id="auth-panel" class="offers-auth">
       <h2>Acces reserve aux membres premium</h2>
-      <p>Entre ton email premium. On t’envoie un code de connexion par courriel. L’acces est verifie via ActiveCampaign.</p>
+      <p>Entre ton email premium. L’acces est verifie directement via ActiveCampaign avant d’ouvrir les offres.</p>
 
       <form id="email-step" class="offers-form-grid">
         <input type="email" id="premium-email" placeholder="ton@email.com" required />
-        <button class="offers-button" type="submit">Recevoir mon code</button>
-      </form>
-
-      <form id="otp-step" class="offers-form-grid" hidden>
-        <input type="text" id="premium-otp" placeholder="Code a 6 chiffres" inputmode="numeric" maxlength="6" required />
-        <button class="offers-button" type="submit">Ouvrir les offres premium</button>
+        <button class="offers-button" type="submit">Voir les offres premium</button>
       </form>
 
       <div id="auth-message" class="offers-message" aria-live="polite"></div>
@@ -372,9 +366,7 @@
       const authPanel = document.getElementById('auth-panel');
       const offersApp = document.getElementById('offers-app');
       const emailForm = document.getElementById('email-step');
-      const otpForm = document.getElementById('otp-step');
       const emailInput = document.getElementById('premium-email');
-      const otpInput = document.getElementById('premium-otp');
       const authMessage = document.getElementById('auth-message');
       const logoutButton = document.getElementById('logout-button');
       const memberState = document.getElementById('member-state');
@@ -392,8 +384,6 @@
       const closeModal = document.getElementById('close-modal');
       const STORAGE_KEY = 'silvousplaitPremiumOffersSession';
 
-      let otpToken = '';
-      let signedEmail = '';
       let offers = [];
 
       function setMessage(kind, message) {
@@ -438,7 +428,6 @@
         offersApp.hidden = true;
         logoutButton.hidden = true;
         authPanel.hidden = false;
-        otpForm.hidden = true;
       }
 
       function normalizeRegion(value) {
@@ -523,7 +512,6 @@
       emailForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         setMessage('', '');
-        otpForm.hidden = true;
 
         const email = String(emailInput.value || '').trim();
         if (!email) return;
@@ -536,34 +524,7 @@
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-          setMessage('err', data.error || 'Impossible d’envoyer le code.');
-          return;
-        }
-
-        signedEmail = email;
-        otpToken = data.otpToken || '';
-        otpForm.hidden = false;
-        setMessage('ok', 'Code envoye. Verifie ton courriel premium puis entre le code ci-dessous.');
-        otpInput.focus();
-      });
-
-      otpForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        setMessage('', '');
-
-        const response = await fetch('/.netlify/functions/verify-premium-offers-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: signedEmail,
-            otpCode: String(otpInput.value || '').trim(),
-            otpToken,
-          }),
-        });
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          setMessage('err', data.error || 'Code invalide.');
+          setMessage('err', data.error || 'Acces premium impossible.');
           return;
         }
 
