@@ -3046,9 +3046,7 @@ body.modal-open {
   object-fit: cover;
   z-index: 0;
   pointer-events: none;
-  filter: grayscale(1) contrast(1.08);
-  mix-blend-mode: multiply;
-  opacity: 0.34;
+  display: none;
 }
 
 .premium-hero-video::-webkit-media-controls {
@@ -3066,7 +3064,7 @@ body.modal-open {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(223, 243, 95, 0.72);
+  background: #dff35f;
   z-index: 1;
 }
 

@@ -19,6 +19,7 @@ const OFFER_HEADERS = [
   'created_at',
   'updated_at',
 ];
+const PREMIUM_OFFERS_TIME_ZONE = 'America/Toronto';
 
 function normalize(value) {
   return String(value || '').trim();
@@ -27,6 +28,72 @@ function normalize(value) {
 function normalizeBoolean(value, fallback = true) {
   const raw = String(value == null ? fallback : value).trim().toLowerCase();
   return !(raw === 'false' || raw === '0' || raw === 'non' || raw === 'inactive');
+}
+
+function getTimeZoneOffsetMinutes(timeZone, date) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date);
+  const values = parts.reduce((acc, part) => {
+    if (part.type !== 'literal') acc[part.type] = part.value;
+    return acc;
+  }, {});
+  const zonedAsUtc = Date.UTC(
+    Number(values.year),
+    Number(values.month) - 1,
+    Number(values.day),
+    Number(values.hour),
+    Number(values.minute),
+    Number(values.second)
+  );
+  return (zonedAsUtc - date.getTime()) / 60000;
+}
+
+function parseLocalDateTimeInTimeZone(value, timeZone = PREMIUM_OFFERS_TIME_ZONE) {
+  const match = String(value || '')
+    .trim()
+    .match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (!match) return null;
+
+  const [, year, month, day, hour = '00', minute = '00', second = '00'] = match;
+  const utcGuess = new Date(
+    Date.UTC(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hour),
+      Number(minute),
+      Number(second)
+    )
+  );
+  const offsetMinutes = getTimeZoneOffsetMinutes(timeZone, utcGuess);
+  return new Date(utcGuess.getTime() - offsetMinutes * 60000);
+}
+
+function parseEventStartDate(value) {
+  const raw = normalize(value);
+  if (!raw) return null;
+
+  const hasExplicitTimezone =
+    /(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw) ||
+    /GMT|UTC/i.test(raw);
+  const parsed = hasExplicitTimezone ? new Date(raw) : parseLocalDateTimeInTimeZone(raw);
+  if (parsed && !Number.isNaN(parsed.getTime())) return parsed;
+
+  const fallback = new Date(raw);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function isExpiredOffer(offer, now = new Date()) {
+  const eventStart = parseEventStartDate(offer && offer.event_date);
+  return !!eventStart && eventStart.getTime() <= now.getTime();
 }
 
 function getMissingSheetEnvVars() {
@@ -126,6 +193,58 @@ async function ensurePremiumOffersSheet(sheets) {
   }
 }
 
+async function getPremiumOffersSheet(sheets) {
+  let meta;
+  try {
+    meta = await sheets.spreadsheets.get({ spreadsheetId: PREMIUM_OFFERS_SHEET_ID });
+  } catch (error) {
+    throw formatSheetsError(error, 'spreadsheet lookup');
+  }
+  const targetSheet = (meta.data.sheets || []).find(
+    (sheet) => String(sheet.properties && sheet.properties.title) === PREMIUM_OFFERS_TAB
+  );
+  if (!targetSheet) {
+    throw new Error(`Sheet not found: ${PREMIUM_OFFERS_TAB}`);
+  }
+  return targetSheet;
+}
+
+function buildDeleteRowsRequests(sheetId, offers) {
+  return offers
+    .map((offer) => Number(offer.rowNumber))
+    .filter((rowNumber) => Number.isInteger(rowNumber) && rowNumber > 1)
+    .sort((a, b) => b - a)
+    .map((rowNumber) => ({
+      deleteDimension: {
+        range: {
+          sheetId,
+          dimension: 'ROWS',
+          startIndex: rowNumber - 1,
+          endIndex: rowNumber,
+        },
+      },
+    }));
+}
+
+async function deleteOfferRows(sheets, offers) {
+  const targetSheet = await getPremiumOffersSheet(sheets);
+  const requests = buildDeleteRowsRequests(targetSheet.properties.sheetId, offers);
+  if (!requests.length) return 0;
+
+  try {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
+      requestBody: {
+        requests,
+      },
+    });
+  } catch (error) {
+    throw formatSheetsError(error, 'expired row cleanup');
+  }
+
+  return requests.length;
+}
+
 function mapOfferRow(row, rowNumber) {
   const values = OFFER_HEADERS.reduce((acc, header, index) => {
     acc[header] = normalize(row[index]);
@@ -169,11 +288,17 @@ async function listPremiumOffers({ includeInactive = false } = {}) {
   for (let i = 1; i < rows.length; i++) {
     const offer = mapOfferRow(rows[i] || [], i + 1);
     if (!offer.id || !offer.title) continue;
-    if (!includeInactive && !offer.is_active) continue;
     offers.push(offer);
   }
 
-  return offers.sort((a, b) => {
+  const expiredOffers = offers.filter((offer) => isExpiredOffer(offer));
+  if (expiredOffers.length) {
+    await deleteOfferRows(sheets, expiredOffers);
+  }
+
+  const availableOffers = offers.filter((offer) => !isExpiredOffer(offer));
+
+  return availableOffers.filter((offer) => includeInactive || offer.is_active).sort((a, b) => {
     const dateA = a.event_date || '9999-12-31';
     const dateB = b.event_date || '9999-12-31';
     if (dateA !== dateB) return dateA.localeCompare(dateB);
@@ -259,37 +384,13 @@ async function deletePremiumOffer(id) {
 
   const sheets = await getSheetsClient();
   await ensurePremiumOffersSheet(sheets);
-  const meta = await sheets.spreadsheets.get({ spreadsheetId: PREMIUM_OFFERS_SHEET_ID });
-  const targetSheet = (meta.data.sheets || []).find(
-    (sheet) => String(sheet.properties && sheet.properties.title) === PREMIUM_OFFERS_TAB
-  );
-  if (!targetSheet) {
-    throw new Error(`Sheet not found: ${PREMIUM_OFFERS_TAB}`);
-  }
-
   const offers = await listPremiumOffers({ includeInactive: true });
   const existingOffer = offers.find((item) => item.id === normalizedId);
   if (!existingOffer) {
     throw new Error('Offer not found');
   }
 
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
-    requestBody: {
-      requests: [
-        {
-          deleteDimension: {
-            range: {
-              sheetId: targetSheet.properties.sheetId,
-              dimension: 'ROWS',
-              startIndex: existingOffer.rowNumber - 1,
-              endIndex: existingOffer.rowNumber,
-            },
-          },
-        },
-      ],
-    },
-  });
+  await deleteOfferRows(sheets, [existingOffer]);
 
   return { deleted: true, id: normalizedId };
 }
@@ -298,6 +399,9 @@ module.exports = {
   PREMIUM_OFFERS_TAB,
   OFFER_HEADERS,
   normalize,
+  parseEventStartDate,
+  isExpiredOffer,
+  buildDeleteRowsRequests,
   getMissingSheetEnvVars,
   listPremiumOffers,
   savePremiumOffer,

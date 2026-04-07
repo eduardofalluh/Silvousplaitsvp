@@ -435,6 +435,16 @@
         return REGIONS.includes(raw) ? raw : raw;
       }
 
+      function formatEventDate(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toLocaleString('fr-CA', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        });
+      }
+
       function renderOffers() {
         const search = String(searchInput.value || '').trim().toLowerCase();
         const region = regionFilter.value;
@@ -457,7 +467,7 @@
             <div class="offer-card-body">
               <div class="offer-region">${escapeHtml(normalizeRegion(offer.region))}</div>
               <h3>${escapeHtml(offer.title)}</h3>
-              <p class="offer-meta">${escapeHtml([offer.venue, offer.event_date].filter(Boolean).join(' · '))}</p>
+              <p class="offer-meta">${escapeHtml([offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · '))}</p>
               <p class="offer-desc">${escapeHtml(offer.description || '')}</p>
               <button class="offers-button" type="button" data-offer-id="${escapeHtml(offer.id)}">Voir l'offre</button>
             </div>
@@ -472,7 +482,7 @@
             modalImage.alt = offer.title || 'Show premium';
             modalRegion.textContent = normalizeRegion(offer.region);
             modalTitle.textContent = offer.title || '';
-            modalMeta.textContent = [offer.venue, offer.event_date].filter(Boolean).join(' · ');
+            modalMeta.textContent = [offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · ');
             modalDesc.textContent = offer.description || '';
             modalCode.textContent = offer.promo_code || 'Code a venir';
             if (offer.ticket_url) {

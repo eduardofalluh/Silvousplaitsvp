@@ -155,7 +155,7 @@
               <option value="Trois-Rivieres">Trois-Rivieres</option>
             </select>
             <input type="text" id="offer-venue" placeholder="Salle / lieu" />
-            <input type="date" id="offer-date" />
+            <input type="datetime-local" id="offer-date" />
             <input type="url" id="offer-image" placeholder="URL de l'image du show" />
             <textarea id="offer-description" placeholder="Description de l'offre premium"></textarea>
             <input type="text" id="offer-code" placeholder="Code promo" />
@@ -246,6 +246,31 @@
         fieldMap.is_active.value = 'true';
       }
 
+      function toDateTimeLocalValue(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        const offsetMs = date.getTimezoneOffset() * 60000;
+        return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+      }
+
+      function toIsoDateTimeValue(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toISOString();
+      }
+
+      function formatEventDate(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toLocaleString('fr-CA', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        });
+      }
+
       async function authFetch(url, options) {
         const session = getSession();
         const headers = Object.assign({}, options && options.headers, {
@@ -264,7 +289,7 @@
           <article class="offer-admin-item">
             <img src="${offer.image_url || 'assets/premium_image.avif'}" alt="${offer.title || ''}" />
             <strong>${offer.title || ''}</strong>
-            <span>${[offer.region, offer.venue, offer.event_date].filter(Boolean).join(' · ')}</span>
+            <span>${[offer.region, offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · ')}</span>
             <span>${offer.is_active ? 'Active' : 'Inactive'}</span>
             <div class="offer-admin-actions">
               <button type="button" data-edit="${offer.id}" class="button-secondary">Modifier</button>
@@ -278,7 +303,13 @@
             const offer = offers.find((item) => item.id === button.getAttribute('data-edit'));
             if (!offer) return;
             Object.keys(fieldMap).forEach((key) => {
-              fieldMap[key].value = key === 'is_active' ? String(offer[key]) : (offer[key] || '');
+              if (key === 'is_active') {
+                fieldMap[key].value = String(offer[key]);
+                return;
+              }
+              fieldMap[key].value = key === 'event_date'
+                ? toDateTimeLocalValue(offer[key])
+                : (offer[key] || '');
             });
             window.scrollTo({ top: 0, behavior: 'smooth' });
           });
@@ -342,6 +373,7 @@
           acc[key] = fieldMap[key].value;
           return acc;
         }, {});
+        payload.event_date = toIsoDateTimeValue(payload.event_date);
 
         const response = await authFetch('/.netlify/functions/save-premium-offer', {
           method: 'POST',
