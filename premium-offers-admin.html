@@ -151,7 +151,7 @@
 
     <section id="admin-login" class="admin-card">
       <h1>Admin Offres Premium</h1>
-      <p>Entre le mot de passe admin pour gerer les shows, images et codes promos.</p>
+      <p>Entre le mot de passe admin pour gérer les spectacles, les images et les codes promo.</p>
       <form id="admin-login-form">
         <input type="password" id="admin-password" placeholder="Mot de passe admin" required />
         <button type="submit">Ouvrir l'admin</button>
@@ -161,11 +161,11 @@
 
     <section id="admin-app" hidden>
       <div class="admin-card">
-        <h2>Gerer les regions du filtre</h2>
+        <h2>Gérer les régions du filtre</h2>
         <form id="region-form">
-          <input type="text" id="region-label" placeholder="Ajouter une region au filtre" required />
+          <input type="text" id="region-label" placeholder="Ajouter une région au filtre" required />
           <div class="form-actions">
-            <button type="submit">Ajouter la region</button>
+            <button type="submit">Ajouter la région</button>
           </div>
         </form>
         <div id="region-form-message" class="admin-message" aria-live="polite"></div>
@@ -177,20 +177,20 @@
           <h2>Ajouter ou modifier une offre</h2>
           <form id="offer-form">
             <input type="hidden" id="offer-id" />
-            <input type="text" id="offer-title" placeholder="Titre du show" required />
+            <input type="text" id="offer-title" placeholder="Titre du spectacle" required />
             <select id="offer-region" required>
-              <option value="">Choisir une region</option>
-              <option value="Montreal">Montreal</option>
-              <option value="Quebec">Quebec</option>
+              <option value="">Choisir une région</option>
+              <option value="Montreal">Montréal</option>
+              <option value="Quebec">Québec</option>
               <option value="Sherbrooke">Sherbrooke</option>
-              <option value="Trois-Rivieres">Trois-Rivieres</option>
+              <option value="Trois-Rivieres">Trois-Rivières</option>
             </select>
             <input type="text" id="offer-venue" placeholder="Salle / lieu" />
             <input type="datetime-local" id="offer-date" />
-            <input type="url" id="offer-image" placeholder="URL de l'image du show" />
+            <input type="url" id="offer-image" placeholder="URL de l'image du spectacle" />
             <textarea id="offer-description" placeholder="Description de l'offre premium"></textarea>
             <input type="text" id="offer-code" placeholder="Code promo" />
-            <input type="url" id="offer-link" placeholder="Lien vers la billetterie / page du show" />
+            <input type="url" id="offer-link" placeholder="Lien vers la billetterie / page du spectacle" />
             <select id="offer-active">
               <option value="true">Active</option>
               <option value="false">Inactive</option>
@@ -282,6 +282,17 @@
         fieldMap.is_active.value = 'true';
       }
 
+      function formatRegionLabel(value) {
+        const raw = String(value || '').trim();
+        const labels = {
+          Montreal: 'Montréal',
+          Quebec: 'Québec',
+          Sherbrooke: 'Sherbrooke',
+          'Trois-Rivieres': 'Trois-Rivières',
+        };
+        return labels[raw] || raw;
+      }
+
       function syncRegionOptions() {
         const currentValue = fieldMap.region.value;
         const labels = Array.from(
@@ -292,8 +303,8 @@
         ).sort((a, b) => a.localeCompare(b, 'fr-CA', { sensitivity: 'base' }));
 
         fieldMap.region.innerHTML = [
-          '<option value="">Choisir une region</option>',
-          ...labels.map((label) => `<option value="${label}">${label}</option>`),
+          '<option value="">Choisir une région</option>',
+          ...labels.map((label) => `<option value="${label}">${formatRegionLabel(label)}</option>`),
         ].join('');
         fieldMap.region.value = labels.includes(currentValue) ? currentValue : '';
       }
@@ -333,20 +344,20 @@
 
       function renderRegions() {
         if (!regions.length) {
-          regionList.innerHTML = '<p>Aucune region pour le moment.</p>';
+          regionList.innerHTML = '<p>Aucune région pour le moment.</p>';
           return;
         }
 
         regionList.innerHTML = regions.map((region) => `
           <div class="region-row">
-            <strong>${region.label}</strong>
+            <strong>${formatRegionLabel(region.label)}</strong>
             <button type="button" class="button-danger" data-delete-region="${region.id}">Supprimer</button>
           </div>
         `).join('');
 
         regionList.querySelectorAll('[data-delete-region]').forEach((button) => {
           button.addEventListener('click', async () => {
-            if (!window.confirm('Supprimer cette region du filtre ?')) return;
+            if (!window.confirm('Supprimer cette région du filtre ?')) return;
 
             const response = await authFetch('/.netlify/functions/delete-premium-offer-region', {
               method: 'POST',
@@ -358,7 +369,7 @@
               setMessage(regionFormMessage, 'err', data.error || 'Suppression impossible.');
               return;
             }
-            setMessage(regionFormMessage, 'ok', 'Region supprimee.');
+            setMessage(regionFormMessage, 'ok', 'Région supprimée.');
             await loadOffers();
           });
         });
@@ -374,7 +385,7 @@
           <article class="offer-admin-item">
             <img src="${offer.image_url || 'assets/premium_image.avif'}" alt="${offer.title || ''}" />
             <strong>${offer.title || ''}</strong>
-            <span>${[offer.region, offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · ')}</span>
+            <span>${[formatRegionLabel(offer.region), offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · ')}</span>
             <span>${offer.is_active ? 'Active' : 'Inactive'}</span>
             <div class="offer-admin-actions">
               <button type="button" data-edit="${offer.id}" class="button-secondary">Modifier</button>
@@ -414,7 +425,7 @@
               setMessage(formMessage, 'err', data.error || 'Suppression impossible.');
               return;
             }
-            setMessage(formMessage, 'ok', 'Offre supprimee.');
+            setMessage(formMessage, 'ok', 'Offre supprimée.');
             await loadOffers();
             resetForm();
           });
@@ -479,7 +490,7 @@
           return;
         }
 
-        setMessage(formMessage, 'ok', 'Offre enregistree avec succes.');
+        setMessage(formMessage, 'ok', 'Offre enregistrée avec succès.');
         resetForm();
         await loadOffers();
       });
@@ -500,7 +511,7 @@
           return;
         }
 
-        setMessage(regionFormMessage, 'ok', 'Region enregistree avec succes.');
+        setMessage(regionFormMessage, 'ok', 'Région enregistrée avec succès.');
         regionForm.reset();
         await loadOffers();
       });

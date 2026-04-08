@@ -343,12 +343,12 @@
 
     <section class="offers-hero">
       <h1>Offres Premium</h1>
-      <p>Consulte les offres exclusives par region, ouvre la fiche d’un show et retrouve directement le code promo ou le lien de reservation.</p>
+      <p>Consulte les offres exclusives par région, ouvre la fiche d’un spectacle et retrouve directement le code promo ou le lien de réservation.</p>
     </section>
 
     <section id="auth-panel" class="offers-auth">
-      <h2>Acces reserve aux membres premium</h2>
-      <p>Entre ton email premium. L’acces est verifie directement via ActiveCampaign avant d’ouvrir les offres.</p>
+      <h2>Accès réservé aux membres premium</h2>
+      <p>Entre ton email premium. L’accès est vérifié directement via ActiveCampaign avant d’ouvrir les offres.</p>
 
       <form id="email-step" class="offers-form-grid">
         <input type="email" id="premium-email" placeholder="ton@email.com" required />
@@ -363,13 +363,13 @@
       <p id="member-state"></p>
 
       <div class="offers-filters">
-        <input type="search" id="search-input" placeholder="Rechercher un show, lieu ou mot-cle..." />
+        <input type="search" id="search-input" placeholder="Rechercher un spectacle, un lieu ou un mot-clé..." />
         <select id="region-filter">
-          <option value="">Toutes les regions</option>
-          <option value="Montreal">Montreal</option>
-          <option value="Quebec">Quebec</option>
+          <option value="">Toutes les régions</option>
+          <option value="Montreal">Montréal</option>
+          <option value="Quebec">Québec</option>
           <option value="Sherbrooke">Sherbrooke</option>
-          <option value="Trois-Rivieres">Trois-Rivieres</option>
+          <option value="Trois-Rivieres">Trois-Rivières</option>
         </select>
       </div>
 
@@ -394,7 +394,7 @@
           <span id="modal-code"></span>
         </div>
         <div class="offer-modal-actions">
-          <a id="modal-link" class="offers-button" href="#" target="_blank" rel="noopener noreferrer">Voir le site du show</a>
+          <a id="modal-link" class="offers-button" href="#" target="_blank" rel="noopener noreferrer">Voir le site du spectacle</a>
           <button id="close-modal" class="offers-button offers-secondary" type="button">Fermer</button>
         </div>
       </div>
@@ -404,7 +404,7 @@
   <div id="offers-loading" class="offers-loading" hidden>
     <div class="offers-loading-inner">
       <img class="offers-loading-logo" src="assets/logo.webp" alt="Silvousplait" />
-      <p>Verification de ton acces premium...</p>
+      <p>Vérification de ton accès premium...</p>
     </div>
   </div>
 
@@ -488,12 +488,23 @@
         return raw;
       }
 
+      function formatRegionLabel(value) {
+        const raw = normalizeRegion(value);
+        const labels = {
+          Montreal: 'Montréal',
+          Quebec: 'Québec',
+          Sherbrooke: 'Sherbrooke',
+          'Trois-Rivieres': 'Trois-Rivières',
+        };
+        return labels[raw] || raw;
+      }
+
       function syncRegionFilterOptions() {
         const currentValue = regionFilter.value;
         const optionLabels = regions.length ? regions : Array.from(new Set(offers.map((offer) => normalizeRegion(offer.region)).filter(Boolean)));
         regionFilter.innerHTML = [
-          '<option value="">Toutes les regions</option>',
-          ...optionLabels.map((label) => `<option value="${escapeHtml(label)}">${escapeHtml(label)}</option>`),
+          '<option value="">Toutes les régions</option>',
+          ...optionLabels.map((label) => `<option value="${escapeHtml(label)}">${escapeHtml(formatRegionLabel(label))}</option>`),
         ].join('');
         regionFilter.value = optionLabels.includes(currentValue) ? currentValue : '';
       }
@@ -520,7 +531,7 @@
         });
 
         if (!filtered.length) {
-          offersGrid.innerHTML = '<p class="offers-empty">Aucune offre premium ne correspond a ce filtre pour le moment.</p>';
+          offersGrid.innerHTML = '<p class="offers-empty">Aucune offre premium ne correspond à ce filtre pour le moment.</p>';
           return;
         }
 
@@ -528,7 +539,7 @@
           <article class="offer-card">
             <img src="${escapeHtml(offer.image_url || 'assets/premium_image.avif')}" alt="${escapeHtml(offer.title)}" />
             <div class="offer-card-body">
-              <div class="offer-region">${escapeHtml(normalizeRegion(offer.region))}</div>
+              <div class="offer-region">${escapeHtml(formatRegionLabel(offer.region))}</div>
               <h3>${escapeHtml(offer.title)}</h3>
               <p class="offer-meta">${escapeHtml([offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · '))}</p>
               <p class="offer-desc">${escapeHtml(offer.description || '')}</p>
@@ -542,8 +553,8 @@
             const offer = offers.find((item) => item.id === button.getAttribute('data-offer-id'));
             if (!offer) return;
             modalImage.src = offer.image_url || 'assets/premium_image.avif';
-            modalImage.alt = offer.title || 'Show premium';
-            modalRegion.textContent = normalizeRegion(offer.region);
+            modalImage.alt = offer.title || 'Spectacle premium';
+            modalRegion.textContent = formatRegionLabel(offer.region);
             modalTitle.textContent = offer.title || '';
             modalMeta.textContent = [offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · ');
             modalDesc.textContent = offer.description || '';
@@ -603,7 +614,7 @@
           const data = await response.json().catch(() => ({}));
 
           if (!response.ok) {
-            setMessage('err', data.error || 'Acces premium impossible.');
+            setMessage('err', data.error || 'Accès premium impossible.');
             return;
           }
 
