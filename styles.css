@@ -198,17 +198,23 @@ body.intro-complete .page-intro {
   display: flex;
   justify-content: center;
   align-items: center;
+  opacity: 0;
+  -webkit-transform: translateX(44px) translateZ(0);
+  transform: translateX(44px) translateZ(0);
+  -webkit-animation: introImage 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.18s forwards;
+  animation: introImage 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.18s forwards;
 }
 
 .page-intro__image {
   width: min(640px, 100%);
   height: auto;
   display: block;
-  opacity: 0;
-  -webkit-transform: translateX(44px) translateZ(0);
-  transform: translateX(44px) translateZ(0);
-  -webkit-animation: introImage 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.18s forwards;
-  animation: introImage 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.18s forwards;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-transform-origin: center center;
+  transform-origin: center center;
+  -webkit-animation: shakeRotate 3s ease-in-out 0.9s infinite;
+  animation: shakeRotate 3s ease-in-out 0.9s infinite;
 }
 
 .page-intro__title {
@@ -293,6 +299,10 @@ body.intro-complete .page-intro {
     font-size: 40px;
     line-height: 1.05;
     text-align: center;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    hyphens: auto;
   }
 }
 
@@ -3633,6 +3643,10 @@ body.modal-open {
 
   .premium-hero h1 {
     font-size: 46px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    hyphens: auto;
   }
 
   .premium-hero-subtitle {
@@ -3715,6 +3729,9 @@ body.modal-open {
 
   .premium-faq-card h3 {
     font-size: 22px;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    hyphens: auto;
   }
 
   .premium-faq-card p {
@@ -3732,6 +3749,9 @@ body.modal-open {
 
   .premium-final-cta-container h2 {
     font-size: 42px;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    hyphens: auto;
   }
 
   .premium-final-cta-container p {
@@ -3762,6 +3782,10 @@ body.modal-open {
 
   .premium-hero h1 {
     font-size: 36px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    hyphens: auto;
   }
 
   .premium-hero-subtitle {
@@ -3869,6 +3893,9 @@ body.modal-open {
 
   .premium-faq-card h3 {
     font-size: 20px;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    hyphens: auto;
   }
 
   .premium-faq-card p {
@@ -3885,6 +3912,9 @@ body.modal-open {
 
   .premium-final-cta-container h2 {
     font-size: 36px;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    hyphens: auto;
   }
 
   .premium-final-cta-button {
