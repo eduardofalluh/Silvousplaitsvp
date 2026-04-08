@@ -168,9 +168,11 @@
       background: linear-gradient(135deg, #e9edf7, #f4f5ef);
     }
     .offer-card-body {
-      display: grid;
+      display: flex;
+      flex-direction: column;
       gap: 12px;
       padding: 18px;
+      flex: 1;
     }
     .offer-region {
       display: inline-flex;
@@ -197,7 +199,8 @@
       line-height: 1.5;
     }
     .offer-card button {
-      margin-top: 6px;
+      margin-top: auto;
+      width: 100%;
     }
     .offers-empty {
       margin: 0;
@@ -270,6 +273,44 @@
       color: var(--offers-ink);
       text-decoration: none;
       font-size: 14px;
+    }
+    .offers-loading[hidden] {
+      display: none;
+    }
+    .offers-loading {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fffef5;
+    }
+    .offers-loading-inner {
+      display: grid;
+      justify-items: center;
+      gap: 18px;
+      text-align: center;
+      color: var(--offers-ink);
+    }
+    .offers-loading-logo {
+      width: 88px;
+      height: 88px;
+      object-fit: contain;
+      animation: offersSpin 1s linear infinite;
+    }
+    .offers-loading p {
+      margin: 0;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+    @keyframes offersSpin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
     }
     @media (max-width: 700px) {
       .offers-topbar,
@@ -360,9 +401,15 @@
     </div>
   </div>
 
+  <div id="offers-loading" class="offers-loading" hidden>
+    <div class="offers-loading-inner">
+      <img class="offers-loading-logo" src="assets/logo.webp" alt="Silvousplait" />
+      <p>Verification de ton acces premium...</p>
+    </div>
+  </div>
+
   <script>
     (function () {
-      const REGIONS = ['Montreal', 'Quebec', 'Sherbrooke', 'Trois-Rivieres'];
       const authPanel = document.getElementById('auth-panel');
       const offersApp = document.getElementById('offers-app');
       const emailForm = document.getElementById('email-step');
@@ -382,9 +429,11 @@
       const modalCode = document.getElementById('modal-code');
       const modalLink = document.getElementById('modal-link');
       const closeModal = document.getElementById('close-modal');
+      const loadingOverlay = document.getElementById('offers-loading');
       const STORAGE_KEY = 'silvousplaitPremiumOffersSession';
 
       let offers = [];
+      let regions = [];
 
       function setMessage(kind, message) {
         authMessage.className = 'offers-message';
@@ -430,9 +479,23 @@
         authPanel.hidden = false;
       }
 
+      function setLoading(isLoading) {
+        loadingOverlay.hidden = !isLoading;
+      }
+
       function normalizeRegion(value) {
         const raw = String(value || '').trim();
-        return REGIONS.includes(raw) ? raw : raw;
+        return raw;
+      }
+
+      function syncRegionFilterOptions() {
+        const currentValue = regionFilter.value;
+        const optionLabels = regions.length ? regions : Array.from(new Set(offers.map((offer) => normalizeRegion(offer.region)).filter(Boolean)));
+        regionFilter.innerHTML = [
+          '<option value="">Toutes les regions</option>',
+          ...optionLabels.map((label) => `<option value="${escapeHtml(label)}">${escapeHtml(label)}</option>`),
+        ].join('');
+        regionFilter.value = optionLabels.includes(currentValue) ? currentValue : '';
       }
 
       function formatEventDate(value) {
@@ -515,7 +578,11 @@
         }
 
         offers = Array.isArray(data.offers) ? data.offers : [];
+        regions = Array.isArray(data.regions)
+          ? data.regions.map((region) => normalizeRegion(region.label || region)).filter(Boolean)
+          : [];
         openOffers(session);
+        syncRegionFilterOptions();
         renderOffers();
       }
 
@@ -526,23 +593,28 @@
         const email = String(emailInput.value || '').trim();
         if (!email) return;
 
-        const response = await fetch('/.netlify/functions/request-premium-offers-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
-        });
-        const data = await response.json().catch(() => ({}));
+        setLoading(true);
+        try {
+          const response = await fetch('/.netlify/functions/request-premium-offers-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+          const data = await response.json().catch(() => ({}));
 
-        if (!response.ok) {
-          setMessage('err', data.error || 'Acces premium impossible.');
-          return;
+          if (!response.ok) {
+            setMessage('err', data.error || 'Acces premium impossible.');
+            return;
+          }
+
+          setSession({
+            email: data.email,
+            accessToken: data.accessToken,
+          });
+          await loadOffers();
+        } finally {
+          setLoading(false);
         }
-
-        setSession({
-          email: data.email,
-          accessToken: data.accessToken,
-        });
-        await loadOffers();
       });
 
       searchInput.addEventListener('input', renderOffers);
@@ -550,6 +622,7 @@
       logoutButton.addEventListener('click', () => {
         clearSession();
         offers = [];
+        regions = [];
         closeOffers();
         setMessage('', '');
       });
@@ -562,7 +635,15 @@
         }
       });
 
-      loadOffers();
+      (async function init() {
+        const hasSession = !!(getSession() && getSession().accessToken);
+        if (hasSession) setLoading(true);
+        try {
+          await loadOffers();
+        } finally {
+          setLoading(false);
+        }
+      })();
     })();
   </script>
 </body>

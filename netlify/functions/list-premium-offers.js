@@ -3,6 +3,7 @@ const { verifyPremiumOffersSessionToken } = require('../../utils/premium-offers-
 const {
   getMissingSheetEnvVars,
   listPremiumOffers,
+  listPremiumOfferRegions,
 } = require('../../utils/premium-offers-store');
 
 const headers = {
@@ -55,11 +56,14 @@ exports.handler = async (event) => {
   }
 
   try {
-    const offers = await listPremiumOffers({ includeInactive: false });
+    const [offers, regions] = await Promise.all([
+      listPremiumOffers({ includeInactive: false }),
+      listPremiumOfferRegions(),
+    ]);
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ success: true, offers }),
+      body: JSON.stringify({ success: true, offers, regions }),
     };
   } catch (error) {
     return {

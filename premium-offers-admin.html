@@ -113,6 +113,25 @@
       gap: 10px;
       flex-wrap: wrap;
     }
+    .region-manager {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .region-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: #fff;
+      border: 1px solid rgba(18, 24, 42, 0.08);
+    }
+    .region-row strong {
+      font-size: 16px;
+    }
     #admin-app[hidden],
     #admin-login[hidden] {
       display: none;
@@ -141,6 +160,18 @@
     </section>
 
     <section id="admin-app" hidden>
+      <div class="admin-card">
+        <h2>Gerer les regions du filtre</h2>
+        <form id="region-form">
+          <input type="text" id="region-label" placeholder="Ajouter une region au filtre" required />
+          <div class="form-actions">
+            <button type="submit">Ajouter la region</button>
+          </div>
+        </form>
+        <div id="region-form-message" class="admin-message" aria-live="polite"></div>
+        <div id="region-list" class="region-manager"></div>
+      </div>
+
       <div class="admin-grid">
         <div class="admin-card">
           <h2>Ajouter ou modifier une offre</h2>
@@ -190,6 +221,10 @@
       const loginMessage = document.getElementById('admin-login-message');
       const form = document.getElementById('offer-form');
       const formMessage = document.getElementById('admin-form-message');
+      const regionForm = document.getElementById('region-form');
+      const regionLabelInput = document.getElementById('region-label');
+      const regionFormMessage = document.getElementById('region-form-message');
+      const regionList = document.getElementById('region-list');
       const offerList = document.getElementById('offer-list');
       const resetFormButton = document.getElementById('reset-form');
 
@@ -207,6 +242,7 @@
       };
 
       let offers = [];
+      let regions = [];
 
       function getSession() {
         try {
@@ -246,6 +282,22 @@
         fieldMap.is_active.value = 'true';
       }
 
+      function syncRegionOptions() {
+        const currentValue = fieldMap.region.value;
+        const labels = Array.from(
+          new Set([
+            ...regions.map((region) => region.label),
+            ...offers.map((offer) => offer.region),
+          ].filter(Boolean))
+        ).sort((a, b) => a.localeCompare(b, 'fr-CA', { sensitivity: 'base' }));
+
+        fieldMap.region.innerHTML = [
+          '<option value="">Choisir une region</option>',
+          ...labels.map((label) => `<option value="${label}">${label}</option>`),
+        ].join('');
+        fieldMap.region.value = labels.includes(currentValue) ? currentValue : '';
+      }
+
       function toDateTimeLocalValue(value) {
         if (!value) return '';
         const date = new Date(value);
@@ -277,6 +329,39 @@
           Authorization: 'Bearer ' + (session && session.accessToken ? session.accessToken : ''),
         });
         return fetch(url, Object.assign({}, options || {}, { headers }));
+      }
+
+      function renderRegions() {
+        if (!regions.length) {
+          regionList.innerHTML = '<p>Aucune region pour le moment.</p>';
+          return;
+        }
+
+        regionList.innerHTML = regions.map((region) => `
+          <div class="region-row">
+            <strong>${region.label}</strong>
+            <button type="button" class="button-danger" data-delete-region="${region.id}">Supprimer</button>
+          </div>
+        `).join('');
+
+        regionList.querySelectorAll('[data-delete-region]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            if (!window.confirm('Supprimer cette region du filtre ?')) return;
+
+            const response = await authFetch('/.netlify/functions/delete-premium-offer-region', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: button.getAttribute('data-delete-region') }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              setMessage(regionFormMessage, 'err', data.error || 'Suppression impossible.');
+              return;
+            }
+            setMessage(regionFormMessage, 'ok', 'Region supprimee.');
+            await loadOffers();
+          });
+        });
       }
 
       function renderOffers() {
@@ -346,6 +431,14 @@
           return;
         }
         offers = Array.isArray(data.offers) ? data.offers : [];
+        regions = Array.isArray(data.regions)
+          ? data.regions.map((region) => ({
+              id: region.id || '',
+              label: region.label || String(region),
+            })).filter((region) => region.label)
+          : [];
+        syncRegionOptions();
+        renderRegions();
         renderOffers();
       }
 
@@ -388,6 +481,27 @@
 
         setMessage(formMessage, 'ok', 'Offre enregistree avec succes.');
         resetForm();
+        await loadOffers();
+      });
+
+      regionForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const label = String(regionLabelInput.value || '').trim();
+        if (!label) return;
+
+        const response = await authFetch('/.netlify/functions/save-premium-offer-region', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ label }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setMessage(regionFormMessage, 'err', data.error || 'Enregistrement impossible.');
+          return;
+        }
+
+        setMessage(regionFormMessage, 'ok', 'Region enregistree avec succes.');
+        regionForm.reset();
         await loadOffers();
       });
 

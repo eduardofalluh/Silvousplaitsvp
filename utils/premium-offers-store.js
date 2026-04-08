@@ -4,6 +4,7 @@ const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 const GOOGLE_PRIVATE_KEY = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
 const PREMIUM_OFFERS_SHEET_ID = process.env.PREMIUM_OFFERS_SHEET_ID || process.env.GOOGLE_SHEET_ID;
 const PREMIUM_OFFERS_TAB = process.env.PREMIUM_OFFERS_TAB || 'premium_offers';
+const PREMIUM_OFFERS_REGIONS_TAB = process.env.PREMIUM_OFFERS_REGIONS_TAB || 'premium_regions';
 
 const OFFER_HEADERS = [
   'id',
@@ -19,7 +20,9 @@ const OFFER_HEADERS = [
   'created_at',
   'updated_at',
 ];
+const REGION_HEADERS = ['id', 'label', 'created_at', 'updated_at'];
 const PREMIUM_OFFERS_TIME_ZONE = 'America/Toronto';
+const DEFAULT_REGIONS = ['Montreal', 'Quebec', 'Sherbrooke', 'Trois-Rivieres'];
 
 function normalize(value) {
   return String(value || '').trim();
@@ -28,6 +31,15 @@ function normalize(value) {
 function normalizeBoolean(value, fallback = true) {
   const raw = String(value == null ? fallback : value).trim().toLowerCase();
   return !(raw === 'false' || raw === '0' || raw === 'non' || raw === 'inactive');
+}
+
+function slugifyRegionLabel(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
 }
 
 function getTimeZoneOffsetMinutes(timeZone, date) {
@@ -130,6 +142,46 @@ function formatSheetsError(error, stage) {
   );
 }
 
+async function safeReadRange(sheets, range, stage) {
+  try {
+    return await sheets.spreadsheets.values.get({
+      spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
+      range,
+    });
+  } catch (error) {
+    throw formatSheetsError(error, stage);
+  }
+}
+
+async function safeWriteRange(sheets, range, values, stage) {
+  try {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
+      range,
+      valueInputOption: 'RAW',
+      requestBody: {
+        values,
+      },
+    });
+  } catch (error) {
+    throw formatSheetsError(error, stage);
+  }
+}
+
+async function safeAppendRows(sheets, range, values, stage) {
+  try {
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
+      range,
+      valueInputOption: 'RAW',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values },
+    });
+  } catch (error) {
+    throw formatSheetsError(error, stage);
+  }
+}
+
 async function ensurePremiumOffersSheet(sheets) {
   let meta;
   try {
@@ -162,15 +214,7 @@ async function ensurePremiumOffersSheet(sheets) {
     }
   }
 
-  let read;
-  try {
-    read = await sheets.spreadsheets.values.get({
-      spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
-      range: `${PREMIUM_OFFERS_TAB}!A1:L2`,
-    });
-  } catch (error) {
-    throw formatSheetsError(error, 'header read');
-  }
+  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:L2`, 'header read');
   const rows = read.data.values || [];
   const headerRow = rows[0] || [];
   const matches =
@@ -178,35 +222,79 @@ async function ensurePremiumOffersSheet(sheets) {
     OFFER_HEADERS.every((header, index) => String(headerRow[index] || '').trim() === header);
 
   if (!matches) {
-    try {
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
-        range: `${PREMIUM_OFFERS_TAB}!A1:L1`,
-        valueInputOption: 'RAW',
-        requestBody: {
-          values: [OFFER_HEADERS],
-        },
-      });
-    } catch (error) {
-      throw formatSheetsError(error, 'header write');
-    }
+    await safeWriteRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:L1`, [OFFER_HEADERS], 'header write');
   }
 }
 
+async function ensureRegionsSheet(sheets) {
+  const targetSheet = await getOrCreateSheet(sheets, PREMIUM_OFFERS_REGIONS_TAB);
+  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_REGIONS_TAB}!A1:D200`, 'regions read');
+  const rows = read.data.values || [];
+  const headerRow = rows[0] || [];
+  const hasExpectedHeaders =
+    headerRow.length >= REGION_HEADERS.length &&
+    REGION_HEADERS.every((header, index) => String(headerRow[index] || '').trim() === header);
+
+  if (!hasExpectedHeaders) {
+    await safeWriteRange(
+      sheets,
+      `${PREMIUM_OFFERS_REGIONS_TAB}!A1:D1`,
+      [REGION_HEADERS],
+      'regions header write'
+    );
+  }
+
+  const existingLabels = new Set(
+    rows
+      .slice(1)
+      .map((row) => normalize(row[1]))
+      .filter(Boolean)
+  );
+  const missingDefaults = DEFAULT_REGIONS.filter((label) => !existingLabels.has(normalize(label)));
+  if (missingDefaults.length) {
+    const timestamp = new Date().toISOString();
+    await safeAppendRows(
+      sheets,
+      `${PREMIUM_OFFERS_REGIONS_TAB}!A:D`,
+      missingDefaults.map((label) => [slugifyRegionLabel(label), label, timestamp, timestamp]),
+      'regions seed write'
+    );
+  }
+
+  return targetSheet;
+}
+
 async function getPremiumOffersSheet(sheets) {
+  return getOrCreateSheet(sheets, PREMIUM_OFFERS_TAB, false);
+}
+
+async function getOrCreateSheet(sheets, title, allowCreate = true) {
   let meta;
   try {
     meta = await sheets.spreadsheets.get({ spreadsheetId: PREMIUM_OFFERS_SHEET_ID });
   } catch (error) {
     throw formatSheetsError(error, 'spreadsheet lookup');
   }
-  const targetSheet = (meta.data.sheets || []).find(
-    (sheet) => String(sheet.properties && sheet.properties.title) === PREMIUM_OFFERS_TAB
+  const existing = (meta.data.sheets || []).find(
+    (sheet) => String(sheet.properties && sheet.properties.title) === title
   );
-  if (!targetSheet) {
-    throw new Error(`Sheet not found: ${PREMIUM_OFFERS_TAB}`);
+  if (existing || !allowCreate) {
+    if (!existing) throw new Error(`Sheet not found: ${title}`);
+    return existing;
   }
-  return targetSheet;
+
+  try {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
+      requestBody: {
+        requests: [{ addSheet: { properties: { title } } }],
+      },
+    });
+  } catch (error) {
+    throw formatSheetsError(error, `${title} tab creation`);
+  }
+
+  return getOrCreateSheet(sheets, title, false);
 }
 
 function buildDeleteRowsRequests(sheetId, offers) {
@@ -226,8 +314,8 @@ function buildDeleteRowsRequests(sheetId, offers) {
     }));
 }
 
-async function deleteOfferRows(sheets, offers) {
-  const targetSheet = await getPremiumOffersSheet(sheets);
+async function deleteOfferRows(sheets, offers, tabName = PREMIUM_OFFERS_TAB) {
+  const targetSheet = await getOrCreateSheet(sheets, tabName, false);
   const requests = buildDeleteRowsRequests(targetSheet.properties.sheetId, offers);
   if (!requests.length) return 0;
 
@@ -271,15 +359,8 @@ function mapOfferRow(row, rowNumber) {
 async function listPremiumOffers({ includeInactive = false } = {}) {
   const sheets = await getSheetsClient();
   await ensurePremiumOffersSheet(sheets);
-  let read;
-  try {
-    read = await sheets.spreadsheets.values.get({
-      spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
-      range: `${PREMIUM_OFFERS_TAB}!A:L`,
-    });
-  } catch (error) {
-    throw formatSheetsError(error, 'offers read');
-  }
+  await ensureRegionsSheet(sheets);
+  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_TAB}!A:L`, 'offers read');
 
   const rows = read.data.values || [];
   if (rows.length < 2) return [];
@@ -351,27 +432,22 @@ function createOfferRow(offer, existingOffer) {
 async function savePremiumOffer(offer) {
   const sheets = await getSheetsClient();
   await ensurePremiumOffersSheet(sheets);
+  await ensureRegionsSheet(sheets);
   const offers = await listPremiumOffers({ includeInactive: true });
   const existingOffer = offers.find((item) => item.id === normalize(offer.id));
   const values = [createOfferRow(offer, existingOffer)];
 
   if (existingOffer) {
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
-      range: `${PREMIUM_OFFERS_TAB}!A${existingOffer.rowNumber}:L${existingOffer.rowNumber}`,
-      valueInputOption: 'RAW',
-      requestBody: { values },
-    });
+    await safeWriteRange(
+      sheets,
+      `${PREMIUM_OFFERS_TAB}!A${existingOffer.rowNumber}:L${existingOffer.rowNumber}`,
+      values,
+      'offer update'
+    );
     return { id: existingOffer.id, updated: true };
   }
 
-  await sheets.spreadsheets.values.append({
-    spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
-    range: `${PREMIUM_OFFERS_TAB}!A:L`,
-    valueInputOption: 'RAW',
-    insertDataOption: 'INSERT_ROWS',
-    requestBody: { values },
-  });
+  await safeAppendRows(sheets, `${PREMIUM_OFFERS_TAB}!A:L`, values, 'offer append');
 
   return { id: values[0][0], created: true };
 }
@@ -384,6 +460,7 @@ async function deletePremiumOffer(id) {
 
   const sheets = await getSheetsClient();
   await ensurePremiumOffersSheet(sheets);
+  await ensureRegionsSheet(sheets);
   const offers = await listPremiumOffers({ includeInactive: true });
   const existingOffer = offers.find((item) => item.id === normalizedId);
   if (!existingOffer) {
@@ -395,15 +472,115 @@ async function deletePremiumOffer(id) {
   return { deleted: true, id: normalizedId };
 }
 
+function mapRegionRow(row, rowNumber) {
+  const id = normalize(row[0]) || `region_${rowNumber}`;
+  const label = normalize(row[1]);
+  return {
+    rowNumber,
+    id,
+    label,
+    created_at: normalize(row[2]),
+    updated_at: normalize(row[3]),
+  };
+}
+
+async function listPremiumOfferRegions() {
+  const sheets = await getSheetsClient();
+  await ensureRegionsSheet(sheets);
+  const read = await safeReadRange(
+    sheets,
+    `${PREMIUM_OFFERS_REGIONS_TAB}!A:D`,
+    'regions list read'
+  );
+  const rows = read.data.values || [];
+  if (rows.length < 2) return DEFAULT_REGIONS.map((label, index) => ({
+    rowNumber: index + 2,
+    id: slugifyRegionLabel(label),
+    label,
+  }));
+
+  return rows
+    .slice(1)
+    .map((row, index) => mapRegionRow(row, index + 2))
+    .filter((region) => region.label)
+    .sort((a, b) => a.label.localeCompare(b.label, 'fr-CA', { sensitivity: 'base' }));
+}
+
+async function savePremiumOfferRegion(region) {
+  const label = normalize(region && region.label);
+  if (!label) {
+    throw new Error('Le nom de la region est requis');
+  }
+
+  const sheets = await getSheetsClient();
+  await ensureRegionsSheet(sheets);
+  const regions = await listPremiumOfferRegions();
+  const existingRegion = regions.find(
+    (item) => normalize(item.label).toLowerCase() === label.toLowerCase()
+  );
+  if (existingRegion) {
+    return { id: existingRegion.id, updated: false };
+  }
+
+  const timestamp = new Date().toISOString();
+  const values = [[slugifyRegionLabel(label), label, timestamp, timestamp]];
+  await safeAppendRows(
+    sheets,
+    `${PREMIUM_OFFERS_REGIONS_TAB}!A:D`,
+    values,
+    'region append'
+  );
+  return { id: values[0][0], created: true };
+}
+
+async function deletePremiumOfferRegion(id) {
+  const normalizedId = normalize(id);
+  if (!normalizedId) {
+    throw new Error('Region id is required');
+  }
+
+  const sheets = await getSheetsClient();
+  await ensureRegionsSheet(sheets);
+  const [regions, offers] = await Promise.all([
+    listPremiumOfferRegions(),
+    listPremiumOffers({ includeInactive: true }),
+  ]);
+  const existingRegion = regions.find((region) => region.id === normalizedId);
+  if (!existingRegion) {
+    throw new Error('Region not found');
+  }
+
+  const usedByOffer = offers.some(
+    (offer) => normalize(offer.region).toLowerCase() === normalize(existingRegion.label).toLowerCase()
+  );
+  if (usedByOffer) {
+    throw new Error('Impossible de supprimer une region utilisee par une offre');
+  }
+
+  await deleteOfferRows(
+    sheets,
+    [{ rowNumber: existingRegion.rowNumber }],
+    PREMIUM_OFFERS_REGIONS_TAB
+  );
+
+  return { deleted: true, id: normalizedId };
+}
+
 module.exports = {
   PREMIUM_OFFERS_TAB,
+  PREMIUM_OFFERS_REGIONS_TAB,
   OFFER_HEADERS,
+  REGION_HEADERS,
+  DEFAULT_REGIONS,
   normalize,
   parseEventStartDate,
   isExpiredOffer,
   buildDeleteRowsRequests,
   getMissingSheetEnvVars,
   listPremiumOffers,
+  listPremiumOfferRegions,
   savePremiumOffer,
+  savePremiumOfferRegion,
   deletePremiumOffer,
+  deletePremiumOfferRegion,
 };
