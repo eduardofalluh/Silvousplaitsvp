@@ -181,16 +181,14 @@ body.intro-complete .page-intro {
 
 /* Same layout as .hero so title and image sit in exact final positions */
 .page-intro__inner {
-  display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 35px;
+  display: flex;
+  justify-content: center;
   align-items: center;
   max-width: 90%;
   width: 100%;
   margin: 0 auto;
   padding: 40px 48px 125px 48px;
   box-sizing: border-box;
-  justify-items: stretch;
 }
 
 .page-intro__title {
@@ -201,7 +199,7 @@ body.intro-complete .page-intro {
   margin: 0;
   color: var(--blue);
   letter-spacing: -0.02em;
-  padding-right: 20px;
+  text-align: center;
   opacity: 0;
   -webkit-transform: translateY(44px) translateZ(0);
   transform: translateY(44px) translateZ(0);
@@ -213,28 +211,6 @@ body.intro-complete .page-intro {
   color: #3247C9;
   font-weight: 900;
   font-size: 1.2em;
-}
-
-.page-intro__visual {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.page-intro__visual img {
-  width: 100%;
-  max-width: 500px;
-  height: auto;
-  object-fit: contain;
-  -webkit-transform-origin: center center;
-  transform-origin: center center;
-  opacity: 0;
-  -webkit-transform: translateX(-52px) translateZ(0);
-  transform: translateX(-52px) translateZ(0);
-  -webkit-animation: introImage 0.6s cubic-bezier(0.34, 1.2, 0.64, 1) 0.7s forwards, shakeRotate 3s ease-in-out infinite 1.35s;
-  animation: introImage 0.6s cubic-bezier(0.34, 1.2, 0.64, 1) 0.7s forwards, shakeRotate 3s ease-in-out infinite 1.35s;
 }
 
 @-webkit-keyframes introTitle {
@@ -267,52 +243,21 @@ body.intro-complete .page-intro {
   }
 }
 
-/* Intro layout matches hero at tablet */
 @media (max-width: 968px) {
   .page-intro__inner {
-    grid-template-columns: 1fr;
     padding: 32px 32px 80px 32px;
-    gap: 60px;
     text-align: center;
-  }
-  .page-intro__title {
-    padding-right: 0;
   }
 }
 
-/* Intro layout matches hero at mobile: trompette in background, text over it (same as hero at 768px) */
 @media (max-width: 768px) {
   .page-intro__inner {
-    padding: 24px 20px 16px 20px;
-    gap: 0;
-    min-height: 500px;
-    position: relative;
-    text-align: center;
+    padding: 24px 20px 64px 20px;
+    min-height: auto;
   }
   .page-intro__title {
     font-size: 40px;
     line-height: 1.05;
-    padding-top: 40px;
-    position: relative;
-    z-index: 2;
-    text-shadow: 0 2px 8px rgba(255, 255, 255, 0.8);
-  }
-  .page-intro__visual {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1;
-  }
-  .page-intro__visual img {
-    max-width: 100%;
-    height: auto;
-    opacity: 0.3;
   }
 }
 
