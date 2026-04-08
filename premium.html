@@ -94,7 +94,7 @@
   </nav>
 </header>
 
-<section class="premium-hero">
+<section class="premium-hero" id="premium-top">
   <div class="premium-hero-content">
     <h1 class="scroll-reveal" data-reveal="fade-up">Silvousplait Premium</h1>
     <p class="premium-hero-subtitle scroll-reveal" data-reveal="fade-in" data-reveal-delay="1">Accédez à la culture autrement !</p>
@@ -103,7 +103,7 @@
       Déjà membre ? <a href="premium-offers.html" data-coming-soon-message="Les offres premium arrivent très bientôt. Cette fonctionnalité est en cours de finalisation." style="color:#3347CA;text-decoration:underline;font-weight:700;">Voir les offres premium</a>
     </p>
 
-    <div class="premium-pricing-grid">
+    <div class="premium-pricing-grid" id="premium-plans">
       <div class="premium-pricing-card scroll-reveal" data-reveal="fade-up" data-reveal-delay="3">
         <p class="pricing-label">Prix</p>
         <div class="pricing-amount">
@@ -217,29 +217,39 @@
 </section>
 
 <section class="premium-cta-band">
-  <button
+  <a
     class="premium-bottom-button"
-    type="button"
-    data-stripe-plan="monthly"
-    data-stripe-fallback-url="https://buy.stripe.com/bJe9AV0HJ1jJehY3zyb7y04"
-  >Accéder aux offres Premium</button>
+    href="premium-offers.html"
+    data-coming-soon-message="Les offres premium arrivent très bientôt. Cette fonctionnalité est en cours de finalisation."
+  >Accéder aux offres premium</a>
 </section>
 
-<section class="premium-trial-section">
-  <div class="premium-trial-container">
-    <h2>Toujours pas convaincu ?</h2>
-    <p>Essayer Silvousplait Premium gratuitement !</p>
-    <div class="premium-trial-action">
-      <span class="trial-arrow" aria-hidden="true">↳</span>
-      <button
-        class="premium-trial-button"
-        type="button"
-        data-stripe-plan="trial"
-        data-stripe-fallback-url="https://buy.stripe.com/aFafZj3TV7I7c9Q4DCb7y01"
-      >
-        Essayer gratuitement
-      </button>
+<section class="premium-faq-section">
+  <div class="premium-faq-container">
+    <p class="premium-faq-kicker">FAQ Premium</p>
+    <h2>Les réponses aux questions les plus fréquentes</h2>
+    <div class="premium-faq-grid">
+      <article class="premium-faq-card">
+        <h3>À quelle fréquence vais-je recevoir les offres premium ?</h3>
+        <p>Toutes les semaines.</p>
+      </article>
+      <article class="premium-faq-card">
+        <h3>Quel est le prix de Silvousplait Premium ?</h3>
+        <p>Silvousplait Premium est offert à 5 $ par mois, facturé annuellement, ou à 8 $ par mois selon l&apos;option choisie.</p>
+      </article>
+      <article class="premium-faq-card">
+        <h3>Comment trouver les offres premium ?</h3>
+        <p>Par courriel, sur le site web et par texto.</p>
+      </article>
     </div>
+  </div>
+</section>
+
+<section class="premium-final-cta-section">
+  <div class="premium-final-cta-container">
+    <h2>Passe à l&apos;action</h2>
+    <p>Choisis l&apos;offre premium qui te convient et remonte vers les abonnements en un clic.</p>
+    <a class="premium-final-cta-button" href="#premium-plans">Passer premium</a>
   </div>
 </section>
 
