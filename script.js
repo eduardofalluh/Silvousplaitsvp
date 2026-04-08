@@ -249,10 +249,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentIndex = 0;
     let autoAdvanceInterval = null;
     let resumeTimeout = null;
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchCurrentX = 0;
-    let touchCurrentY = 0;
+    let gestureStartX = 0;
+    let gestureStartY = 0;
+    let gestureCurrentX = 0;
+    let gestureCurrentY = 0;
+    let gestureActive = false;
 
     dotsContainer.innerHTML = '';
     const dots = slides.map((_, index) => {
@@ -384,42 +385,81 @@ document.addEventListener('DOMContentLoaded', () => {
 
     viewport.addEventListener('mouseenter', stopAutoAdvanceTemporarily);
     viewport.addEventListener('focusin', stopAutoAdvanceTemporarily);
-    viewport.addEventListener('touchstart', function (event) {
-      const touch = event.changedTouches[0];
-      touchStartX = touch.clientX;
-      touchStartY = touch.clientY;
-      touchCurrentX = touch.clientX;
-      touchCurrentY = touch.clientY;
+
+    function beginGesture(x, y) {
+      gestureStartX = x;
+      gestureStartY = y;
+      gestureCurrentX = x;
+      gestureCurrentY = y;
+      gestureActive = true;
       stopAutoAdvanceTemporarily();
-    }, { passive: true });
+    }
 
-    viewport.addEventListener('touchmove', function (event) {
-      const touch = event.changedTouches[0];
-      touchCurrentX = touch.clientX;
-      touchCurrentY = touch.clientY;
-    }, { passive: true });
+    function updateGesture(x, y) {
+      if (!gestureActive) return;
+      gestureCurrentX = x;
+      gestureCurrentY = y;
+    }
 
-    viewport.addEventListener('touchend', function (event) {
-      const touch = event.changedTouches[0];
-      const endX = touchCurrentX || touch.clientX;
-      const endY = touchCurrentY || touch.clientY;
-      const deltaX = endX - touchStartX;
-      const deltaY = endY - touchStartY;
+    function endGesture(x, y) {
+      if (!gestureActive) return;
 
-      if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      gestureCurrentX = typeof x === 'number' ? x : gestureCurrentX;
+      gestureCurrentY = typeof y === 'number' ? y : gestureCurrentY;
+
+      const deltaX = gestureCurrentX - gestureStartX;
+      const deltaY = gestureCurrentY - gestureStartY;
+
+      if (Math.abs(deltaX) >= 35 && Math.abs(deltaX) > Math.abs(deltaY)) {
         if (deltaX < 0) {
           nextSlide(true);
         } else {
           previousSlide(true);
         }
       }
+
+      gestureActive = false;
+    }
+
+    viewport.addEventListener('pointerdown', function (event) {
+      if (!isMobileView()) return;
+      beginGesture(event.clientX, event.clientY);
+    });
+
+    viewport.addEventListener('pointermove', function (event) {
+      if (!isMobileView()) return;
+      updateGesture(event.clientX, event.clientY);
+    });
+
+    viewport.addEventListener('pointerup', function (event) {
+      if (!isMobileView()) return;
+      endGesture(event.clientX, event.clientY);
+    });
+
+    viewport.addEventListener('pointercancel', function () {
+      gestureActive = false;
+    });
+
+    viewport.addEventListener('touchstart', function (event) {
+      if (!isMobileView()) return;
+      const touch = event.changedTouches[0];
+      beginGesture(touch.clientX, touch.clientY);
+    }, { passive: true });
+
+    viewport.addEventListener('touchmove', function (event) {
+      if (!isMobileView()) return;
+      const touch = event.changedTouches[0];
+      updateGesture(touch.clientX, touch.clientY);
+    }, { passive: true });
+
+    viewport.addEventListener('touchend', function (event) {
+      if (!isMobileView()) return;
+      const touch = event.changedTouches[0];
+      endGesture(touch.clientX, touch.clientY);
     }, { passive: true });
 
     viewport.addEventListener('touchcancel', function () {
-      touchStartX = 0;
-      touchStartY = 0;
-      touchCurrentX = 0;
-      touchCurrentY = 0;
+      gestureActive = false;
     }, { passive: true });
 
     window.addEventListener('resize', function () {
