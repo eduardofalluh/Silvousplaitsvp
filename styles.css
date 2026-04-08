@@ -3092,6 +3092,13 @@ body.modal-open {
   color: var(--blue);
 }
 
+.premium-hero-text a,
+.premium-hero-text a:visited,
+.premium-hero-text a:hover,
+.premium-hero-text a:active {
+  color: var(--blue);
+}
+
 .premium-pricing-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(280px, 340px));
