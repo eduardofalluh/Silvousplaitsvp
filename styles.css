@@ -2612,8 +2612,13 @@ body.modal-open {
   }
 
   .testimonial-slide {
+    display: none;
     width: 100%;
     left: 50%;
+  }
+
+  .testimonial-slide.is-active {
+    display: block;
   }
 
   .testimonial-slide blockquote {
