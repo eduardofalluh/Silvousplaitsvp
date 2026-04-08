@@ -28,6 +28,13 @@ function normalize(value) {
   return String(value || '').trim();
 }
 
+function normalizeForCompare(value) {
+  return normalize(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
 function normalizeBoolean(value, fallback = true) {
   const raw = String(value == null ? fallback : value).trim().toLowerCase();
   return !(raw === 'false' || raw === '0' || raw === 'non' || raw === 'inactive');
@@ -40,6 +47,39 @@ function slugifyRegionLabel(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
+}
+
+function canonicalizeRegionLabel(value) {
+  const raw = normalize(value);
+  if (!raw) return '';
+
+  const key = slugifyRegionLabel(raw);
+  const knownLabels = {
+    montreal: 'Montreal',
+    quebec: 'Quebec',
+    sherbrooke: 'Sherbrooke',
+    trois_rivieres: 'Trois-Rivieres',
+  };
+  return knownLabels[key] || raw;
+}
+
+function dedupeRegionsForCleanup(regions) {
+  const seen = new Set();
+  const kept = [];
+  const duplicates = [];
+
+  for (const region of regions) {
+    const key = normalizeForCompare(region && region.label);
+    if (!key) continue;
+    if (seen.has(key)) {
+      duplicates.push(region);
+      continue;
+    }
+    seen.add(key);
+    kept.push(region);
+  }
+
+  return { kept, duplicates };
 }
 
 function getTimeZoneOffsetMinutes(timeZone, date) {
@@ -247,10 +287,12 @@ async function ensureRegionsSheet(sheets) {
   const existingLabels = new Set(
     rows
       .slice(1)
-      .map((row) => normalize(row[1]))
+      .map((row) => normalizeForCompare(canonicalizeRegionLabel(row[1])))
       .filter(Boolean)
   );
-  const missingDefaults = DEFAULT_REGIONS.filter((label) => !existingLabels.has(normalize(label)));
+  const missingDefaults = DEFAULT_REGIONS.filter(
+    (label) => !existingLabels.has(normalizeForCompare(label))
+  );
   if (missingDefaults.length) {
     const timestamp = new Date().toISOString();
     await safeAppendRows(
@@ -343,7 +385,7 @@ function mapOfferRow(row, rowNumber) {
     rowNumber,
     id: values.id,
     title: values.title,
-    region: values.region,
+    region: canonicalizeRegionLabel(values.region),
     venue: values.venue,
     event_date: values.event_date,
     image_url: values.image_url,
@@ -359,7 +401,6 @@ function mapOfferRow(row, rowNumber) {
 async function listPremiumOffers({ includeInactive = false } = {}) {
   const sheets = await getSheetsClient();
   await ensurePremiumOffersSheet(sheets);
-  await ensureRegionsSheet(sheets);
   const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_TAB}!A:L`, 'offers read');
 
   const rows = read.data.values || [];
@@ -399,7 +440,7 @@ function createOfferRow(offer, existingOffer) {
       case 'title':
         return normalize(offer.title || current.title);
       case 'region':
-        return normalize(offer.region || current.region);
+        return canonicalizeRegionLabel(offer.region || current.region);
       case 'venue':
         return normalize(offer.venue || current.venue);
       case 'event_date':
@@ -432,7 +473,6 @@ function createOfferRow(offer, existingOffer) {
 async function savePremiumOffer(offer) {
   const sheets = await getSheetsClient();
   await ensurePremiumOffersSheet(sheets);
-  await ensureRegionsSheet(sheets);
   const offers = await listPremiumOffers({ includeInactive: true });
   const existingOffer = offers.find((item) => item.id === normalize(offer.id));
   const values = [createOfferRow(offer, existingOffer)];
@@ -460,7 +500,6 @@ async function deletePremiumOffer(id) {
 
   const sheets = await getSheetsClient();
   await ensurePremiumOffersSheet(sheets);
-  await ensureRegionsSheet(sheets);
   const offers = await listPremiumOffers({ includeInactive: true });
   const existingOffer = offers.find((item) => item.id === normalizedId);
   if (!existingOffer) {
@@ -474,7 +513,7 @@ async function deletePremiumOffer(id) {
 
 function mapRegionRow(row, rowNumber) {
   const id = normalize(row[0]) || `region_${rowNumber}`;
-  const label = normalize(row[1]);
+  const label = canonicalizeRegionLabel(row[1]);
   return {
     rowNumber,
     id,
@@ -499,15 +538,22 @@ async function listPremiumOfferRegions() {
     label,
   }));
 
-  return rows
+  const regions = rows
     .slice(1)
     .map((row, index) => mapRegionRow(row, index + 2))
     .filter((region) => region.label)
     .sort((a, b) => a.label.localeCompare(b.label, 'fr-CA', { sensitivity: 'base' }));
+
+  const { kept, duplicates } = dedupeRegionsForCleanup(regions);
+  if (duplicates.length) {
+    await deleteOfferRows(sheets, duplicates, PREMIUM_OFFERS_REGIONS_TAB);
+  }
+
+  return kept;
 }
 
 async function savePremiumOfferRegion(region) {
-  const label = normalize(region && region.label);
+  const label = canonicalizeRegionLabel(region && region.label);
   if (!label) {
     throw new Error('Le nom de la region est requis');
   }
@@ -516,7 +562,7 @@ async function savePremiumOfferRegion(region) {
   await ensureRegionsSheet(sheets);
   const regions = await listPremiumOfferRegions();
   const existingRegion = regions.find(
-    (item) => normalize(item.label).toLowerCase() === label.toLowerCase()
+    (item) => normalizeForCompare(item.label) === normalizeForCompare(label)
   );
   if (existingRegion) {
     return { id: existingRegion.id, updated: false };
@@ -551,7 +597,7 @@ async function deletePremiumOfferRegion(id) {
   }
 
   const usedByOffer = offers.some(
-    (offer) => normalize(offer.region).toLowerCase() === normalize(existingRegion.label).toLowerCase()
+    (offer) => normalizeForCompare(offer.region) === normalizeForCompare(existingRegion.label)
   );
   if (usedByOffer) {
     throw new Error('Impossible de supprimer une region utilisee par une offre');
@@ -573,6 +619,9 @@ module.exports = {
   REGION_HEADERS,
   DEFAULT_REGIONS,
   normalize,
+  normalizeForCompare,
+  canonicalizeRegionLabel,
+  dedupeRegionsForCleanup,
   parseEventStartDate,
   isExpiredOffer,
   buildDeleteRowsRequests,
