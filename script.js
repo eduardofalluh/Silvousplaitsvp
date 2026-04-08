@@ -233,148 +233,201 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =====================================================
-  // TESTIMONIAL CAROUSEL – auto-advance every 8s with seamless infinite loop
+  // TESTIMONIAL CAROUSEL – 3D arc desktop, swipe mobile, infinite loop
   // =====================================================
   (function initTestimonialCarousel() {
-    const track = document.getElementById('testimonial-track');
-    if (!track) return;
+    const viewport = document.getElementById('testimonial-viewport');
+    const dotsContainer = document.getElementById('testimonial-dots');
+    const prevButton = document.getElementById('testimonial-prev');
+    const nextButton = document.getElementById('testimonial-next');
+    if (!viewport || !dotsContainer || !prevButton || !nextButton) return;
 
-    const originalSlides = Array.from(track.querySelectorAll('.testimonial-slide'));
-    const originalCount = originalSlides.length;
-    
-    // Clone slides for seamless infinite loop
-    originalSlides.forEach(slide => {
-      const clone = slide.cloneNode(true);
-      track.appendChild(clone);
-    });
-    
-    const allSlides = Array.from(track.querySelectorAll('.testimonial-slide'));
+    const slides = Array.from(viewport.querySelectorAll('.testimonial-slide'));
+    const slideCount = slides.length;
+    if (!slideCount) return;
+
     let currentIndex = 0;
     let autoAdvanceInterval = null;
-    let userInteractionTimeout = null;
-    let isTransitioning = false;
+    let resumeTimeout = null;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchCurrentX = 0;
+    let touchCurrentY = 0;
 
-    // Dots indicator
-    const dotsContainer = document.getElementById('testimonial-dots');
-    const dots = dotsContainer ? Array.from(dotsContainer.querySelectorAll('.dot')) : [];
-    
+    dotsContainer.innerHTML = '';
+    const dots = slides.map((_, index) => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.className = 'dot';
+      dot.setAttribute('aria-label', 'Aller au témoignage ' + (index + 1));
+      dot.addEventListener('click', function () {
+        goToSlide(index, true);
+      });
+      dotsContainer.appendChild(dot);
+      return dot;
+    });
+
+    function isMobileView() {
+      return window.innerWidth < 768;
+    }
+
+    function getRelativeOffset(index) {
+      let offset = index - currentIndex;
+      const half = Math.floor(slideCount / 2);
+
+      if (offset > half) offset -= slideCount;
+      if (offset < -half) offset += slideCount;
+
+      return offset;
+    }
+
+    function syncViewportHeight() {
+      const activeSlide = slides[currentIndex];
+      if (!activeSlide) return;
+      viewport.style.height = activeSlide.offsetHeight + 'px';
+    }
+
     function updateDots() {
-      if (dots.length === 0) return;
-      const activeIndex = currentIndex % originalCount;
-      dots.forEach((dot, index) => {
-        dot.classList.toggle('active', index === activeIndex);
+      dots.forEach(function (dot, index) {
+        dot.classList.toggle('active', index === currentIndex);
+        dot.setAttribute('aria-current', index === currentIndex ? 'true' : 'false');
       });
     }
 
-    function getSlidePosition(index) {
-      let position = 0;
-      for (let i = 0; i < index; i++) {
-        if (allSlides[i]) position += allSlides[i].offsetWidth + 24;
-      }
-      return position;
-    }
+    function updateSlides() {
+      const mobile = isMobileView();
 
-    function scrollToSlide(index, smooth = true) {
-      const position = getSlidePosition(index);
-      track.scrollTo({
-        left: position,
-        behavior: smooth ? 'smooth' : 'auto'
+      slides.forEach(function (slide, index) {
+        const offset = getRelativeOffset(index);
+        slide.classList.remove(
+          'is-active',
+          'is-prev',
+          'is-next',
+          'is-hidden-left',
+          'is-hidden-right',
+          'is-mobile-hidden'
+        );
+
+        if (mobile) {
+          if (offset === 0) {
+            slide.classList.add('is-active');
+            slide.removeAttribute('aria-hidden');
+          } else {
+            slide.classList.add('is-mobile-hidden');
+            slide.setAttribute('aria-hidden', 'true');
+          }
+          return;
+        }
+
+        slide.removeAttribute('aria-hidden');
+
+        if (offset === 0) {
+          slide.classList.add('is-active');
+        } else if (offset === -1) {
+          slide.classList.add('is-prev');
+        } else if (offset === 1) {
+          slide.classList.add('is-next');
+        } else if (offset < 0) {
+          slide.classList.add('is-hidden-left');
+          slide.setAttribute('aria-hidden', 'true');
+        } else {
+          slide.classList.add('is-hidden-right');
+          slide.setAttribute('aria-hidden', 'true');
+        }
       });
-    }
 
-    function nextSlide() {
-      if (isTransitioning) return;
-      isTransitioning = true;
-      
-      currentIndex++;
-      scrollToSlide(currentIndex, true);
       updateDots();
-      
-      if (currentIndex >= originalCount) {
-        setTimeout(() => {
-          currentIndex = 0;
-          scrollToSlide(0, false);
-          updateDots();
-          isTransitioning = false;
-        }, 800);
-      } else {
-        setTimeout(() => {
-          isTransitioning = false;
-        }, 800);
-      }
+      requestAnimationFrame(syncViewportHeight);
     }
 
-    // 3D curve effect
-    function apply3DCurve() {
-      const trackRect = track.getBoundingClientRect();
-      const trackCenter = trackRect.left + trackRect.width / 2;
-      
-      allSlides.forEach(slide => {
-        const slideRect = slide.getBoundingClientRect();
-        const slideCenter = slideRect.left + slideRect.width / 2;
-        const distanceFromCenter = slideCenter - trackCenter;
-        const maxDistance = trackRect.width / 2;
-        const normalizedDistance = Math.max(-1, Math.min(1, distanceFromCenter / maxDistance));
-        
-        const rotateY = normalizedDistance * 15;
-        const scale = 1 - Math.abs(normalizedDistance) * 0.15;
-        const opacity = 1 - Math.abs(normalizedDistance) * 0.3;
-        
-        slide.style.transform = `rotateY(${rotateY}deg) scale(${scale})`;
-        slide.style.opacity = opacity;
-      });
-    }
-
-    function startAutoAdvance() {
-      if (autoAdvanceInterval) clearInterval(autoAdvanceInterval);
-      autoAdvanceInterval = setInterval(nextSlide, 8000);
-    }
-
-    function stopAutoAdvance() {
+    function stopAutoAdvanceTemporarily() {
       if (autoAdvanceInterval) {
         clearInterval(autoAdvanceInterval);
         autoAdvanceInterval = null;
       }
-      if (userInteractionTimeout) clearTimeout(userInteractionTimeout);
-      userInteractionTimeout = setTimeout(startAutoAdvance, 5000);
+
+      if (resumeTimeout) clearTimeout(resumeTimeout);
+      resumeTimeout = setTimeout(startAutoAdvance, 5000);
     }
 
-    // Scroll event for 3D effect
-    let rafId = null;
-    track.addEventListener('scroll', function() {
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(function() {
-        apply3DCurve();
-        rafId = null;
-      });
+    function goToSlide(index, userInitiated) {
+      currentIndex = (index + slideCount) % slideCount;
+      updateSlides();
+
+      if (userInitiated) {
+        stopAutoAdvanceTemporarily();
+      }
+    }
+
+    function nextSlide(userInitiated) {
+      goToSlide(currentIndex + 1, userInitiated);
+    }
+
+    function previousSlide(userInitiated) {
+      goToSlide(currentIndex - 1, userInitiated);
+    }
+
+    function startAutoAdvance() {
+      if (autoAdvanceInterval) clearInterval(autoAdvanceInterval);
+      autoAdvanceInterval = setInterval(function () {
+        nextSlide(false);
+      }, 5000);
+    }
+
+    prevButton.addEventListener('click', function () {
+      previousSlide(true);
+    });
+
+    nextButton.addEventListener('click', function () {
+      nextSlide(true);
+    });
+
+    viewport.addEventListener('mouseenter', stopAutoAdvanceTemporarily);
+    viewport.addEventListener('focusin', stopAutoAdvanceTemporarily);
+    viewport.addEventListener('touchstart', function (event) {
+      const touch = event.changedTouches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+      touchCurrentX = touch.clientX;
+      touchCurrentY = touch.clientY;
+      stopAutoAdvanceTemporarily();
     }, { passive: true });
 
-    // Update dots on manual scroll
-    let scrollTimeout = null;
-    track.addEventListener('scroll', function() {
-      if (scrollTimeout) clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => {
-        if (!isTransitioning) {
-          const slideWidth = allSlides[0] ? allSlides[0].offsetWidth + 24 : 500;
-          const estimatedIndex = Math.round(track.scrollLeft / slideWidth);
-          currentIndex = estimatedIndex % originalCount;
-          updateDots();
+    viewport.addEventListener('touchmove', function (event) {
+      const touch = event.changedTouches[0];
+      touchCurrentX = touch.clientX;
+      touchCurrentY = touch.clientY;
+    }, { passive: true });
+
+    viewport.addEventListener('touchend', function (event) {
+      const touch = event.changedTouches[0];
+      const endX = touchCurrentX || touch.clientX;
+      const endY = touchCurrentY || touch.clientY;
+      const deltaX = endX - touchStartX;
+      const deltaY = endY - touchStartY;
+
+      if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX < 0) {
+          nextSlide(true);
+        } else {
+          previousSlide(true);
         }
-      }, 150);
+      }
     }, { passive: true });
 
-    // User interaction handlers
-    track.addEventListener('mousedown', stopAutoAdvance);
-    track.addEventListener('touchstart', stopAutoAdvance, { passive: true });
-    track.addEventListener('wheel', stopAutoAdvance, { passive: true });
+    viewport.addEventListener('touchcancel', function () {
+      touchStartX = 0;
+      touchStartY = 0;
+      touchCurrentX = 0;
+      touchCurrentY = 0;
+    }, { passive: true });
 
-    // Initialize
-    track.style.touchAction = 'pan-x';
+    window.addEventListener('resize', function () {
+      updateSlides();
+    });
+
+    updateSlides();
     startAutoAdvance();
-    apply3DCurve();
-    updateDots();
-    
-    window.addEventListener('resize', apply3DCurve);
   })();
 
   // =====================================================

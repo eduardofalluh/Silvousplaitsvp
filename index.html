@@ -240,53 +240,45 @@
 </section>
 
 <section class="testimonial">
-  <div class="testimonial-carousel scroll-reveal" data-reveal="fade-in">
-    <div class="testimonial-track" id="testimonial-track" aria-label="Témoignages à faire défiler">
-      <div class="testimonial-slide">
-        <blockquote>
-          « Enfin une infolettre qui me parle vraiment ! Je découvre des artistes incroyables et j'économise sur mes billets. Merci! »
-        </blockquote>
-        <span>— Sophie</span>
+  <div class="testimonial-shell scroll-reveal" data-reveal="fade-in">
+    <div class="testimonial-stage">
+      <button class="testimonial-arrow testimonial-arrow--prev" id="testimonial-prev" type="button" aria-label="Témoignage précédent">
+        <span aria-hidden="true">‹</span>
+      </button>
+
+      <div class="testimonial-viewport" id="testimonial-viewport" aria-live="polite">
+        <article class="testimonial-slide">
+          <blockquote>« Simple, efficace et économique. Exactement ce qu'il me fallait pour profiter de la culture montréalaise sans me ruiner ! »</blockquote>
+          <span>— David</span>
+        </article>
+        <article class="testimonial-slide">
+          <blockquote>« Les suggestions sont toujours pertinentes et adaptées à mes goûts. C'est devenu un rituel du vendredi de découvrir ma nouvelle sélection ! »</blockquote>
+          <span>— Émilie</span>
+        </article>
+        <article class="testimonial-slide">
+          <blockquote>« Enfin une infolettre qui fonctionne vraiment ! Je découvre des endroits incroyables et j'économise sur mes billets. Merci! »</blockquote>
+          <span>— Sophie</span>
+        </article>
+        <article class="testimonial-slide">
+          <blockquote>« Je ne rate plus aucun bon spectacle depuis que je suis abonné. Une vraie mine d'or pour les Montréalais ! »</blockquote>
+          <span>— Marc</span>
+        </article>
+        <article class="testimonial-slide">
+          <blockquote>« Parfait pour sortir sans se casser la tête. Les bons plans arrivent directement dans ma boîte mail. »</blockquote>
+          <span>— Léa</span>
+        </article>
+        <article class="testimonial-slide">
+          <blockquote>« J'ai découvert des événements que je n'aurais jamais trouvés autrement. Merci Silvousplait ! »</blockquote>
+          <span>— Thomas</span>
+        </article>
       </div>
-      <div class="testimonial-slide">
-        <blockquote>
-          « Une découverte chaque semaine ! Les prix sont vraiment imbattables et la sélection est toujours de qualité. »
-        </blockquote>
-        <span>— Marc</span>
-      </div>
-      <div class="testimonial-slide">
-        <blockquote>
-          « Je ne rate plus aucun spectacle ! L'abonnement premium en vaut vraiment la peine avec les billets gratuits. »
-        </blockquote>
-        <span>— Julie</span>
-      </div>
-      <div class="testimonial-slide">
-        <blockquote>
-          « Grâce à Silvousplait, j'ai découvert des salles de spectacle incroyables que je ne connaissais pas. Merci pour cette belle initiative ! »
-        </blockquote>
-        <span>— Thomas</span>
-      </div>
-      <div class="testimonial-slide">
-        <blockquote>
-          « Les suggestions sont toujours pertinentes et adaptées à mes goûts. C'est devenu un rituel du vendredi de consulter ma nouvelle sélection ! »
-        </blockquote>
-        <span>— Émilie</span>
-      </div>
-      <div class="testimonial-slide">
-        <blockquote>
-          « Simple, efficace et économique. Exactement ce qu'il me fallait pour profiter de la culture montréalaise sans me ruiner ! »
-        </blockquote>
-        <span>— David</span>
-      </div>
+
+      <button class="testimonial-arrow testimonial-arrow--next" id="testimonial-next" type="button" aria-label="Témoignage suivant">
+        <span aria-hidden="true">›</span>
+      </button>
     </div>
-    <div class="testimonial-dots" id="testimonial-dots" aria-label="Indicateur de témoignages">
-      <span class="dot active"></span>
-      <span class="dot"></span>
-      <span class="dot"></span>
-      <span class="dot"></span>
-      <span class="dot"></span>
-      <span class="dot"></span>
-    </div>
+
+    <div class="testimonial-dots" id="testimonial-dots" aria-label="Indicateur de témoignages"></div>
   </div>
 </section>
 
