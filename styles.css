@@ -3028,7 +3028,7 @@ body.modal-open {
 .premium-hero {
   padding: 15px 40px 80px 40px;
   text-align: center;
-  color: white;
+  color: var(--blue);
   position: relative;
   overflow: hidden;
   background: #dff35f;
@@ -3074,6 +3074,7 @@ body.modal-open {
   font-weight: 800;
   margin-bottom: 16px;
   line-height: 1.1;
+  color: var(--blue);
 }
 
 .premium-hero-subtitle {
@@ -3081,12 +3082,14 @@ body.modal-open {
   font-weight: 600;
   margin-bottom: 12px;
   opacity: 0.95;
+  color: var(--blue);
 }
 
 .premium-hero-text {
   font-size: 24px;
   opacity: 0.9;
   margin-bottom: 40px;
+  color: var(--blue);
 }
 
 .premium-pricing-grid {
