@@ -4457,7 +4457,7 @@ video::-webkit-media-controls-panel {
   width: clamp(120px, 18vw, 180px);
   height: auto;
   transform-origin: 50% 50%;
-  animation: premiumVinylSpin 9s linear infinite;
+  animation: premiumVinylSpin 5.5s linear infinite;
 }
 
 @keyframes premiumVinylSpin {
