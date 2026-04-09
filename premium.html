@@ -141,45 +141,23 @@
         <span aria-hidden="true">‹</span>
       </button>
       <div class="premium-deals-viewport" id="premium-deals-viewport">
-        <div class="premium-deals-track" id="premium-deals-track">
-          <article class="premium-deal-card">
-            <img src="assets/image1.avif" alt="Bleu Jeans Bleu" />
-            <div class="premium-deal-card-body">
-              <p class="premium-deal-tag">Billets gratuits</p>
-              <h3>Bleu Jeans Bleu</h3>
-              <p>Accès offert à nos membres Premium pour une soirée complète.</p>
+        <div class="premium-deals-track premium-deals-track--loading" id="premium-deals-track" aria-live="polite">
+          <article class="premium-deal-card premium-deal-card--loading" aria-hidden="true">
+            <div class="premium-deal-loading">
+              <img class="premium-deal-loading-logo" src="assets/trompette.avif" alt="" />
+              <p>Chargement des offres premium...</p>
             </div>
           </article>
-          <article class="premium-deal-card">
-            <img src="assets/image2.avif" alt="Visages" />
-            <div class="premium-deal-card-body">
-              <p class="premium-deal-tag">32 % de rabais</p>
-              <h3>Visages</h3>
-              <p>Un deal théâtre exclusif réservé aux abonnés Premium.</p>
+          <article class="premium-deal-card premium-deal-card--loading" aria-hidden="true">
+            <div class="premium-deal-loading">
+              <img class="premium-deal-loading-logo" src="assets/trompette.avif" alt="" />
+              <p>Chargement des offres premium...</p>
             </div>
           </article>
-          <article class="premium-deal-card">
-            <img src="assets/image3.avif" alt="Soirée humour" />
-            <div class="premium-deal-card-body">
-              <p class="premium-deal-tag">2 pour 1</p>
-              <h3>Soirée humour</h3>
-              <p>Des billets à partager sans te casser la tête.</p>
-            </div>
-          </article>
-          <article class="premium-deal-card">
-            <img src="assets/image4.avif" alt="Spectacle en salle" />
-            <div class="premium-deal-card-body">
-              <p class="premium-deal-tag">Places VIP à rabais</p>
-              <h3>Expérience scène</h3>
-              <p>Des offres premium repérées pour sortir mieux, sans payer plus.</p>
-            </div>
-          </article>
-          <article class="premium-deal-card">
-            <img src="assets/premium_image.avif" alt="Offre spectacle gratuit" />
-            <div class="premium-deal-card-body">
-              <p class="premium-deal-tag">Spectacle gratuit</p>
-              <h3>Soirée découverte</h3>
-              <p>Des invitations gratuites dans les meilleures salles de la ville.</p>
+          <article class="premium-deal-card premium-deal-card--loading" aria-hidden="true">
+            <div class="premium-deal-loading">
+              <img class="premium-deal-loading-logo" src="assets/trompette.avif" alt="" />
+              <p>Chargement des offres premium...</p>
             </div>
           </article>
         </div>
@@ -335,6 +313,9 @@
 <script>
   (function() {
     var track = document.getElementById('premium-deals-track');
+    var dots = document.getElementById('premium-deals-dots');
+    var prevButton = document.getElementById('premium-deals-prev');
+    var nextButton = document.getElementById('premium-deals-next');
     var escapeHtml = function (value) {
       return String(value || '')
         .replace(/&/g, '&amp;')
@@ -346,6 +327,7 @@
 
     var renderShowcase = function(items) {
       if (!track || !Array.isArray(items) || !items.length) return;
+      track.classList.remove('premium-deals-track--loading');
       track.innerHTML = items.map(function (item) {
         return (
           '<article class="premium-deal-card">' +
@@ -364,6 +346,21 @@
       }
     };
 
+    var renderShowcaseError = function () {
+      if (!track) return;
+      track.classList.remove('premium-deals-track--loading');
+      track.innerHTML =
+        '<article class="premium-deal-card premium-deal-card--loading premium-deal-card--message">' +
+          '<div class="premium-deal-loading">' +
+            '<img class="premium-deal-loading-logo" src="assets/trompette.avif" alt="" />' +
+            '<p>Les offres arrivent dans un instant.</p>' +
+          '</div>' +
+        '</article>';
+      if (dots) dots.innerHTML = '';
+      if (prevButton) prevButton.disabled = true;
+      if (nextButton) nextButton.disabled = true;
+    };
+
     fetch('/.netlify/functions/list-premium-showcase')
       .then(function (response) {
         return response.json().then(function (data) {
@@ -374,10 +371,13 @@
       .then(function (data) {
         if (data && Array.isArray(data.showcaseItems) && data.showcaseItems.length) {
           renderShowcase(data.showcaseItems);
+          return;
         }
+        renderShowcaseError();
       })
       .catch(function (error) {
         console.error('Premium showcase load error:', error);
+        renderShowcaseError();
       });
 
     // Initialize scroll reveal

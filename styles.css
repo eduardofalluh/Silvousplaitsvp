@@ -4255,6 +4255,10 @@ video::-webkit-media-controls-panel {
   will-change: scroll-position;
 }
 
+.premium-deals-track--loading {
+  width: 100%;
+}
+
 .premium-deal-card {
   position: relative;
   flex: 0 0 min(41vw, 470px);
@@ -4267,6 +4271,47 @@ video::-webkit-media-controls-panel {
   overflow: hidden;
   box-shadow: 0 22px 54px rgba(51, 71, 202, 0.12);
   transition: transform 360ms ease, opacity 360ms ease, box-shadow 360ms ease;
+}
+
+.premium-deal-card--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at top center, rgba(223, 243, 95, 0.32), transparent 44%),
+    linear-gradient(180deg, rgba(235, 231, 245, 0.98) 0%, rgba(245, 244, 239, 1) 100%);
+}
+
+.premium-deal-card--loading::after {
+  display: none;
+}
+
+.premium-deal-loading {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  padding: 28px;
+  text-align: center;
+}
+
+.premium-deal-loading-logo {
+  width: 104px;
+  height: 104px;
+  object-fit: contain;
+  animation: premiumShowcaseLoadingSpin 2.4s linear infinite;
+}
+
+.premium-deal-loading p {
+  margin: 0;
+  max-width: 18ch;
+  color: var(--blue);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.premium-deal-card--message {
+  min-width: min(41vw, 470px);
 }
 
 .premium-deal-card::after {
@@ -4379,6 +4424,15 @@ video::-webkit-media-controls-panel {
 .premium-deals-dots button.is-active {
   width: 28px;
   background: var(--blue);
+}
+
+@keyframes premiumShowcaseLoadingSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .premium-plans-section {
@@ -4631,6 +4685,11 @@ video::-webkit-media-controls-panel {
     opacity: 1 !important;
   }
 
+  .premium-deal-loading-logo {
+    width: 88px;
+    height: 88px;
+  }
+
   .premium-deals-arrow {
     display: none;
   }
@@ -4677,6 +4736,10 @@ video::-webkit-media-controls-panel {
     flex-basis: calc(100vw - 42px);
     min-width: calc(100vw - 42px);
     height: 350px;
+  }
+
+  .premium-deal-loading p {
+    font-size: 16px;
   }
 
   .premium-deal-card-body {
