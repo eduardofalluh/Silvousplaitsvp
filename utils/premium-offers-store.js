@@ -5,6 +5,7 @@ const GOOGLE_PRIVATE_KEY = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g
 const PREMIUM_OFFERS_SHEET_ID = process.env.PREMIUM_OFFERS_SHEET_ID || process.env.GOOGLE_SHEET_ID;
 const PREMIUM_OFFERS_TAB = process.env.PREMIUM_OFFERS_TAB || 'premium_offers';
 const PREMIUM_OFFERS_REGIONS_TAB = process.env.PREMIUM_OFFERS_REGIONS_TAB || 'premium_regions';
+const PREMIUM_OFFERS_SHOWCASE_TAB = process.env.PREMIUM_OFFERS_SHOWCASE_TAB || 'premium_showcase';
 
 const OFFER_HEADERS = [
   'id',
@@ -21,8 +22,66 @@ const OFFER_HEADERS = [
   'updated_at',
 ];
 const REGION_HEADERS = ['id', 'label', 'created_at', 'updated_at'];
+const SHOWCASE_HEADERS = [
+  'id',
+  'title',
+  'badge',
+  'image_url',
+  'description',
+  'sort_order',
+  'is_active',
+  'created_at',
+  'updated_at',
+];
 const PREMIUM_OFFERS_TIME_ZONE = 'America/Toronto';
 const DEFAULT_REGIONS = ['Montreal', 'Quebec', 'Sherbrooke', 'Trois-Rivieres'];
+const DEFAULT_SHOWCASE_ITEMS = [
+  {
+    id: 'showcase_bleu_jeans_bleu',
+    title: 'Bleu Jeans Bleu',
+    badge: 'Billets gratuits',
+    image_url: 'assets/image1.avif',
+    description: 'Accès offert à nos membres Premium pour une soirée complète.',
+    sort_order: 1,
+    is_active: true,
+  },
+  {
+    id: 'showcase_visages',
+    title: 'Visages',
+    badge: '32 % de rabais',
+    image_url: 'assets/image2.avif',
+    description: 'Un deal théâtre exclusif réservé aux abonnés Premium.',
+    sort_order: 2,
+    is_active: true,
+  },
+  {
+    id: 'showcase_soiree_humour',
+    title: 'Soirée humour',
+    badge: '2 pour 1',
+    image_url: 'assets/image3.avif',
+    description: 'Des billets à partager sans te casser la tête.',
+    sort_order: 3,
+    is_active: true,
+  },
+  {
+    id: 'showcase_experience_scene',
+    title: 'Expérience scène',
+    badge: 'Places VIP à rabais',
+    image_url: 'assets/image4.avif',
+    description: 'Des offres premium repérées pour sortir mieux, sans payer plus.',
+    sort_order: 4,
+    is_active: true,
+  },
+  {
+    id: 'showcase_soiree_decouverte',
+    title: 'Soirée découverte',
+    badge: 'Spectacle gratuit',
+    image_url: 'assets/premium_image.avif',
+    description: 'Des invitations gratuites dans les meilleures salles de la ville.',
+    sort_order: 5,
+    is_active: true,
+  },
+];
 
 function normalize(value) {
   return String(value || '').trim();
@@ -38,6 +97,11 @@ function normalizeForCompare(value) {
 function normalizeBoolean(value, fallback = true) {
   const raw = String(value == null ? fallback : value).trim().toLowerCase();
   return !(raw === 'false' || raw === '0' || raw === 'non' || raw === 'inactive');
+}
+
+function normalizeInteger(value, fallback = 0) {
+  const parsed = Number.parseInt(String(value == null ? fallback : value).trim(), 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function slugifyRegionLabel(value) {
@@ -306,6 +370,45 @@ async function ensureRegionsSheet(sheets) {
   return targetSheet;
 }
 
+async function ensureShowcaseSheet(sheets) {
+  await getOrCreateSheet(sheets, PREMIUM_OFFERS_SHOWCASE_TAB);
+  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_SHOWCASE_TAB}!A1:I200`, 'showcase read');
+  const rows = read.data.values || [];
+  const headerRow = rows[0] || [];
+  const hasExpectedHeaders =
+    headerRow.length >= SHOWCASE_HEADERS.length &&
+    SHOWCASE_HEADERS.every((header, index) => String(headerRow[index] || '').trim() === header);
+
+  if (!hasExpectedHeaders) {
+    await safeWriteRange(
+      sheets,
+      `${PREMIUM_OFFERS_SHOWCASE_TAB}!A1:I1`,
+      [SHOWCASE_HEADERS],
+      'showcase header write'
+    );
+  }
+
+  if (rows.length < 2) {
+    const timestamp = new Date().toISOString();
+    await safeAppendRows(
+      sheets,
+      `${PREMIUM_OFFERS_SHOWCASE_TAB}!A:I`,
+      DEFAULT_SHOWCASE_ITEMS.map((item) => [
+        item.id,
+        item.title,
+        item.badge,
+        item.image_url,
+        item.description,
+        String(item.sort_order),
+        item.is_active ? 'true' : 'false',
+        timestamp,
+        timestamp,
+      ]),
+      'showcase seed write'
+    );
+  }
+}
+
 async function getPremiumOffersSheet(sheets) {
   return getOrCreateSheet(sheets, PREMIUM_OFFERS_TAB, false);
 }
@@ -523,6 +626,26 @@ function mapRegionRow(row, rowNumber) {
   };
 }
 
+function mapShowcaseRow(row, rowNumber) {
+  const values = SHOWCASE_HEADERS.reduce((acc, header, index) => {
+    acc[header] = normalize(row[index]);
+    return acc;
+  }, {});
+
+  return {
+    rowNumber,
+    id: values.id || `showcase_${rowNumber}`,
+    title: values.title,
+    badge: values.badge,
+    image_url: values.image_url,
+    description: values.description,
+    sort_order: normalizeInteger(values.sort_order, rowNumber - 1),
+    is_active: normalizeBoolean(values.is_active, true),
+    created_at: values.created_at,
+    updated_at: values.updated_at,
+  };
+}
+
 async function listPremiumOfferRegions() {
   const sheets = await getSheetsClient();
   await ensureRegionsSheet(sheets);
@@ -612,12 +735,112 @@ async function deletePremiumOfferRegion(id) {
   return { deleted: true, id: normalizedId };
 }
 
+async function listPremiumShowcaseItems({ includeInactive = false } = {}) {
+  const sheets = await getSheetsClient();
+  await ensureShowcaseSheet(sheets);
+  const read = await safeReadRange(
+    sheets,
+    `${PREMIUM_OFFERS_SHOWCASE_TAB}!A:I`,
+    'showcase list read'
+  );
+  const rows = read.data.values || [];
+  if (rows.length < 2) return DEFAULT_SHOWCASE_ITEMS.slice();
+
+  return rows
+    .slice(1)
+    .map((row, index) => mapShowcaseRow(row, index + 2))
+    .filter((item) => item.id && item.title)
+    .filter((item) => includeInactive || item.is_active)
+    .sort((a, b) => {
+      if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+      return a.title.localeCompare(b.title, 'fr-CA', { sensitivity: 'base' });
+    });
+}
+
+function createShowcaseRow(item, existingItem) {
+  const timestamp = new Date().toISOString();
+  const current = existingItem || {};
+  const id = normalize(item.id) || current.id || `showcase_${Date.now()}`;
+
+  return SHOWCASE_HEADERS.map((header) => {
+    switch (header) {
+      case 'id':
+        return id;
+      case 'title':
+        return normalize(item.title || current.title);
+      case 'badge':
+        return normalize(item.badge || current.badge);
+      case 'image_url':
+        return normalize(item.image_url || current.image_url);
+      case 'description':
+        return normalize(item.description || current.description);
+      case 'sort_order':
+        return String(normalizeInteger(item.sort_order, current.sort_order || 0));
+      case 'is_active':
+        return normalizeBoolean(
+          item.is_active != null ? item.is_active : current.is_active,
+          true
+        )
+          ? 'true'
+          : 'false';
+      case 'created_at':
+        return current.created_at || timestamp;
+      case 'updated_at':
+        return timestamp;
+      default:
+        return '';
+    }
+  });
+}
+
+async function savePremiumShowcaseItem(item) {
+  const sheets = await getSheetsClient();
+  await ensureShowcaseSheet(sheets);
+  const items = await listPremiumShowcaseItems({ includeInactive: true });
+  const existingItem = items.find((entry) => entry.id === normalize(item.id));
+  const values = [createShowcaseRow(item, existingItem)];
+
+  if (existingItem) {
+    await safeWriteRange(
+      sheets,
+      `${PREMIUM_OFFERS_SHOWCASE_TAB}!A${existingItem.rowNumber}:I${existingItem.rowNumber}`,
+      values,
+      'showcase update'
+    );
+    return { id: existingItem.id, updated: true };
+  }
+
+  await safeAppendRows(sheets, `${PREMIUM_OFFERS_SHOWCASE_TAB}!A:I`, values, 'showcase append');
+  return { id: values[0][0], created: true };
+}
+
+async function deletePremiumShowcaseItem(id) {
+  const normalizedId = normalize(id);
+  if (!normalizedId) {
+    throw new Error('Showcase item id is required');
+  }
+
+  const sheets = await getSheetsClient();
+  await ensureShowcaseSheet(sheets);
+  const items = await listPremiumShowcaseItems({ includeInactive: true });
+  const existingItem = items.find((item) => item.id === normalizedId);
+  if (!existingItem) {
+    throw new Error('Showcase item not found');
+  }
+
+  await deleteOfferRows(sheets, [existingItem], PREMIUM_OFFERS_SHOWCASE_TAB);
+  return { deleted: true, id: normalizedId };
+}
+
 module.exports = {
   PREMIUM_OFFERS_TAB,
   PREMIUM_OFFERS_REGIONS_TAB,
+  PREMIUM_OFFERS_SHOWCASE_TAB,
   OFFER_HEADERS,
   REGION_HEADERS,
+  SHOWCASE_HEADERS,
   DEFAULT_REGIONS,
+  DEFAULT_SHOWCASE_ITEMS,
   normalize,
   normalizeForCompare,
   canonicalizeRegionLabel,
@@ -628,8 +851,11 @@ module.exports = {
   getMissingSheetEnvVars,
   listPremiumOffers,
   listPremiumOfferRegions,
+  listPremiumShowcaseItems,
   savePremiumOffer,
   savePremiumOfferRegion,
+  savePremiumShowcaseItem,
   deletePremiumOffer,
   deletePremiumOfferRegion,
+  deletePremiumShowcaseItem,
 };

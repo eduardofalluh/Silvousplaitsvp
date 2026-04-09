@@ -88,6 +88,10 @@
       display: grid;
       gap: 12px;
     }
+    .showcase-list {
+      display: grid;
+      gap: 12px;
+    }
     .offer-admin-item {
       display: grid;
       gap: 10px;
@@ -107,6 +111,21 @@
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
+    }
+    .showcase-admin-item {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid rgba(18, 24, 42, 0.08);
+    }
+    .showcase-admin-item img {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      border-radius: 14px;
+      background: #eef1f7;
     }
     .form-actions {
       display: flex;
@@ -208,6 +227,34 @@
           <div id="offer-list" class="offer-list"></div>
         </div>
       </div>
+
+      <div class="admin-grid">
+        <div class="admin-card">
+          <h2>Carousel des offres déjà profitées</h2>
+          <form id="showcase-form">
+            <input type="hidden" id="showcase-id" />
+            <input type="text" id="showcase-title" placeholder="Titre de l'offre / du spectacle" required />
+            <input type="text" id="showcase-badge" placeholder="Badge (ex. Billets gratuits)" />
+            <input type="url" id="showcase-image" placeholder="URL de l'image" />
+            <textarea id="showcase-description" placeholder="Description courte de l'offre"></textarea>
+            <input type="number" id="showcase-order" placeholder="Ordre d'affichage" min="1" step="1" />
+            <select id="showcase-active">
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+            <div class="form-actions">
+              <button type="submit">Enregistrer la carte</button>
+              <button type="button" id="reset-showcase-form" class="button-secondary">Vider le formulaire</button>
+            </div>
+          </form>
+          <div id="showcase-form-message" class="admin-message" aria-live="polite"></div>
+        </div>
+
+        <div class="admin-card">
+          <h2>Cartes du carousel</h2>
+          <div id="showcase-list" class="showcase-list"></div>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -226,6 +273,10 @@
       const regionList = document.getElementById('region-list');
       const offerList = document.getElementById('offer-list');
       const resetFormButton = document.getElementById('reset-form');
+      const showcaseForm = document.getElementById('showcase-form');
+      const showcaseFormMessage = document.getElementById('showcase-form-message');
+      const showcaseList = document.getElementById('showcase-list');
+      const resetShowcaseFormButton = document.getElementById('reset-showcase-form');
 
       const fieldMap = {
         id: document.getElementById('offer-id'),
@@ -239,9 +290,19 @@
         ticket_url: document.getElementById('offer-link'),
         is_active: document.getElementById('offer-active'),
       };
+      const showcaseFieldMap = {
+        id: document.getElementById('showcase-id'),
+        title: document.getElementById('showcase-title'),
+        badge: document.getElementById('showcase-badge'),
+        image_url: document.getElementById('showcase-image'),
+        description: document.getElementById('showcase-description'),
+        sort_order: document.getElementById('showcase-order'),
+        is_active: document.getElementById('showcase-active'),
+      };
 
       let offers = [];
       let regions = [];
+      let showcaseItems = [];
       let adminAccessToken = '';
 
       function setMessage(target, kind, message) {
@@ -264,6 +325,12 @@
         form.reset();
         fieldMap.id.value = '';
         fieldMap.is_active.value = 'true';
+      }
+
+      function resetShowcaseForm() {
+        showcaseForm.reset();
+        showcaseFieldMap.id.value = '';
+        showcaseFieldMap.is_active.value = 'true';
       }
 
       function formatRegionLabel(value) {
@@ -415,6 +482,61 @@
         });
       }
 
+      function renderShowcaseItems() {
+        if (!showcaseItems.length) {
+          showcaseList.innerHTML = '<p>Aucune carte dans le carousel pour le moment.</p>';
+          return;
+        }
+
+        showcaseList.innerHTML = showcaseItems.map((item) => `
+          <article class="showcase-admin-item">
+            <img src="${item.image_url || 'assets/premium_image.avif'}" alt="${item.title || ''}" />
+            <strong>${item.title || ''}</strong>
+            <span>${[item.badge, item.sort_order ? 'Ordre ' + item.sort_order : '', item.is_active ? 'Active' : 'Inactive'].filter(Boolean).join(' · ')}</span>
+            <p>${item.description || ''}</p>
+            <div class="offer-admin-actions">
+              <button type="button" data-edit-showcase="${item.id}" class="button-secondary">Modifier</button>
+              <button type="button" data-delete-showcase="${item.id}" class="button-danger">Supprimer</button>
+            </div>
+          </article>
+        `).join('');
+
+        showcaseList.querySelectorAll('[data-edit-showcase]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const item = showcaseItems.find((entry) => entry.id === button.getAttribute('data-edit-showcase'));
+            if (!item) return;
+            Object.keys(showcaseFieldMap).forEach((key) => {
+              if (key === 'is_active') {
+                showcaseFieldMap[key].value = String(item[key]);
+                return;
+              }
+              showcaseFieldMap[key].value = item[key] || '';
+            });
+            window.scrollTo({ top: showcaseForm.getBoundingClientRect().top + window.scrollY - 24, behavior: 'smooth' });
+          });
+        });
+
+        showcaseList.querySelectorAll('[data-delete-showcase]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            if (!window.confirm('Supprimer cette carte du carousel ?')) return;
+
+            const response = await authFetch('/.netlify/functions/delete-premium-showcase-item', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: button.getAttribute('data-delete-showcase') }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              setMessage(showcaseFormMessage, 'err', data.error || 'Suppression impossible.');
+              return;
+            }
+            setMessage(showcaseFormMessage, 'ok', 'Carte supprimée.');
+            await loadOffers();
+            resetShowcaseForm();
+          });
+        });
+      }
+
       async function loadOffers() {
         const response = await authFetch('/.netlify/functions/list-premium-offers-admin');
         const data = await response.json().catch(() => ({}));
@@ -425,6 +547,7 @@
           return;
         }
         offers = Array.isArray(data.offers) ? data.offers : [];
+        showcaseItems = Array.isArray(data.showcaseItems) ? data.showcaseItems : [];
         regions = Array.isArray(data.regions)
           ? data.regions.map((region) => ({
               id: region.id || '',
@@ -434,6 +557,7 @@
         syncRegionOptions();
         renderRegions();
         renderOffers();
+        renderShowcaseItems();
       }
 
       loginForm.addEventListener('submit', async (event) => {
@@ -501,7 +625,32 @@
       });
 
       resetFormButton.addEventListener('click', resetForm);
+      showcaseForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const payload = Object.keys(showcaseFieldMap).reduce((acc, key) => {
+          acc[key] = showcaseFieldMap[key].value;
+          return acc;
+        }, {});
+
+        const response = await authFetch('/.netlify/functions/save-premium-showcase-item', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setMessage(showcaseFormMessage, 'err', data.error || 'Enregistrement impossible.');
+          return;
+        }
+
+        setMessage(showcaseFormMessage, 'ok', 'Carte enregistrée avec succès.');
+        resetShowcaseForm();
+        await loadOffers();
+      });
+
+      resetShowcaseFormButton.addEventListener('click', resetShowcaseForm);
       resetForm();
+      resetShowcaseForm();
     })();
   </script>
 </body>

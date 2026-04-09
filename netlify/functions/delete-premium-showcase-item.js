@@ -1,9 +1,7 @@
 const { verifyAdminSessionToken } = require('../../utils/premium-offers-auth');
 const {
   getMissingSheetEnvVars,
-  listPremiumOffers,
-  listPremiumOfferRegions,
-  listPremiumShowcaseItems,
+  deletePremiumShowcaseItem,
 } = require('../../utils/premium-offers-store');
 
 const headers = {
@@ -22,7 +20,7 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers, body: '' };
   }
-  if (event.httpMethod !== 'GET') {
+  if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
@@ -40,22 +38,25 @@ exports.handler = async (event) => {
     return { statusCode: 401, headers, body: JSON.stringify({ error: 'Admin session invalide' }) };
   }
 
+  let body;
   try {
-    const [offers, regions, showcaseItems] = await Promise.all([
-      listPremiumOffers({ includeInactive: true }),
-      listPremiumOfferRegions(),
-      listPremiumShowcaseItems({ includeInactive: true }),
-    ]);
+    body = JSON.parse(event.body || '{}');
+  } catch {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid JSON body' }) };
+  }
+
+  try {
+    const result = await deletePremiumShowcaseItem(body.id);
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ success: true, offers, regions, showcaseItems }),
+      body: JSON.stringify({ success: true, ...result }),
     };
   } catch (error) {
     return {
-      statusCode: 500,
+      statusCode: error.message === 'Showcase item not found' ? 404 : 500,
       headers,
-      body: JSON.stringify({ error: error.message || 'Failed to load admin premium offers' }),
+      body: JSON.stringify({ error: error.message || 'Failed to delete premium showcase item' }),
     };
   }
 };

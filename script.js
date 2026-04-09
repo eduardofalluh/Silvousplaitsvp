@@ -471,6 +471,182 @@ document.addEventListener('DOMContentLoaded', () => {
   })();
 
   // =====================================================
+  // PREMIUM DEALS CAROUSEL – drag/swipe horizontal showcase
+  // =====================================================
+  window.initPremiumDealsCarousel = function initPremiumDealsCarousel(forceRebuild) {
+    const viewport = document.getElementById('premium-deals-viewport');
+    const track = document.getElementById('premium-deals-track');
+    const dotsContainer = document.getElementById('premium-deals-dots');
+    const prevButton = document.getElementById('premium-deals-prev');
+    const nextButton = document.getElementById('premium-deals-next');
+    if (!viewport || !track || !dotsContainer || !prevButton || !nextButton) return;
+    if (viewport.dataset.carouselReady === 'true' && !forceRebuild) return;
+
+    const cards = Array.from(track.querySelectorAll('.premium-deal-card'));
+    if (!cards.length) return;
+
+    let currentIndex = 0;
+    let dragStartX = 0;
+    let dragStartScrollLeft = 0;
+    let isDragging = false;
+    let hasDragged = false;
+    let activePointerId = null;
+    let scrollTicking = false;
+
+    dotsContainer.innerHTML = '';
+    viewport.dataset.carouselReady = 'true';
+    const dots = cards.map((_, index) => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.setAttribute('aria-label', 'Aller a l offre ' + (index + 1));
+      dot.addEventListener('click', () => applyIndex(index, true));
+      dotsContainer.appendChild(dot);
+      return dot;
+    });
+
+    function isMobileView() {
+      return window.innerWidth < 768;
+    }
+
+    function updateDots() {
+      dots.forEach((dot, index) => {
+        const isActive = index === currentIndex;
+        dot.classList.toggle('is-active', isActive);
+        dot.setAttribute('aria-current', isActive ? 'true' : 'false');
+      });
+    }
+
+    function updateCards() {
+      cards.forEach((card, index) => {
+        card.classList.toggle('is-active', index === currentIndex);
+      });
+    }
+
+    function updateButtons() {
+      const disabled = cards.length <= 1;
+      prevButton.disabled = disabled;
+      nextButton.disabled = disabled;
+    }
+
+    function getScrollTarget(index) {
+      const card = cards[index];
+      if (!card) return 0;
+      const centeredOffset = card.offsetLeft - Math.max(0, (viewport.clientWidth - card.offsetWidth) / 2);
+      return Math.max(0, centeredOffset);
+    }
+
+    function applyIndex(index, animate = true) {
+      currentIndex = Math.max(0, Math.min(cards.length - 1, index));
+      updateCards();
+      updateDots();
+      updateButtons();
+      viewport.scrollTo({
+        left: getScrollTarget(currentIndex),
+        behavior: animate ? 'smooth' : 'auto',
+      });
+    }
+
+    function getNearestIndex() {
+      const viewportCenter = viewport.scrollLeft + viewport.clientWidth / 2;
+      let bestIndex = 0;
+      let bestDistance = Number.POSITIVE_INFINITY;
+
+      cards.forEach((card, index) => {
+        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+        const distance = Math.abs(cardCenter - viewportCenter);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = index;
+        }
+      });
+
+      return bestIndex;
+    }
+
+    function startDrag(clientX, pointerId) {
+      isDragging = true;
+      hasDragged = false;
+      activePointerId = pointerId;
+      dragStartX = clientX;
+      dragStartScrollLeft = viewport.scrollLeft;
+      viewport.classList.add('is-dragging');
+    }
+
+    function moveDrag(clientX) {
+      if (!isDragging) return;
+      const delta = clientX - dragStartX;
+      if (Math.abs(delta) > 4) hasDragged = true;
+      viewport.scrollLeft = dragStartScrollLeft - delta;
+    }
+
+    function endDrag() {
+      if (!isDragging) return;
+      isDragging = false;
+      activePointerId = null;
+      viewport.classList.remove('is-dragging');
+      applyIndex(getNearestIndex(), true);
+    }
+
+    function syncFromScroll() {
+      if (scrollTicking) return;
+      scrollTicking = true;
+      requestAnimationFrame(() => {
+        currentIndex = getNearestIndex();
+        updateCards();
+        updateDots();
+        updateButtons();
+        scrollTicking = false;
+      });
+    }
+
+    prevButton.onclick = () => applyIndex(currentIndex - 1, true);
+    nextButton.onclick = () => applyIndex(currentIndex + 1, true);
+
+    viewport.onpointerdown = (event) => {
+      if (event.button !== 0 || isMobileView()) return;
+      startDrag(event.clientX, event.pointerId);
+      viewport.setPointerCapture(event.pointerId);
+    };
+
+    viewport.onpointermove = (event) => {
+      if (!isDragging || event.pointerId !== activePointerId) return;
+      moveDrag(event.clientX);
+    };
+
+    viewport.onpointerup = (event) => {
+      if (event.pointerId !== activePointerId) return;
+      endDrag();
+    };
+
+    viewport.onpointercancel = endDrag;
+    viewport.onmouseleave = () => {
+      if (isDragging) endDrag();
+    };
+
+    viewport.onclick = (event) => {
+      if (!hasDragged) return;
+      event.preventDefault();
+      event.stopPropagation();
+      hasDragged = false;
+    };
+
+    viewport.onscroll = syncFromScroll;
+
+    if (!window.__premiumDealsCarouselResizeBound) {
+      window.addEventListener('resize', () => {
+        if (typeof window.initPremiumDealsCarousel === 'function') {
+          window.initPremiumDealsCarousel(true);
+        }
+      });
+      window.__premiumDealsCarouselResizeBound = true;
+    }
+
+    applyIndex(0, false);
+  };
+
+  window.initPremiumDealsCarousel();
+
+  // =====================================================
   // FAQ SCROLL ANIMATION (STAGGERED + RELIABLE)
   // =====================================================
   // Initialize FAQ animations after a brief delay to ensure CSS is loaded
