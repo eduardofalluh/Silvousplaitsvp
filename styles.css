@@ -4636,21 +4636,29 @@ video::-webkit-media-controls-panel {
   }
 
   .premium-hero-copy {
-    max-width: 360px;
+    width: min(100%, 420px);
     margin: 0 auto;
     text-align: center;
   }
 
   .premium-hero h1 {
     margin-bottom: 16px;
-    font-size: clamp(42px, 11vw, 58px);
+    max-width: 100%;
+    font-size: clamp(40px, 10vw, 54px);
+    line-height: 0.96;
+    letter-spacing: -0.04em;
+    overflow-wrap: normal;
+    word-break: keep-all;
+    hyphens: none;
+    text-wrap: balance;
   }
 
   .premium-hero-subtitle {
-    max-width: 12ch;
+    width: min(100%, 320px);
+    max-width: 320px;
     margin-bottom: 22px;
-    font-size: clamp(24px, 7.2vw, 34px);
-    line-height: 1.08;
+    font-size: clamp(23px, 7vw, 31px);
+    line-height: 1.1;
     margin-left: auto;
     margin-right: auto;
   }
@@ -4736,16 +4744,17 @@ video::-webkit-media-controls-panel {
 
 @media (max-width: 480px) {
   .premium-hero-copy {
-    max-width: 320px;
+    width: min(100%, 100%);
   }
 
   .premium-hero h1 {
-    font-size: clamp(38px, 10.5vw, 50px);
+    font-size: clamp(36px, 9.4vw, 48px);
   }
 
   .premium-hero-subtitle {
-    max-width: 10ch;
-    font-size: clamp(22px, 7.5vw, 30px);
+    width: min(100%, 318px);
+    max-width: 318px;
+    font-size: clamp(22px, 7vw, 29px);
   }
 
   .premium-step {
