@@ -4647,19 +4647,22 @@ video::-webkit-media-controls-panel {
   }
 
   .premium-hero-subtitle {
-    max-width: none;
+    max-width: 12ch;
     margin-bottom: 22px;
     font-size: clamp(24px, 7.2vw, 34px);
     line-height: 1.08;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .premium-hero-subtitle-line {
     display: block;
-    white-space: nowrap;
+    white-space: normal;
   }
 
   .premium-hero-subtitle-emphasis {
     display: block;
+    white-space: normal;
   }
 
   .premium-hero-primary {
@@ -4741,6 +4744,7 @@ video::-webkit-media-controls-panel {
   }
 
   .premium-hero-subtitle {
+    max-width: 10ch;
     font-size: clamp(22px, 7.5vw, 30px);
   }
 
