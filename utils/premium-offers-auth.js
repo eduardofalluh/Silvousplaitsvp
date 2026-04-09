@@ -86,7 +86,16 @@ function verifyAdminSessionToken(token) {
 }
 
 function isAdminPasswordValid(password) {
-  return Boolean(PREMIUM_OFFERS_ADMIN_PASSWORD) && String(password || '') === PREMIUM_OFFERS_ADMIN_PASSWORD;
+  if (!PREMIUM_OFFERS_ADMIN_PASSWORD) return false;
+
+  const providedBuffer = Buffer.from(String(password || ''), 'utf8');
+  const expectedBuffer = Buffer.from(PREMIUM_OFFERS_ADMIN_PASSWORD, 'utf8');
+
+  if (providedBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(providedBuffer, expectedBuffer);
 }
 
 module.exports = {

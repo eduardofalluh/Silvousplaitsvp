@@ -4,16 +4,16 @@ const {
   isAdminPasswordValid,
   createAdminSessionToken,
 } = require('../../utils/premium-offers-auth');
-
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Content-Type': 'application/json',
-};
+const { buildJsonHeaders, isAllowedOrigin } = require('../../utils/http-security');
 
 exports.handler = async (event) => {
+  const headers = buildJsonHeaders(event, { noStore: true });
+
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers, body: '' };
+  }
+  if (!isAllowedOrigin(event)) {
+    return { statusCode: 403, headers, body: JSON.stringify({ error: 'Forbidden origin' }) };
   }
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
