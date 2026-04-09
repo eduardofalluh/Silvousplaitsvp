@@ -213,7 +213,6 @@
 
   <script>
     (function () {
-      const STORAGE_KEY = 'silvousplaitPremiumOffersAdminSession';
       const loginPanel = document.getElementById('admin-login');
       const appPanel = document.getElementById('admin-app');
       const loginForm = document.getElementById('admin-login-form');
@@ -243,22 +242,7 @@
 
       let offers = [];
       let regions = [];
-
-      function getSession() {
-        try {
-          return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-        } catch (_) {
-          return null;
-        }
-      }
-
-      function setSession(session) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-      }
-
-      function clearSession() {
-        localStorage.removeItem(STORAGE_KEY);
-      }
+      let adminAccessToken = '';
 
       function setMessage(target, kind, message) {
         target.className = 'admin-message';
@@ -335,9 +319,8 @@
       }
 
       async function authFetch(url, options) {
-        const session = getSession();
         const headers = Object.assign({}, options && options.headers, {
-          Authorization: 'Bearer ' + (session && session.accessToken ? session.accessToken : ''),
+          Authorization: 'Bearer ' + adminAccessToken,
         });
         return fetch(url, Object.assign({}, options || {}, { headers }));
       }
@@ -436,7 +419,7 @@
         const response = await authFetch('/.netlify/functions/list-premium-offers-admin');
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-          clearSession();
+          adminAccessToken = '';
           closeApp();
           setMessage(loginMessage, 'err', data.error || 'Session admin invalide.');
           return;
@@ -465,9 +448,10 @@
           setMessage(loginMessage, 'err', data.error || 'Connexion admin impossible.');
           return;
         }
-        setSession({ accessToken: data.accessToken });
+        adminAccessToken = data.accessToken || '';
         openApp();
         setMessage(loginMessage, '', '');
+        passwordInput.value = '';
         await loadOffers();
       });
 
@@ -518,11 +502,6 @@
 
       resetFormButton.addEventListener('click', resetForm);
       resetForm();
-
-      if (getSession()) {
-        openApp();
-        loadOffers();
-      }
     })();
   </script>
 </body>
