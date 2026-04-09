@@ -4456,6 +4456,17 @@ video::-webkit-media-controls-panel {
 .premium-proof-banner img {
   width: clamp(120px, 18vw, 180px);
   height: auto;
+  transform-origin: 50% 50%;
+  animation: premiumVinylSpin 9s linear infinite;
+}
+
+@keyframes premiumVinylSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .premium-faq-layout {
