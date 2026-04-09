@@ -655,33 +655,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // =====================================================
   // SMOOTH SCROLL FOR "JE M'INSCRIS" BUTTON
   // =====================================================
+  function isMobileViewport() {
+    return window.matchMedia('(max-width: 768px)').matches;
+  }
+
   function smoothScrollTo(targetEl, offset = 100) {
     if (!targetEl) return;
-
-    const startPosition = window.pageYOffset;
-    const targetPosition = targetEl.getBoundingClientRect().top + startPosition - offset;
-    const distance = targetPosition - startPosition;
-    const duration = 1500;
-    let start = null;
-
-    function easeInOutCubic(t) {
-      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    }
-
-    function animation(currentTime) {
-      if (start === null) start = currentTime;
-      const timeElapsed = currentTime - start;
-      const progress = Math.min(timeElapsed / duration, 1);
-      const ease = easeInOutCubic(progress);
-
-      window.scrollTo(0, startPosition + distance * ease);
-
-      if (timeElapsed < duration) {
-        requestAnimationFrame(animation);
-      }
-    }
-
-    requestAnimationFrame(animation);
+    const targetPosition = targetEl.getBoundingClientRect().top + window.pageYOffset - offset;
+    window.scrollTo({
+      top: Math.max(0, targetPosition),
+      behavior: 'smooth',
+    });
   }
 
   const jeMinscrisBtn = document.getElementById('je-minscris-btn');
@@ -692,10 +676,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (target) {
         smoothScrollTo(target, 100);
         const input = target.querySelector('input[type="email"]');
-        if (input) {
+        if (input && !isMobileViewport()) {
           setTimeout(() => {
             input.focus();
-          }, 900);
+          }, 700);
         }
       }
     });
@@ -711,10 +695,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!targetForm) return;
       smoothScrollTo(targetForm, 100);
       const input = targetForm.querySelector('input[type="email"]');
-      if (input) {
+      if (input && !isMobileViewport()) {
         setTimeout(() => {
           input.focus();
-        }, 900);
+        }, 700);
       }
     });
   }
