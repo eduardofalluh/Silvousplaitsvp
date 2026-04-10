@@ -31,17 +31,17 @@
     }
     .offers-topbar {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
       gap: 16px;
       margin-bottom: 24px;
     }
-    .offers-topbar a,
-    .offers-logout {
+    .offers-topbar a {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border-radius: 999px;
+      min-height: 44px;
+      border-radius: 8px;
       border: 1px solid rgba(20, 33, 61, 0.12);
       background: rgba(255, 255, 255, 0.85);
       color: var(--offers-ink);
@@ -49,6 +49,37 @@
       padding: 12px 18px;
       font-weight: 700;
       cursor: pointer;
+      line-height: 1.1;
+      white-space: nowrap;
+      box-shadow: 0 10px 24px rgba(20, 33, 61, 0.06);
+    }
+    .offers-logout {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      border: 0;
+      background: transparent;
+      color: rgba(20, 33, 61, 0.64);
+      padding: 0;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      cursor: pointer;
+    }
+    .offers-session-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin: 0 0 18px;
+    }
+    .offers-session-row p {
+      margin: 0;
+      color: rgba(20, 33, 61, 0.7);
+      line-height: 1.35;
     }
     .offers-hero {
       margin-bottom: 28px;
@@ -313,10 +344,30 @@
       }
     }
     @media (max-width: 700px) {
-      .offers-topbar,
       .offers-filters {
         grid-template-columns: 1fr;
         display: grid;
+      }
+      .offers-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        margin-bottom: 18px;
+      }
+      .offers-topbar a {
+        width: auto;
+        min-height: 42px;
+        padding: 10px 14px;
+        font-size: 14px;
+        letter-spacing: 0;
+      }
+      .offers-session-row {
+        display: grid;
+        gap: 8px;
+      }
+      .offers-logout {
+        justify-self: start;
+        font-size: 13px;
       }
       .offers-shell {
         width: min(100% - 20px, 1180px);
@@ -338,7 +389,6 @@
   <main class="offers-shell">
     <div class="offers-topbar">
       <a href="index.html">Retour au site</a>
-      <button id="logout-button" class="offers-logout" hidden>Fermer ma session</button>
     </div>
 
     <section class="offers-hero">
@@ -360,7 +410,10 @@
 
     <section id="offers-app" class="offers-app" hidden>
       <h2 class="offers-panel-title">Catalogue premium</h2>
-      <p id="member-state"></p>
+      <div class="offers-session-row">
+        <p id="member-state"></p>
+        <button id="logout-button" class="offers-logout" hidden>Fermer ma session</button>
+      </div>
 
       <div class="offers-filters">
         <input type="search" id="search-input" placeholder="Rechercher un spectacle, un lieu ou un mot-clé..." />
