@@ -180,16 +180,9 @@
   <div class="premium-plans-shell">
     <div class="premium-plans-header">
       <h2 class="scroll-reveal" data-reveal="fade-up">Choisis ton abonnement Premium</h2>
-      <a
-        class="premium-bottom-button premium-bottom-button--inline scroll-reveal"
-        data-reveal="fade-in"
-        data-reveal-delay="1"
-        href="premium-offers.html"
-        data-coming-soon-message="Les offres premium arrivent très bientôt. Cette fonctionnalité est en cours de finalisation."
-      >Accéder aux offres premium</a>
     </div>
     <div class="premium-pricing-grid premium-pricing-grid--framed">
-      <div class="premium-plan-column scroll-reveal" data-reveal="fade-up" data-reveal-delay="2">
+      <div class="premium-plan-column premium-plan-column--monthly scroll-reveal" data-reveal="fade-up" data-reveal-delay="2">
         <p class="premium-plan-overline">Mensuel :</p>
         <div class="premium-pricing-card">
           <p class="pricing-label">Prix</p>
@@ -223,7 +216,7 @@
             type="button"
             data-stripe-plan="monthly"
             data-stripe-fallback-url="https://buy.stripe.com/bJe9AV0HJ1jJehY3zyb7y04"
-          >Devenir Premium</button>
+          >Commencer à économiser</button>
         </div>
       </div>
 
@@ -261,9 +254,15 @@
             type="button"
             data-stripe-plan="yearly"
             data-stripe-fallback-url="https://buy.stripe.com/14AaEZ2PRgeD4Hogmkb7y00"
-          >Devenir Premium</button>
+          >Commencer à économiser</button>
         </div>
       </div>
+    </div>
+    <div class="premium-offers-access scroll-reveal" data-reveal="fade-in" data-reveal-delay="1">
+      <a
+        class="premium-offers-access-link"
+        href="premium-offers.html"
+      >Accéder aux offres premium</a>
     </div>
   </div>
 </section>

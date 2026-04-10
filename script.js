@@ -484,6 +484,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const cards = Array.from(track.querySelectorAll('.premium-deal-card'));
     if (!cards.length) return;
+    if (viewport.dataset.carouselAutoplayTimer) {
+      window.clearInterval(Number(viewport.dataset.carouselAutoplayTimer));
+      delete viewport.dataset.carouselAutoplayTimer;
+    }
 
     let currentIndex = 0;
     let dragStartX = 0;
@@ -499,13 +503,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const dot = document.createElement('button');
       dot.type = 'button';
       dot.setAttribute('aria-label', 'Aller a l offre ' + (index + 1));
-      dot.addEventListener('click', () => applyIndex(index, true));
+      dot.addEventListener('click', () => {
+        applyIndex(index, true);
+        restartAutoplay();
+      });
       dotsContainer.appendChild(dot);
       return dot;
     });
 
     function isMobileView() {
       return window.innerWidth < 768;
+    }
+
+    function shouldAutoplay() {
+      return !isMobileView()
+        && cards.length > 1
+        && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 
     function updateDots() {
@@ -544,6 +557,28 @@ document.addEventListener('DOMContentLoaded', () => {
         left: getScrollTarget(currentIndex),
         behavior: animate ? 'smooth' : 'auto',
       });
+    }
+
+    function stopAutoplay() {
+      if (!viewport.dataset.carouselAutoplayTimer) return;
+      window.clearInterval(Number(viewport.dataset.carouselAutoplayTimer));
+      delete viewport.dataset.carouselAutoplayTimer;
+    }
+
+    function startAutoplay() {
+      stopAutoplay();
+      if (!shouldAutoplay()) return;
+      const timer = window.setInterval(() => {
+        if (document.hidden || isDragging) return;
+        const nextIndex = currentIndex >= cards.length - 1 ? 0 : currentIndex + 1;
+        applyIndex(nextIndex, true);
+      }, 3600);
+      viewport.dataset.carouselAutoplayTimer = String(timer);
+    }
+
+    function restartAutoplay() {
+      stopAutoplay();
+      startAutoplay();
     }
 
     function getNearestIndex() {
@@ -599,11 +634,18 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    prevButton.onclick = () => applyIndex(currentIndex - 1, true);
-    nextButton.onclick = () => applyIndex(currentIndex + 1, true);
+    prevButton.onclick = () => {
+      applyIndex(currentIndex <= 0 ? cards.length - 1 : currentIndex - 1, true);
+      restartAutoplay();
+    };
+    nextButton.onclick = () => {
+      applyIndex(currentIndex >= cards.length - 1 ? 0 : currentIndex + 1, true);
+      restartAutoplay();
+    };
 
     viewport.onpointerdown = (event) => {
       if (event.button !== 0 || isMobileView()) return;
+      stopAutoplay();
       startDrag(event.clientX, event.pointerId);
       viewport.setPointerCapture(event.pointerId);
     };
@@ -616,12 +658,23 @@ document.addEventListener('DOMContentLoaded', () => {
     viewport.onpointerup = (event) => {
       if (event.pointerId !== activePointerId) return;
       endDrag();
+      restartAutoplay();
     };
 
-    viewport.onpointercancel = endDrag;
-    viewport.onmouseleave = () => {
-      if (isDragging) endDrag();
+    viewport.onpointercancel = () => {
+      endDrag();
+      restartAutoplay();
     };
+    viewport.onmouseleave = () => {
+      if (isDragging) {
+        endDrag();
+      }
+      startAutoplay();
+    };
+
+    viewport.onmouseenter = stopAutoplay;
+    viewport.onfocusin = stopAutoplay;
+    viewport.onfocusout = startAutoplay;
 
     viewport.onclick = (event) => {
       if (!hasDragged) return;
@@ -642,6 +695,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     applyIndex(0, false);
+    startAutoplay();
   };
 
   window.initPremiumDealsCarousel();
