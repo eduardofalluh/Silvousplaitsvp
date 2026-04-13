@@ -1020,38 +1020,27 @@ async function listPremiumOfferRegions({ sheets: providedSheets } = {}) {
 }
 
 async function listPremiumOfferTypes({ sheets: providedSheets } = {}) {
-  try {
-    const sheets = providedSheets || await getSheetsClient();
-    await ensureOfferTypesSheet(sheets);
-    const read = await safeReadRange(
-      sheets,
-      `${PREMIUM_OFFERS_TYPES_TAB}!A:D`,
-      'offer types list read'
-    );
-    const rows = read.data.values || [];
-    if (rows.length >= 2) {
-      return rows
-        .slice(1)
-        .map((row, index) => mapOfferTypeRow(row, index + 2))
-        .filter((item) => item.label)
-        .sort((a, b) => a.label.localeCompare(b.label, 'fr-CA', { sensitivity: 'base' }));
-    }
-  } catch (error) {
-    // Fall through to derived offer types when the dedicated tab is unavailable or throttled.
+  const sheets = providedSheets || await getSheetsClient();
+  await ensureOfferTypesSheet(sheets);
+  const read = await safeReadRange(
+    sheets,
+    `${PREMIUM_OFFERS_TYPES_TAB}!A:D`,
+    'offer types list read'
+  );
+  const rows = read.data.values || [];
+  if (rows.length < 2) {
+    return DEFAULT_OFFER_TYPES.map((label, index) => ({
+      rowNumber: index + 2,
+      id: slugifyLabel(label),
+      label,
+    }));
   }
 
-  const offers = await listPremiumOffers({ includeInactive: true, sheets: providedSheets });
-  const labels = Array.from(new Set(
-    offers
-      .map((offer) => canonicalizeFilterLabel(offer.filtre_offre || offer.offer_type))
-      .filter(Boolean)
-  )).sort((a, b) => a.localeCompare(b, 'fr-CA', { sensitivity: 'base' }));
-  const fallbackLabels = labels.length ? labels : DEFAULT_OFFER_TYPES;
-  return fallbackLabels.map((label, index) => ({
-    rowNumber: index + 2,
-    id: slugifyLabel(label),
-    label,
-  }));
+  return rows
+    .slice(1)
+    .map((row, index) => mapOfferTypeRow(row, index + 2))
+    .filter((item) => item.label)
+    .sort((a, b) => a.label.localeCompare(b.label, 'fr-CA', { sensitivity: 'base' }));
 }
 
 async function savePremiumOfferRegion(region) {

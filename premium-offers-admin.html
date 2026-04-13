@@ -273,7 +273,10 @@
             <input type="text" id="offer-filter-tag" placeholder="Tag / filtre affiché (ex. Rabais)" />
             <div id="offer-extra-fields" class="dynamic-fields" hidden></div>
             <input type="text" id="offer-venue" placeholder="Salle / lieu" />
-            <input type="datetime-local" id="offer-date" />
+            <div class="dynamic-field-group">
+              <label for="offer-date">Date et heure du spectacle</label>
+              <input type="datetime-local" id="offer-date" />
+            </div>
             <input type="url" id="offer-image" placeholder="URL de l'image du spectacle" />
             <textarea id="offer-description" placeholder="Description de l'offre premium"></textarea>
             <input type="text" id="offer-code" placeholder="Code promo" />
