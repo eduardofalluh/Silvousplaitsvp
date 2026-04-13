@@ -112,6 +112,29 @@
       flex-wrap: wrap;
       gap: 10px;
     }
+    .access-log-list {
+      display: grid;
+      gap: 10px;
+      max-height: 520px;
+      overflow: auto;
+    }
+    .access-log-item {
+      display: grid;
+      gap: 6px;
+      padding: 14px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid rgba(18, 24, 42, 0.08);
+    }
+    .access-log-item strong {
+      font-size: 16px;
+    }
+    .access-log-meta {
+      color: rgba(22, 32, 59, 0.74);
+      font-size: 14px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
     .showcase-admin-item {
       display: grid;
       gap: 10px;
@@ -137,6 +160,11 @@
       gap: 14px;
       margin-bottom: 20px;
     }
+    .filter-manager-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
     .region-row {
       display: flex;
       flex-wrap: wrap;
@@ -157,6 +185,9 @@
     }
     @media (max-width: 900px) {
       .admin-grid {
+        grid-template-columns: 1fr;
+      }
+      .filter-manager-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -180,15 +211,31 @@
 
     <section id="admin-app" hidden>
       <div class="admin-card">
-        <h2>Gérer les régions du filtre</h2>
-        <form id="region-form">
-          <input type="text" id="region-label" placeholder="Ajouter une région au filtre" required />
-          <div class="form-actions">
-            <button type="submit">Ajouter la région</button>
+        <div class="filter-manager-grid">
+          <div>
+            <h2>Gérer les régions du filtre</h2>
+            <form id="region-form">
+              <input type="text" id="region-label" placeholder="Ajouter une région au filtre" required />
+              <div class="form-actions">
+                <button type="submit">Ajouter la région</button>
+              </div>
+            </form>
+            <div id="region-form-message" class="admin-message" aria-live="polite"></div>
+            <div id="region-list" class="region-manager"></div>
           </div>
-        </form>
-        <div id="region-form-message" class="admin-message" aria-live="polite"></div>
-        <div id="region-list" class="region-manager"></div>
+
+          <div>
+            <h2>Gérer les types d’offres</h2>
+            <form id="offer-type-form">
+              <input type="text" id="offer-type-label" placeholder="Ajouter un type d’offre au filtre" required />
+              <div class="form-actions">
+                <button type="submit">Ajouter le type</button>
+              </div>
+            </form>
+            <div id="offer-type-form-message" class="admin-message" aria-live="polite"></div>
+            <div id="offer-type-list" class="region-manager"></div>
+          </div>
+        </div>
       </div>
 
       <div class="admin-grid">
@@ -203,6 +250,9 @@
               <option value="Quebec">Québec</option>
               <option value="Sherbrooke">Sherbrooke</option>
               <option value="Trois-Rivieres">Trois-Rivières</option>
+            </select>
+            <select id="offer-type">
+              <option value="">Choisir un type d’offre</option>
             </select>
             <input type="text" id="offer-venue" placeholder="Salle / lieu" />
             <input type="datetime-local" id="offer-date" />
@@ -255,6 +305,11 @@
           <div id="showcase-list" class="showcase-list"></div>
         </div>
       </div>
+
+      <div class="admin-card">
+        <h2>Logs live des connexions premium</h2>
+        <div id="access-log-list" class="access-log-list"></div>
+      </div>
     </section>
   </main>
 
@@ -271,17 +326,23 @@
       const regionLabelInput = document.getElementById('region-label');
       const regionFormMessage = document.getElementById('region-form-message');
       const regionList = document.getElementById('region-list');
+      const offerTypeForm = document.getElementById('offer-type-form');
+      const offerTypeLabelInput = document.getElementById('offer-type-label');
+      const offerTypeFormMessage = document.getElementById('offer-type-form-message');
+      const offerTypeList = document.getElementById('offer-type-list');
       const offerList = document.getElementById('offer-list');
       const resetFormButton = document.getElementById('reset-form');
       const showcaseForm = document.getElementById('showcase-form');
       const showcaseFormMessage = document.getElementById('showcase-form-message');
       const showcaseList = document.getElementById('showcase-list');
       const resetShowcaseFormButton = document.getElementById('reset-showcase-form');
+      const accessLogList = document.getElementById('access-log-list');
 
       const fieldMap = {
         id: document.getElementById('offer-id'),
         title: document.getElementById('offer-title'),
         region: document.getElementById('offer-region'),
+        offer_type: document.getElementById('offer-type'),
         venue: document.getElementById('offer-venue'),
         event_date: document.getElementById('offer-date'),
         image_url: document.getElementById('offer-image'),
@@ -302,8 +363,11 @@
 
       let offers = [];
       let regions = [];
+      let offerTypes = [];
       let showcaseItems = [];
+      let accessLogs = [];
       let adminAccessToken = '';
+      let accessLogsRefreshTimer = null;
 
       function setMessage(target, kind, message) {
         target.className = 'admin-message';
@@ -319,6 +383,10 @@
       function closeApp() {
         appPanel.hidden = true;
         loginPanel.hidden = false;
+        if (accessLogsRefreshTimer) {
+          clearInterval(accessLogsRefreshTimer);
+          accessLogsRefreshTimer = null;
+        }
       }
 
       function resetForm() {
@@ -358,6 +426,22 @@
           ...labels.map((label) => `<option value="${label}">${formatRegionLabel(label)}</option>`),
         ].join('');
         fieldMap.region.value = labels.includes(currentValue) ? currentValue : '';
+      }
+
+      function syncOfferTypeOptions() {
+        const currentValue = fieldMap.offer_type.value;
+        const labels = Array.from(
+          new Set([
+            ...offerTypes.map((item) => item.label),
+            currentValue,
+          ].filter(Boolean))
+        ).sort((a, b) => a.localeCompare(b, 'fr-CA', { sensitivity: 'base' }));
+
+        fieldMap.offer_type.innerHTML = [
+          '<option value="">Choisir un type d’offre</option>',
+          ...labels.map((label) => `<option value="${label}">${label}</option>`),
+        ].join('');
+        fieldMap.offer_type.value = labels.includes(currentValue) ? currentValue : '';
       }
 
       function toDateTimeLocalValue(value) {
@@ -425,6 +509,39 @@
         });
       }
 
+      function renderOfferTypes() {
+        if (!offerTypes.length) {
+          offerTypeList.innerHTML = "<p>Aucun type d’offre pour le moment.</p>";
+          return;
+        }
+
+        offerTypeList.innerHTML = offerTypes.map((item) => `
+          <div class="region-row">
+            <strong>${item.label}</strong>
+            <button type="button" class="button-danger" data-delete-offer-type="${item.id}">Supprimer</button>
+          </div>
+        `).join('');
+
+        offerTypeList.querySelectorAll('[data-delete-offer-type]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            if (!window.confirm("Supprimer ce type d’offre du filtre ?")) return;
+
+            const response = await authFetch('/.netlify/functions/delete-premium-offer-type', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: button.getAttribute('data-delete-offer-type') }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              setMessage(offerTypeFormMessage, 'err', data.error || 'Suppression impossible.');
+              return;
+            }
+            setMessage(offerTypeFormMessage, 'ok', 'Type d’offre supprimé.');
+            await loadOffers();
+          });
+        });
+      }
+
       function renderOffers() {
         if (!offers.length) {
           offerList.innerHTML = '<p>Aucune offre pour le moment.</p>';
@@ -435,7 +552,7 @@
           <article class="offer-admin-item">
             <img src="${offer.image_url || 'assets/premium_image.avif'}" alt="${offer.title || ''}" />
             <strong>${offer.title || ''}</strong>
-            <span>${[formatRegionLabel(offer.region), offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · ')}</span>
+            <span>${[formatRegionLabel(offer.region), offer.offer_type, offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · ')}</span>
             <span>${offer.is_active ? 'Active' : 'Inactive'}</span>
             <div class="offer-admin-actions">
               <button type="button" data-edit="${offer.id}" class="button-secondary">Modifier</button>
@@ -537,6 +654,51 @@
         });
       }
 
+      function formatDateTime(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toLocaleString('fr-CA', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        });
+      }
+
+      function renderAccessLogs() {
+        if (!accessLogs.length) {
+          accessLogList.innerHTML = '<p>Aucune connexion premium enregistrée pour le moment.</p>';
+          return;
+        }
+
+        accessLogList.innerHTML = accessLogs.map((entry) => `
+          <article class="access-log-item">
+            <strong>${entry.email || ''}</strong>
+            <div class="access-log-meta">${[formatDateTime(entry.created_at), entry.event_type || 'sign_in'].filter(Boolean).join(' · ')}</div>
+            <div class="access-log-meta">${entry.ip_address ? `IP: ${entry.ip_address}` : 'IP: indisponible'}</div>
+            <div class="access-log-meta">${entry.user_agent || 'Navigateur non disponible'}</div>
+          </article>
+        `).join('');
+      }
+
+      async function loadAccessLogs() {
+        const response = await authFetch('/.netlify/functions/list-premium-access-logs-admin');
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          accessLogList.innerHTML = '<p>Impossible de charger les logs live.</p>';
+          return;
+        }
+        accessLogs = Array.isArray(data.accessLogs) ? data.accessLogs : [];
+        renderAccessLogs();
+      }
+
+      function startAccessLogsRefresh() {
+        if (accessLogsRefreshTimer) clearInterval(accessLogsRefreshTimer);
+        accessLogsRefreshTimer = setInterval(() => {
+          if (!adminAccessToken) return;
+          loadAccessLogs().catch(() => {});
+        }, 15000);
+      }
+
       async function loadOffers() {
         const response = await authFetch('/.netlify/functions/list-premium-offers-admin');
         const data = await response.json().catch(() => ({}));
@@ -554,8 +716,16 @@
               label: region.label || String(region),
             })).filter((region) => region.label)
           : [];
+        offerTypes = Array.isArray(data.offerTypes)
+          ? data.offerTypes.map((item) => ({
+              id: item.id || '',
+              label: item.label || String(item),
+            })).filter((item) => item.label)
+          : [];
         syncRegionOptions();
+        syncOfferTypeOptions();
         renderRegions();
+        renderOfferTypes();
         renderOffers();
         renderShowcaseItems();
       }
@@ -577,6 +747,8 @@
         setMessage(loginMessage, '', '');
         passwordInput.value = '';
         await loadOffers();
+        await loadAccessLogs();
+        startAccessLogsRefresh();
       });
 
       form.addEventListener('submit', async (event) => {
@@ -621,6 +793,27 @@
 
         setMessage(regionFormMessage, 'ok', 'Région enregistrée avec succès.');
         regionForm.reset();
+        await loadOffers();
+      });
+
+      offerTypeForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const label = String(offerTypeLabelInput.value || '').trim();
+        if (!label) return;
+
+        const response = await authFetch('/.netlify/functions/save-premium-offer-type', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ label }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setMessage(offerTypeFormMessage, 'err', data.error || 'Enregistrement impossible.');
+          return;
+        }
+
+        setMessage(offerTypeFormMessage, 'ok', 'Type d’offre enregistré avec succès.');
+        offerTypeForm.reset();
         await loadOffers();
       });
 

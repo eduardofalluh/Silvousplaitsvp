@@ -1,10 +1,7 @@
 const { verifyAdminSessionToken } = require('../../utils/premium-offers-auth');
 const {
   getMissingSheetEnvVars,
-  listPremiumOffers,
-  listPremiumOfferRegions,
-  listPremiumOfferTypes,
-  listPremiumShowcaseItems,
+  listPremiumOfferAccessLogs,
 } = require('../../utils/premium-offers-store');
 const { buildJsonHeaders, isAllowedOrigin } = require('../../utils/http-security');
 
@@ -42,22 +39,17 @@ exports.handler = async (event) => {
   }
 
   try {
-    const [offers, regions, offerTypes, showcaseItems] = await Promise.all([
-      listPremiumOffers({ includeInactive: true }),
-      listPremiumOfferRegions(),
-      listPremiumOfferTypes(),
-      listPremiumShowcaseItems({ includeInactive: true }),
-    ]);
+    const accessLogs = await listPremiumOfferAccessLogs({ limit: 150 });
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ success: true, offers, regions, offerTypes, showcaseItems }),
+      body: JSON.stringify({ success: true, accessLogs }),
     };
   } catch (error) {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: error.message || 'Failed to load admin premium offers' }),
+      body: JSON.stringify({ error: error.message || 'Failed to load premium access logs' }),
     };
   }
 };

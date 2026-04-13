@@ -5,12 +5,15 @@ const GOOGLE_PRIVATE_KEY = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g
 const PREMIUM_OFFERS_SHEET_ID = process.env.PREMIUM_OFFERS_SHEET_ID || process.env.GOOGLE_SHEET_ID;
 const PREMIUM_OFFERS_TAB = process.env.PREMIUM_OFFERS_TAB || 'premium_offers';
 const PREMIUM_OFFERS_REGIONS_TAB = process.env.PREMIUM_OFFERS_REGIONS_TAB || 'premium_regions';
+const PREMIUM_OFFERS_TYPES_TAB = process.env.PREMIUM_OFFERS_TYPES_TAB || 'premium_offer_types';
 const PREMIUM_OFFERS_SHOWCASE_TAB = process.env.PREMIUM_OFFERS_SHOWCASE_TAB || 'premium_showcase';
+const PREMIUM_OFFERS_ACCESS_LOGS_TAB = process.env.PREMIUM_OFFERS_ACCESS_LOGS_TAB || 'premium_access_logs';
 
 const OFFER_HEADERS = [
   'id',
   'title',
   'region',
+  'offer_type',
   'venue',
   'event_date',
   'image_url',
@@ -22,6 +25,8 @@ const OFFER_HEADERS = [
   'updated_at',
 ];
 const REGION_HEADERS = ['id', 'label', 'created_at', 'updated_at'];
+const OFFER_TYPE_HEADERS = ['id', 'label', 'created_at', 'updated_at'];
+const ACCESS_LOG_HEADERS = ['id', 'email', 'event_type', 'ip_address', 'user_agent', 'created_at'];
 const SHOWCASE_HEADERS = [
   'id',
   'title',
@@ -35,6 +40,13 @@ const SHOWCASE_HEADERS = [
 ];
 const PREMIUM_OFFERS_TIME_ZONE = 'America/Toronto';
 const DEFAULT_REGIONS = ['Montreal', 'Quebec', 'Sherbrooke', 'Trois-Rivieres'];
+const DEFAULT_OFFER_TYPES = [
+  'Billets gratuits',
+  'Rabais',
+  '2 pour 1',
+  'Places VIP',
+  'Invitations',
+];
 const DEFAULT_SHOWCASE_ITEMS = [
   {
     id: 'showcase_bleu_jeans_bleu',
@@ -125,6 +137,19 @@ function canonicalizeRegionLabel(value) {
     trois_rivieres: 'Trois-Rivieres',
   };
   return knownLabels[key] || raw;
+}
+
+function slugifyLabel(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function canonicalizeOfferTypeLabel(value) {
+  return normalize(value);
 }
 
 function dedupeRegionsForCleanup(regions) {
@@ -318,15 +343,60 @@ async function ensurePremiumOffersSheet(sheets) {
     }
   }
 
-  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:L2`, 'header read');
+  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:M2`, 'header read');
   const rows = read.data.values || [];
   const headerRow = rows[0] || [];
+  const legacyHeaders = [
+    'id',
+    'title',
+    'region',
+    'venue',
+    'event_date',
+    'image_url',
+    'description',
+    'promo_code',
+    'ticket_url',
+    'is_active',
+    'created_at',
+    'updated_at',
+  ];
+  const matchesLegacyHeaders =
+    headerRow.length >= legacyHeaders.length &&
+    legacyHeaders.every((header, index) => String(headerRow[index] || '').trim() === header);
   const matches =
     headerRow.length >= OFFER_HEADERS.length &&
     OFFER_HEADERS.every((header, index) => String(headerRow[index] || '').trim() === header);
 
+  if (matchesLegacyHeaders && !matches) {
+    const migratedRows = rows.slice(1).map((row) => [
+      normalize(row[0]),
+      normalize(row[1]),
+      normalize(row[2]),
+      '',
+      normalize(row[3]),
+      normalize(row[4]),
+      normalize(row[5]),
+      normalize(row[6]),
+      normalize(row[7]),
+      normalize(row[8]),
+      normalize(row[9]),
+      normalize(row[10]),
+      normalize(row[11]),
+    ]);
+    await safeWriteRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:M1`, [OFFER_HEADERS], 'header migration write');
+    if (migratedRows.length) {
+      await safeWriteRange(
+        sheets,
+        `${PREMIUM_OFFERS_TAB}!A2:M${migratedRows.length + 1}`,
+        migratedRows,
+        'row migration write'
+      );
+    }
+    return;
+  }
+
   if (!matches) {
-    await safeWriteRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:L1`, [OFFER_HEADERS], 'header write');
+    await safeWriteRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:M1`, [OFFER_HEADERS], 'header write');
   }
 }
 
@@ -370,6 +440,44 @@ async function ensureRegionsSheet(sheets) {
   return targetSheet;
 }
 
+async function ensureOfferTypesSheet(sheets) {
+  await getOrCreateSheet(sheets, PREMIUM_OFFERS_TYPES_TAB);
+  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_TYPES_TAB}!A1:D200`, 'offer types read');
+  const rows = read.data.values || [];
+  const headerRow = rows[0] || [];
+  const hasExpectedHeaders =
+    headerRow.length >= OFFER_TYPE_HEADERS.length &&
+    OFFER_TYPE_HEADERS.every((header, index) => String(headerRow[index] || '').trim() === header);
+
+  if (!hasExpectedHeaders) {
+    await safeWriteRange(
+      sheets,
+      `${PREMIUM_OFFERS_TYPES_TAB}!A1:D1`,
+      [OFFER_TYPE_HEADERS],
+      'offer types header write'
+    );
+  }
+
+  const existingLabels = new Set(
+    rows
+      .slice(1)
+      .map((row) => normalizeForCompare(canonicalizeOfferTypeLabel(row[1])))
+      .filter(Boolean)
+  );
+  const missingDefaults = DEFAULT_OFFER_TYPES.filter(
+    (label) => !existingLabels.has(normalizeForCompare(label))
+  );
+  if (missingDefaults.length) {
+    const timestamp = new Date().toISOString();
+    await safeAppendRows(
+      sheets,
+      `${PREMIUM_OFFERS_TYPES_TAB}!A:D`,
+      missingDefaults.map((label) => [slugifyLabel(label), label, timestamp, timestamp]),
+      'offer types seed write'
+    );
+  }
+}
+
 async function ensureShowcaseSheet(sheets) {
   await getOrCreateSheet(sheets, PREMIUM_OFFERS_SHOWCASE_TAB);
   const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_SHOWCASE_TAB}!A1:I200`, 'showcase read');
@@ -405,6 +513,25 @@ async function ensureShowcaseSheet(sheets) {
         timestamp,
       ]),
       'showcase seed write'
+    );
+  }
+}
+
+async function ensureAccessLogsSheet(sheets) {
+  await getOrCreateSheet(sheets, PREMIUM_OFFERS_ACCESS_LOGS_TAB);
+  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_ACCESS_LOGS_TAB}!A1:F10`, 'access logs read');
+  const rows = read.data.values || [];
+  const headerRow = rows[0] || [];
+  const hasExpectedHeaders =
+    headerRow.length >= ACCESS_LOG_HEADERS.length &&
+    ACCESS_LOG_HEADERS.every((header, index) => String(headerRow[index] || '').trim() === header);
+
+  if (!hasExpectedHeaders) {
+    await safeWriteRange(
+      sheets,
+      `${PREMIUM_OFFERS_ACCESS_LOGS_TAB}!A1:F1`,
+      [ACCESS_LOG_HEADERS],
+      'access logs header write'
     );
   }
 }
@@ -478,6 +605,18 @@ async function deleteOfferRows(sheets, offers, tabName = PREMIUM_OFFERS_TAB) {
   return requests.length;
 }
 
+function mapAccessLogRow(row, rowNumber) {
+  return {
+    rowNumber,
+    id: normalize(row[0]) || `access_log_${rowNumber}`,
+    email: normalize(row[1]),
+    event_type: normalize(row[2]) || 'sign_in',
+    ip_address: normalize(row[3]),
+    user_agent: normalize(row[4]),
+    created_at: normalize(row[5]),
+  };
+}
+
 function mapOfferRow(row, rowNumber) {
   const values = OFFER_HEADERS.reduce((acc, header, index) => {
     acc[header] = normalize(row[index]);
@@ -489,6 +628,7 @@ function mapOfferRow(row, rowNumber) {
     id: values.id,
     title: values.title,
     region: canonicalizeRegionLabel(values.region),
+    offer_type: canonicalizeOfferTypeLabel(values.offer_type),
     venue: values.venue,
     event_date: values.event_date,
     image_url: values.image_url,
@@ -504,7 +644,7 @@ function mapOfferRow(row, rowNumber) {
 async function listPremiumOffers({ includeInactive = false } = {}) {
   const sheets = await getSheetsClient();
   await ensurePremiumOffersSheet(sheets);
-  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_TAB}!A:L`, 'offers read');
+  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_TAB}!A:M`, 'offers read');
 
   const rows = read.data.values || [];
   if (rows.length < 2) return [];
@@ -544,6 +684,8 @@ function createOfferRow(offer, existingOffer) {
         return normalize(offer.title || current.title);
       case 'region':
         return canonicalizeRegionLabel(offer.region || current.region);
+      case 'offer_type':
+        return canonicalizeOfferTypeLabel(offer.offer_type || current.offer_type);
       case 'venue':
         return normalize(offer.venue || current.venue);
       case 'event_date':
@@ -583,14 +725,14 @@ async function savePremiumOffer(offer) {
   if (existingOffer) {
     await safeWriteRange(
       sheets,
-      `${PREMIUM_OFFERS_TAB}!A${existingOffer.rowNumber}:L${existingOffer.rowNumber}`,
+      `${PREMIUM_OFFERS_TAB}!A${existingOffer.rowNumber}:M${existingOffer.rowNumber}`,
       values,
       'offer update'
     );
     return { id: existingOffer.id, updated: true };
   }
 
-  await safeAppendRows(sheets, `${PREMIUM_OFFERS_TAB}!A:L`, values, 'offer append');
+  await safeAppendRows(sheets, `${PREMIUM_OFFERS_TAB}!A:M`, values, 'offer append');
 
   return { id: values[0][0], created: true };
 }
@@ -617,6 +759,18 @@ async function deletePremiumOffer(id) {
 function mapRegionRow(row, rowNumber) {
   const id = normalize(row[0]) || `region_${rowNumber}`;
   const label = canonicalizeRegionLabel(row[1]);
+  return {
+    rowNumber,
+    id,
+    label,
+    created_at: normalize(row[2]),
+    updated_at: normalize(row[3]),
+  };
+}
+
+function mapOfferTypeRow(row, rowNumber) {
+  const id = normalize(row[0]) || `offer_type_${rowNumber}`;
+  const label = canonicalizeOfferTypeLabel(row[1]);
   return {
     rowNumber,
     id,
@@ -675,6 +829,30 @@ async function listPremiumOfferRegions() {
   return kept;
 }
 
+async function listPremiumOfferTypes() {
+  const sheets = await getSheetsClient();
+  await ensureOfferTypesSheet(sheets);
+  const read = await safeReadRange(
+    sheets,
+    `${PREMIUM_OFFERS_TYPES_TAB}!A:D`,
+    'offer types list read'
+  );
+  const rows = read.data.values || [];
+  if (rows.length < 2) {
+    return DEFAULT_OFFER_TYPES.map((label, index) => ({
+      rowNumber: index + 2,
+      id: slugifyLabel(label),
+      label,
+    }));
+  }
+
+  return rows
+    .slice(1)
+    .map((row, index) => mapOfferTypeRow(row, index + 2))
+    .filter((item) => item.label)
+    .sort((a, b) => a.label.localeCompare(b.label, 'fr-CA', { sensitivity: 'base' }));
+}
+
 async function savePremiumOfferRegion(region) {
   const label = canonicalizeRegionLabel(region && region.label);
   if (!label) {
@@ -698,6 +876,33 @@ async function savePremiumOfferRegion(region) {
     `${PREMIUM_OFFERS_REGIONS_TAB}!A:D`,
     values,
     'region append'
+  );
+  return { id: values[0][0], created: true };
+}
+
+async function savePremiumOfferType(offerType) {
+  const label = canonicalizeOfferTypeLabel(offerType && offerType.label);
+  if (!label) {
+    throw new Error("Le type d'offre est requis");
+  }
+
+  const sheets = await getSheetsClient();
+  await ensureOfferTypesSheet(sheets);
+  const offerTypes = await listPremiumOfferTypes();
+  const existingItem = offerTypes.find(
+    (item) => normalizeForCompare(item.label) === normalizeForCompare(label)
+  );
+  if (existingItem) {
+    return { id: existingItem.id, updated: false };
+  }
+
+  const timestamp = new Date().toISOString();
+  const values = [[slugifyLabel(label), label, timestamp, timestamp]];
+  await safeAppendRows(
+    sheets,
+    `${PREMIUM_OFFERS_TYPES_TAB}!A:D`,
+    values,
+    'offer type append'
   );
   return { id: values[0][0], created: true };
 }
@@ -730,6 +935,39 @@ async function deletePremiumOfferRegion(id) {
     sheets,
     [{ rowNumber: existingRegion.rowNumber }],
     PREMIUM_OFFERS_REGIONS_TAB
+  );
+
+  return { deleted: true, id: normalizedId };
+}
+
+async function deletePremiumOfferType(id) {
+  const normalizedId = normalize(id);
+  if (!normalizedId) {
+    throw new Error('Offer type id is required');
+  }
+
+  const sheets = await getSheetsClient();
+  await ensureOfferTypesSheet(sheets);
+  const [offerTypes, offers] = await Promise.all([
+    listPremiumOfferTypes(),
+    listPremiumOffers({ includeInactive: true }),
+  ]);
+  const existingItem = offerTypes.find((item) => item.id === normalizedId);
+  if (!existingItem) {
+    throw new Error('Offer type not found');
+  }
+
+  const usedByOffer = offers.some(
+    (offer) => normalizeForCompare(offer.offer_type) === normalizeForCompare(existingItem.label)
+  );
+  if (usedByOffer) {
+    throw new Error("Impossible de supprimer un type d'offre utilise par une offre");
+  }
+
+  await deleteOfferRows(
+    sheets,
+    [{ rowNumber: existingItem.rowNumber }],
+    PREMIUM_OFFERS_TYPES_TAB
   );
 
   return { deleted: true, id: normalizedId };
@@ -832,18 +1070,69 @@ async function deletePremiumShowcaseItem(id) {
   return { deleted: true, id: normalizedId };
 }
 
+async function listPremiumOfferAccessLogs({ limit = 100 } = {}) {
+  const sheets = await getSheetsClient();
+  await ensureAccessLogsSheet(sheets);
+  const read = await safeReadRange(
+    sheets,
+    `${PREMIUM_OFFERS_ACCESS_LOGS_TAB}!A:F`,
+    'access logs list read'
+  );
+  const rows = read.data.values || [];
+  if (rows.length < 2) return [];
+
+  return rows
+    .slice(1)
+    .map((row, index) => mapAccessLogRow(row, index + 2))
+    .filter((item) => item.email)
+    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+    .slice(0, Math.max(1, limit));
+}
+
+async function recordPremiumOfferAccessLog(entry) {
+  const email = normalize(entry && entry.email).toLowerCase();
+  if (!email) {
+    throw new Error('Access log email is required');
+  }
+
+  const sheets = await getSheetsClient();
+  await ensureAccessLogsSheet(sheets);
+  const timestamp = new Date().toISOString();
+  const values = [[
+    `access_log_${Date.now()}`,
+    email,
+    normalize(entry && entry.event_type) || 'sign_in',
+    normalize(entry && entry.ip_address),
+    normalize(entry && entry.user_agent).slice(0, 500),
+    timestamp,
+  ]];
+  await safeAppendRows(
+    sheets,
+    `${PREMIUM_OFFERS_ACCESS_LOGS_TAB}!A:F`,
+    values,
+    'access log append'
+  );
+  return { id: values[0][0], created: true };
+}
+
 module.exports = {
   PREMIUM_OFFERS_TAB,
   PREMIUM_OFFERS_REGIONS_TAB,
+  PREMIUM_OFFERS_TYPES_TAB,
   PREMIUM_OFFERS_SHOWCASE_TAB,
+  PREMIUM_OFFERS_ACCESS_LOGS_TAB,
   OFFER_HEADERS,
   REGION_HEADERS,
+  OFFER_TYPE_HEADERS,
   SHOWCASE_HEADERS,
+  ACCESS_LOG_HEADERS,
   DEFAULT_REGIONS,
+  DEFAULT_OFFER_TYPES,
   DEFAULT_SHOWCASE_ITEMS,
   normalize,
   normalizeForCompare,
   canonicalizeRegionLabel,
+  canonicalizeOfferTypeLabel,
   dedupeRegionsForCleanup,
   parseEventStartDate,
   isExpiredOffer,
@@ -851,11 +1140,16 @@ module.exports = {
   getMissingSheetEnvVars,
   listPremiumOffers,
   listPremiumOfferRegions,
+  listPremiumOfferTypes,
+  listPremiumOfferAccessLogs,
   listPremiumShowcaseItems,
+  recordPremiumOfferAccessLog,
   savePremiumOffer,
   savePremiumOfferRegion,
+  savePremiumOfferType,
   savePremiumShowcaseItem,
   deletePremiumOffer,
   deletePremiumOfferRegion,
+  deletePremiumOfferType,
   deletePremiumShowcaseItem,
 };

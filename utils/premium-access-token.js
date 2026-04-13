@@ -50,7 +50,12 @@ function verifySignedToken(token, secret) {
 
   const [payloadPart, signaturePart] = parts;
   const expectedSignature = signPayload(payloadPart, secret);
-  if (signaturePart !== expectedSignature) {
+  const signatureBuffer = Buffer.from(String(signaturePart), 'utf8');
+  const expectedBuffer = Buffer.from(String(expectedSignature), 'utf8');
+  if (
+    signatureBuffer.length !== expectedBuffer.length ||
+    !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)
+  ) {
     return { valid: false, reason: 'invalid_signature' };
   }
 
@@ -106,7 +111,12 @@ function verifyPremiumAccessToken(token, secret) {
 
   const [payloadPart, signaturePart] = parts;
   const expectedSignature = signPayload(payloadPart, secret);
-  if (signaturePart !== expectedSignature) {
+  const signatureBuffer = Buffer.from(String(signaturePart), 'utf8');
+  const expectedBuffer = Buffer.from(String(expectedSignature), 'utf8');
+  if (
+    signatureBuffer.length !== expectedBuffer.length ||
+    !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)
+  ) {
     return { valid: false, reason: 'invalid_signature' };
   }
 

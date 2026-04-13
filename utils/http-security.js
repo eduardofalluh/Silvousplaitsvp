@@ -61,6 +61,13 @@ function buildJsonHeaders(event, options = {}) {
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     Vary: 'Origin',
     'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(self)',
+    'Cross-Origin-Resource-Policy': 'same-site',
+    'Content-Security-Policy':
+      "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+    'X-Robots-Tag': 'noindex, nofollow, noarchive',
   };
 
   if (allowedOrigin) {

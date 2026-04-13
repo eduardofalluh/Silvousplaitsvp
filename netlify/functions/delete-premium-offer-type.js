@@ -1,10 +1,7 @@
 const { verifyAdminSessionToken } = require('../../utils/premium-offers-auth');
 const {
   getMissingSheetEnvVars,
-  listPremiumOffers,
-  listPremiumOfferRegions,
-  listPremiumOfferTypes,
-  listPremiumShowcaseItems,
+  deletePremiumOfferType,
 } = require('../../utils/premium-offers-store');
 const { buildJsonHeaders, isAllowedOrigin } = require('../../utils/http-security');
 
@@ -23,7 +20,7 @@ exports.handler = async (event) => {
   if (!isAllowedOrigin(event)) {
     return { statusCode: 403, headers, body: JSON.stringify({ error: 'Forbidden origin' }) };
   }
-  if (event.httpMethod !== 'GET') {
+  if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
@@ -41,23 +38,27 @@ exports.handler = async (event) => {
     return { statusCode: 401, headers, body: JSON.stringify({ error: 'Admin session invalide' }) };
   }
 
+  let body;
   try {
-    const [offers, regions, offerTypes, showcaseItems] = await Promise.all([
-      listPremiumOffers({ includeInactive: true }),
-      listPremiumOfferRegions(),
-      listPremiumOfferTypes(),
-      listPremiumShowcaseItems({ includeInactive: true }),
-    ]);
+    body = JSON.parse(event.body || '{}');
+  } catch {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid JSON body' }) };
+  }
+
+  try {
+    const result = await deletePremiumOfferType(body.id);
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ success: true, offers, regions, offerTypes, showcaseItems }),
+      body: JSON.stringify({ success: true, ...result }),
     };
   } catch (error) {
+    const isNotFound = error.message === 'Offer type not found';
+    const isConflict = error.message === "Impossible de supprimer un type d'offre utilise par une offre";
     return {
-      statusCode: 500,
+      statusCode: isNotFound ? 404 : isConflict ? 409 : 500,
       headers,
-      body: JSON.stringify({ error: error.message || 'Failed to load admin premium offers' }),
+      body: JSON.stringify({ error: error.message || 'Failed to delete premium offer type' }),
     };
   }
 };

@@ -473,12 +473,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // =====================================================
   // PREMIUM DEALS CAROUSEL – drag/swipe horizontal showcase
   // =====================================================
-  window.initPremiumDealsCarousel = function initPremiumDealsCarousel(forceRebuild) {
-    const viewport = document.getElementById('premium-deals-viewport');
-    const track = document.getElementById('premium-deals-track');
-    const dotsContainer = document.getElementById('premium-deals-dots');
-    const prevButton = document.getElementById('premium-deals-prev');
-    const nextButton = document.getElementById('premium-deals-next');
+  function initPremiumDealsCarouselInstance(options) {
+    const viewport = document.getElementById(options.viewportId);
+    const track = document.getElementById(options.trackId);
+    const dotsContainer = document.getElementById(options.dotsId);
+    const prevButton = document.getElementById(options.prevButtonId);
+    const nextButton = document.getElementById(options.nextButtonId);
+    const forceRebuild = !!options.forceRebuild;
     if (!viewport || !track || !dotsContainer || !prevButton || !nextButton) return;
     if (viewport.dataset.carouselReady === 'true' && !forceRebuild) return;
 
@@ -690,13 +691,111 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof window.initPremiumDealsCarousel === 'function') {
           window.initPremiumDealsCarousel(true);
         }
+        if (typeof window.initHomePremiumDealsCarousel === 'function') {
+          window.initHomePremiumDealsCarousel(true);
+        }
       });
       window.__premiumDealsCarouselResizeBound = true;
     }
 
     applyIndex(0, false);
     startAutoplay();
+  }
+
+  window.initPremiumDealsCarousel = function initPremiumDealsCarousel(forceRebuild) {
+    initPremiumDealsCarouselInstance({
+      viewportId: 'premium-deals-viewport',
+      trackId: 'premium-deals-track',
+      dotsId: 'premium-deals-dots',
+      prevButtonId: 'premium-deals-prev',
+      nextButtonId: 'premium-deals-next',
+      forceRebuild,
+    });
   };
+
+  window.initHomePremiumDealsCarousel = function initHomePremiumDealsCarousel(forceRebuild) {
+    initPremiumDealsCarouselInstance({
+      viewportId: 'home-premium-deals-viewport',
+      trackId: 'home-premium-deals-track',
+      dotsId: 'home-premium-deals-dots',
+      prevButtonId: 'home-premium-deals-prev',
+      nextButtonId: 'home-premium-deals-next',
+      forceRebuild,
+    });
+  };
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function formatOfferDate(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString('fr-CA', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+  }
+
+  (function initHomePremiumOffersCarousel() {
+    const track = document.getElementById('home-premium-deals-track');
+    const dots = document.getElementById('home-premium-deals-dots');
+    const prevButton = document.getElementById('home-premium-deals-prev');
+    const nextButton = document.getElementById('home-premium-deals-next');
+    if (!track) return;
+
+    function renderOffers(offers) {
+      if (!Array.isArray(offers) || !offers.length) return renderError();
+      track.classList.remove('premium-deals-track--loading');
+      track.innerHTML = offers.map((offer) => {
+        const meta = [offer.offer_type, offer.venue, formatOfferDate(offer.event_date)].filter(Boolean).join(' · ');
+        return (
+          '<article class="premium-deal-card">' +
+            '<img src="' + escapeHtml(offer.image_url || 'assets/premium_image.avif') + '" alt="' + escapeHtml(offer.title || '') + '" />' +
+            '<div class="premium-deal-card-body">' +
+              '<p class="premium-deal-tag">' + escapeHtml(offer.region || '') + '</p>' +
+              '<h3>' + escapeHtml(offer.title || '') + '</h3>' +
+              (meta ? '<p class="premium-deal-meta">' + escapeHtml(meta) + '</p>' : '') +
+              '<p>' + escapeHtml(offer.description || '') + '</p>' +
+            '</div>' +
+          '</article>'
+        );
+      }).join('');
+      window.initHomePremiumDealsCarousel(true);
+    }
+
+    function renderError() {
+      track.classList.remove('premium-deals-track--loading');
+      track.innerHTML =
+        '<article class="premium-deal-card premium-deal-card--loading premium-deal-card--message">' +
+          '<div class="premium-deal-loading">' +
+            '<img class="premium-deal-loading-logo" src="assets/trompette.avif" alt="" />' +
+            '<p class="premium-deal-loading-kicker">Offres premium</p>' +
+            '<p>Les offres premium arrivent dans un instant.</p>' +
+          '</div>' +
+        '</article>';
+      if (dots) dots.innerHTML = '';
+      if (prevButton) prevButton.disabled = true;
+      if (nextButton) nextButton.disabled = true;
+    }
+
+    fetch('/.netlify/functions/list-public-premium-offers')
+      .then((response) => response.json().then((data) => ({ response, data })))
+      .then(({ response, data }) => {
+        if (!response.ok) throw new Error((data && data.error) || 'Erreur de chargement');
+        renderOffers(data && data.offers);
+      })
+      .catch((error) => {
+        console.error('Home premium offers load error:', error);
+        renderError();
+      });
+  })();
 
   window.initPremiumDealsCarousel();
 
@@ -1226,6 +1325,9 @@ window.initScrollReveal = initScrollReveal;
     return;
   }
   setTimeout(function() {
+    document.body.classList.add('intro-fading');
+  }, 2550);
+  setTimeout(function() {
     document.body.classList.add('intro-complete');
-  }, 3000);
+  }, 3225);
 })();

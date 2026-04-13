@@ -124,6 +124,7 @@
   </button>
   <nav class="nav-menu">
     <a href="premium.html">Premium</a>
+    <a href="premium-offers.html">Connexion Premium</a>
     <a href="contact.html">Contactez-nous</a>
   </nav>
 </header>
@@ -239,8 +240,75 @@
   </div>
 </section>
 
+<section class="premium-deals-section home-premium-live-section">
+  <div class="premium-deals-container">
+    <h2 class="scroll-reveal" data-reveal="fade-up">Offres premium du moment</h2>
+    <div class="premium-deals-carousel scroll-reveal" data-reveal="fade-in" data-reveal-delay="1">
+      <button class="premium-deals-arrow premium-deals-arrow--prev" type="button" id="home-premium-deals-prev" aria-label="Offre précédente">
+        <span aria-hidden="true">‹</span>
+      </button>
+      <div class="premium-deals-viewport" id="home-premium-deals-viewport">
+        <div class="premium-deals-track premium-deals-track--loading" id="home-premium-deals-track" aria-live="polite">
+          <article class="premium-deal-card premium-deal-card--loading" aria-hidden="true">
+            <div class="premium-deal-loading">
+              <img class="premium-deal-loading-logo" src="assets/trompette.avif" alt="" />
+              <p class="premium-deal-loading-kicker">Offres premium</p>
+              <p>Chargement des offres premium...</p>
+            </div>
+          </article>
+          <article class="premium-deal-card premium-deal-card--loading" aria-hidden="true">
+            <div class="premium-deal-loading">
+              <img class="premium-deal-loading-logo" src="assets/trompette.avif" alt="" />
+              <p class="premium-deal-loading-kicker">Offres premium</p>
+              <p>Chargement des offres premium...</p>
+            </div>
+          </article>
+          <article class="premium-deal-card premium-deal-card--loading" aria-hidden="true">
+            <div class="premium-deal-loading">
+              <img class="premium-deal-loading-logo" src="assets/trompette.avif" alt="" />
+              <p class="premium-deal-loading-kicker">Offres premium</p>
+              <p>Chargement des offres premium...</p>
+            </div>
+          </article>
+        </div>
+      </div>
+      <button class="premium-deals-arrow premium-deals-arrow--next" type="button" id="home-premium-deals-next" aria-label="Offre suivante">
+        <span aria-hidden="true">›</span>
+      </button>
+    </div>
+    <div class="premium-deals-dots" id="home-premium-deals-dots" aria-label="Pagination du carousel"></div>
+  </div>
+</section>
+
+<section class="home-trust-section">
+  <div class="premium-trust-shell scroll-reveal" data-reveal="fade-in">
+    <p class="premium-trust-kicker">Ils nous font confiance</p>
+    <div class="premium-trust-logos">
+      <a
+        class="premium-trust-logo"
+        href="https://ici.radio-canada.ca/ohdio/premiere/emissions/c-est-encore-mieux-l-apres-midi/segments/rattrapage/2341810/arts-avec-emilie-rioux"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Ouvrir le segment Radio-Canada"
+      >
+        <img src="assets/ac-embed.png" alt="Radio-Canada" />
+      </a>
+      <div class="premium-trust-logo">
+        <img src="assets/logo_ciné_public.png" alt="Cinéma Public" />
+      </div>
+      <div class="premium-trust-logo">
+        <img src="assets/logo_ctda.jpg" alt="Théâtre d’aujourd’hui" />
+      </div>
+      <div class="premium-trust-logo">
+        <img src="assets/logo_espace_go.webp" alt="Espace GO" />
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="testimonial">
   <div class="testimonial-shell scroll-reveal" data-reveal="fade-in">
+    <h2 class="testimonial-title">Témoignages</h2>
     <div class="testimonial-stage">
       <button class="testimonial-arrow testimonial-arrow--prev" id="testimonial-prev" type="button" aria-label="Témoignage précédent">
         <span aria-hidden="true">‹</span>

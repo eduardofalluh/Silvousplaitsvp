@@ -173,7 +173,7 @@
     }
     .offers-filters {
       display: grid;
-      grid-template-columns: 1.2fr 0.9fr;
+      grid-template-columns: minmax(0, 1.3fr) repeat(2, minmax(0, 0.85fr));
       gap: 12px;
       margin: 18px 0 22px;
     }
@@ -217,6 +217,23 @@
       font-weight: 800;
       letter-spacing: 0.04em;
       text-transform: uppercase;
+    }
+    .offer-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .offer-type {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(51, 71, 202, 0.12);
+      color: var(--offers-blue);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
     }
     .offer-card h3 {
       margin: 0;
@@ -417,6 +434,9 @@
 
       <div class="offers-filters">
         <input type="search" id="search-input" placeholder="Rechercher un spectacle, un lieu ou un mot-clé..." />
+        <select id="offer-type-filter">
+          <option value="">Tous les types d’offres</option>
+        </select>
         <select id="region-filter">
           <option value="">Toutes les régions</option>
           <option value="Montreal">Montréal</option>
@@ -428,10 +448,6 @@
 
       <div id="offers-grid" class="offers-grid"></div>
     </section>
-
-    <div class="offers-footer-link">
-      <a href="premium-offers-admin.html">Espace admin</a>
-    </div>
   </main>
 
   <div id="offer-modal" class="offer-modal" hidden>
@@ -471,6 +487,7 @@
       const logoutButton = document.getElementById('logout-button');
       const memberState = document.getElementById('member-state');
       const searchInput = document.getElementById('search-input');
+      const offerTypeFilter = document.getElementById('offer-type-filter');
       const regionFilter = document.getElementById('region-filter');
       const offersGrid = document.getElementById('offers-grid');
       const offerModal = document.getElementById('offer-modal');
@@ -487,6 +504,7 @@
 
       let offers = [];
       let regions = [];
+      let offerTypes = [];
 
       function setMessage(kind, message) {
         authMessage.className = 'offers-message';
@@ -562,6 +580,18 @@
         regionFilter.value = optionLabels.includes(currentValue) ? currentValue : '';
       }
 
+      function syncOfferTypeFilterOptions() {
+        const currentValue = offerTypeFilter.value;
+        const optionLabels = offerTypes.length
+          ? offerTypes
+          : Array.from(new Set(offers.map((offer) => String(offer.offer_type || '').trim()).filter(Boolean)));
+        offerTypeFilter.innerHTML = [
+          "<option value=\"\">Tous les types d’offres</option>",
+          ...optionLabels.map((label) => `<option value="${escapeHtml(label)}">${escapeHtml(label)}</option>`),
+        ].join('');
+        offerTypeFilter.value = optionLabels.includes(currentValue) ? currentValue : '';
+      }
+
       function formatEventDate(value) {
         if (!value) return '';
         const date = new Date(value);
@@ -574,13 +604,15 @@
 
       function renderOffers() {
         const search = String(searchInput.value || '').trim().toLowerCase();
+        const offerType = offerTypeFilter.value;
         const region = regionFilter.value;
 
         const filtered = offers.filter((offer) => {
           const regionMatch = !region || offer.region === region;
-          const text = [offer.title, offer.venue, offer.description, offer.region].join(' ').toLowerCase();
+          const offerTypeMatch = !offerType || String(offer.offer_type || '') === offerType;
+          const text = [offer.title, offer.venue, offer.description, offer.region, offer.offer_type].join(' ').toLowerCase();
           const searchMatch = !search || text.includes(search);
-          return regionMatch && searchMatch;
+          return regionMatch && offerTypeMatch && searchMatch;
         });
 
         if (!filtered.length) {
@@ -592,7 +624,10 @@
           <article class="offer-card">
             <img src="${escapeHtml(offer.image_url || 'assets/premium_image.avif')}" alt="${escapeHtml(offer.title)}" />
             <div class="offer-card-body">
-              <div class="offer-region">${escapeHtml(formatRegionLabel(offer.region))}</div>
+              <div class="offer-tags">
+                <div class="offer-region">${escapeHtml(formatRegionLabel(offer.region))}</div>
+                ${offer.offer_type ? `<div class="offer-type">${escapeHtml(offer.offer_type)}</div>` : ''}
+              </div>
               <h3>${escapeHtml(offer.title)}</h3>
               <p class="offer-meta">${escapeHtml([offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · '))}</p>
               <p class="offer-desc">${escapeHtml(offer.description || '')}</p>
@@ -607,7 +642,9 @@
             if (!offer) return;
             modalImage.src = offer.image_url || 'assets/premium_image.avif';
             modalImage.alt = offer.title || 'Spectacle premium';
-            modalRegion.textContent = formatRegionLabel(offer.region);
+            modalRegion.textContent = [formatRegionLabel(offer.region), offer.offer_type]
+              .filter(Boolean)
+              .join(' · ');
             modalTitle.textContent = offer.title || '';
             modalMeta.textContent = [offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · ');
             modalDesc.textContent = offer.description || '';
@@ -645,7 +682,11 @@
         regions = Array.isArray(data.regions)
           ? data.regions.map((region) => normalizeRegion(region.label || region)).filter(Boolean)
           : [];
+        offerTypes = Array.isArray(data.offerTypes)
+          ? data.offerTypes.map((item) => String(item.label || item).trim()).filter(Boolean)
+          : [];
         openOffers(session);
+        syncOfferTypeFilterOptions();
         syncRegionFilterOptions();
         renderOffers();
       }
@@ -682,11 +723,13 @@
       });
 
       searchInput.addEventListener('input', renderOffers);
+      offerTypeFilter.addEventListener('change', renderOffers);
       regionFilter.addEventListener('change', renderOffers);
       logoutButton.addEventListener('click', () => {
         clearSession();
         offers = [];
         regions = [];
+        offerTypes = [];
         closeOffers();
         setMessage('', '');
       });

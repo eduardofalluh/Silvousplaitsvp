@@ -4,6 +4,7 @@ const {
   getMissingSheetEnvVars,
   listPremiumOffers,
   listPremiumOfferRegions,
+  listPremiumOfferTypes,
 } = require('../../utils/premium-offers-store');
 const { buildJsonHeaders, isAllowedOrigin } = require('../../utils/http-security');
 
@@ -56,14 +57,15 @@ exports.handler = async (event) => {
   }
 
   try {
-    const [offers, regions] = await Promise.all([
+    const [offers, regions, offerTypes] = await Promise.all([
       listPremiumOffers({ includeInactive: false }),
       listPremiumOfferRegions(),
+      listPremiumOfferTypes(),
     ]);
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ success: true, offers, regions }),
+      body: JSON.stringify({ success: true, offers, regions, offerTypes }),
     };
   } catch (error) {
     return {
