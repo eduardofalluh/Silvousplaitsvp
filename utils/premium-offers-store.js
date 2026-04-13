@@ -595,21 +595,13 @@ async function ensureRegionsSheet(sheets) {
     );
   }
 
-  const existingLabels = new Set(
-    rows
-      .slice(1)
-      .map((row) => normalizeForCompare(canonicalizeRegionLabel(row[1])))
-      .filter(Boolean)
-  );
-  const missingDefaults = DEFAULT_REGIONS.filter(
-    (label) => !existingLabels.has(normalizeForCompare(label))
-  );
-  if (missingDefaults.length) {
+  const hasAnyRegion = rows.slice(1).some((row) => row && normalize(row[1]));
+  if (!hasAnyRegion) {
     const timestamp = new Date().toISOString();
     await safeAppendRows(
       sheets,
       `${PREMIUM_OFFERS_REGIONS_TAB}!A:D`,
-      missingDefaults.map((label) => [slugifyRegionLabel(label), label, timestamp, timestamp]),
+      DEFAULT_REGIONS.map((label) => [slugifyRegionLabel(label), label, timestamp, timestamp]),
       'regions seed write'
     );
   }
@@ -635,21 +627,13 @@ async function ensureOfferTypesSheet(sheets) {
     );
   }
 
-  const existingLabels = new Set(
-    rows
-      .slice(1)
-      .map((row) => normalizeForCompare(canonicalizeOfferTypeLabel(row[1])))
-      .filter(Boolean)
-  );
-  const missingDefaults = DEFAULT_OFFER_TYPES.filter(
-    (label) => !existingLabels.has(normalizeForCompare(label))
-  );
-  if (missingDefaults.length) {
+  const hasAnyType = rows.slice(1).some((row) => row && normalize(row[1]));
+  if (!hasAnyType) {
     const timestamp = new Date().toISOString();
     await safeAppendRows(
       sheets,
       `${PREMIUM_OFFERS_TYPES_TAB}!A:D`,
-      missingDefaults.map((label) => [slugifyLabel(label), label, timestamp, timestamp]),
+      DEFAULT_OFFER_TYPES.map((label) => [slugifyLabel(label), label, timestamp, timestamp]),
       'offer types seed write'
     );
   }
@@ -923,7 +907,18 @@ async function savePremiumOffer(offer) {
     return { id: existingOffer.id, updated: true };
   }
 
-  await safeAppendRows(sheets, `${PREMIUM_OFFERS_TAB}!A:${endColumn}`, values, 'offer append');
+  // Find the last row that has a non-empty id (column A) to avoid
+  // appending to wrong columns when the sheet has empty rows in the middle.
+  const lastDataRow = rows.reduce((max, row, index) => {
+    return normalize(row && row[0]) ? index + 1 : max;
+  }, 0);
+  const newRowNumber = Math.max(lastDataRow, rows.length, 1) + 1;
+  await safeWriteRange(
+    sheets,
+    `${PREMIUM_OFFERS_TAB}!A${newRowNumber}:${endColumn}${newRowNumber}`,
+    values,
+    'offer append'
+  );
 
   return { id: values[0][0], created: true };
 }
