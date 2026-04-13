@@ -156,6 +156,11 @@ function looksLikeDateTime(value) {
   return /^\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}(?::\d{2})?)?$/.test(normalize(value));
 }
 
+function looksLikeUrl(value) {
+  const raw = normalize(value);
+  return /^https?:\/\//i.test(raw) || /^assets\//i.test(raw);
+}
+
 function isLegacyOfferRow(row) {
   return looksLikeDateTime(row[4]);
 }
@@ -244,11 +249,29 @@ function columnNumberToLetter(columnNumber) {
 function mapOfferRowWithHeaderMap(row, rowNumber, headerMap) {
   const headerRow = Object.keys(headerMap)
     .sort((a, b) => headerMap[a] - headerMap[b]);
-  const values = OFFER_HEADERS.reduce((acc, header) => {
+  const rawValues = OFFER_HEADERS.reduce((acc, header) => {
     const index = Object.prototype.hasOwnProperty.call(headerMap, header) ? headerMap[header] : -1;
     acc[header] = index >= 0 ? normalize(row[index]) : '';
     return acc;
   }, {});
+  const values =
+    !looksLikeUrl(rawValues.image_url) &&
+    looksLikeUrl(rawValues.event_date) &&
+    looksLikeDateTime(rawValues.venue)
+      ? {
+          ...rawValues,
+          offer_type: canonicalizeOfferTypeLabel(rawValues.filtre_offre),
+          venue: rawValues.offer_type,
+          event_date: rawValues.venue,
+          image_url: rawValues.event_date,
+          description: rawValues.image_url,
+          promo_code: rawValues.description,
+          ticket_url: rawValues.promo_code,
+          is_active: rawValues.ticket_url,
+          created_at: rawValues.is_active,
+          updated_at: rawValues.created_at,
+        }
+      : rawValues;
 
   const filterLabel = canonicalizeFilterLabel(values.filtre_offre);
   const offerTypeLabel = canonicalizeOfferTypeLabel(values.offer_type);

@@ -757,7 +757,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const meta = [offer.venue, formatOfferDate(offer.event_date)].filter(Boolean).join(' · ');
         return (
           '<article class="premium-deal-card">' +
-            '<img src="' + escapeHtml(offer.image_url || 'assets/premium_image.avif') + '" alt="' + escapeHtml(offer.title || '') + '" />' +
+            '<img src="' + escapeHtml(offer.image_url || 'assets/premium_image.avif') + '" alt="' + escapeHtml(offer.title || '') + '" onerror="this.onerror=null;this.src=\'assets/premium_image.avif\';" />' +
             '<div class="premium-deal-card-body">' +
               '<div class="premium-deal-tags">' +
                 '<p class="premium-deal-tag">' + escapeHtml(offer.region || '') + '</p>' +

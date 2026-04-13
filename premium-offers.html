@@ -686,7 +686,7 @@
 
         offersGrid.innerHTML = filtered.map((offer) => `
           <article class="offer-card">
-            <img src="${escapeHtml(offer.image_url || 'assets/premium_image.avif')}" alt="${escapeHtml(offer.title)}" />
+            <img src="${escapeHtml(offer.image_url || 'assets/premium_image.avif')}" alt="${escapeHtml(offer.title)}" onerror="this.onerror=null;this.src='assets/premium_image.avif';" />
             <div class="offer-card-body">
               <div class="offer-tags">
                 <div class="offer-region">${escapeHtml(formatRegionLabel(offer.region))}</div>
@@ -704,6 +704,10 @@
           button.addEventListener('click', () => {
             const offer = offers.find((item) => item.id === button.getAttribute('data-offer-id'));
             if (!offer) return;
+            modalImage.onerror = function () {
+              this.onerror = null;
+              this.src = 'assets/premium_image.avif';
+            };
             modalImage.src = offer.image_url || 'assets/premium_image.avif';
             modalImage.alt = offer.title || 'Spectacle premium';
             modalRegion.textContent = [formatRegionLabel(offer.region), offer.filtre_offre || offer.offer_type]
