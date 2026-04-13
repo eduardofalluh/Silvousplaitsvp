@@ -24,6 +24,20 @@ const OFFER_HEADERS = [
   'created_at',
   'updated_at',
 ];
+const LEGACY_OFFER_HEADERS = [
+  'id',
+  'title',
+  'region',
+  'venue',
+  'event_date',
+  'image_url',
+  'description',
+  'promo_code',
+  'ticket_url',
+  'is_active',
+  'created_at',
+  'updated_at',
+];
 const REGION_HEADERS = ['id', 'label', 'created_at', 'updated_at'];
 const OFFER_TYPE_HEADERS = ['id', 'label', 'created_at', 'updated_at'];
 const ACCESS_LOG_HEADERS = ['id', 'email', 'event_type', 'ip_address', 'user_agent', 'created_at'];
@@ -114,6 +128,14 @@ function normalizeBoolean(value, fallback = true) {
 function normalizeInteger(value, fallback = 0) {
   const parsed = Number.parseInt(String(value == null ? fallback : value).trim(), 10);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function looksLikeDateTime(value) {
+  return /^\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}(?::\d{2})?)?$/.test(normalize(value));
+}
+
+function isLegacyOfferRow(row) {
+  return looksLikeDateTime(row[4]);
 }
 
 function slugifyRegionLabel(value) {
@@ -618,7 +640,8 @@ function mapAccessLogRow(row, rowNumber) {
 }
 
 function mapOfferRow(row, rowNumber) {
-  const values = OFFER_HEADERS.reduce((acc, header, index) => {
+  const headers = isLegacyOfferRow(row) ? LEGACY_OFFER_HEADERS : OFFER_HEADERS;
+  const values = headers.reduce((acc, header, index) => {
     acc[header] = normalize(row[index]);
     return acc;
   }, {});

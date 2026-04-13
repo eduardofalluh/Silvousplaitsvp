@@ -4,20 +4,31 @@ const {
   verifyPremiumOffersOtpToken,
   createPremiumOffersSessionToken,
 } = require('../../utils/premium-offers-auth');
-
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Content-Type': 'application/json',
-};
+const { recordPremiumOfferAccessLog } = require('../../utils/premium-offers-store');
+const { checkRateLimit } = require('../../utils/rate-limit');
+const { buildJsonHeaders, isAllowedOrigin } = require('../../utils/http-security');
 
 function normalize(value) {
   return String(value || '').trim().toLowerCase();
 }
 
+function getClientIp(event) {
+  const raw =
+    event.headers['x-forwarded-for'] ||
+    event.headers['client-ip'] ||
+    event.headers['x-nf-client-connection-ip'] ||
+    '';
+  return String(raw).split(',')[0].trim();
+}
+
 exports.handler = async (event) => {
+  const headers = buildJsonHeaders(event, { noStore: true });
+
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers, body: '' };
+  }
+  if (!isAllowedOrigin(event)) {
+    return { statusCode: 403, headers, body: JSON.stringify({ error: 'Forbidden origin' }) };
   }
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
@@ -50,6 +61,18 @@ exports.handler = async (event) => {
     };
   }
 
+  const rateLimit = checkRateLimit(`premium-offers-verify:${getClientIp(event)}:${email}`, {
+    windowMs: 10 * 60 * 1000,
+    max: 10,
+  });
+  if (!rateLimit.allowed) {
+    return {
+      statusCode: 429,
+      headers,
+      body: JSON.stringify({ error: 'Trop de tentatives. Réessaie dans quelques minutes.' }),
+    };
+  }
+
   const otpResult = verifyPremiumOffersOtpToken(otpToken, email, otpCode);
   if (!otpResult.valid) {
     return {
@@ -66,6 +89,17 @@ exports.handler = async (event) => {
       headers,
       body: JSON.stringify({ error: 'Premium membership required' }),
     };
+  }
+
+  try {
+    await recordPremiumOfferAccessLog({
+      email,
+      event_type: 'sign_in',
+      ip_address: getClientIp(event),
+      user_agent: event.headers['user-agent'] || event.headers['User-Agent'] || '',
+    });
+  } catch (error) {
+    console.error('Premium access log write error:', error);
   }
 
   return {

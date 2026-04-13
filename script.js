@@ -754,15 +754,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!Array.isArray(offers) || !offers.length) return renderError();
       track.classList.remove('premium-deals-track--loading');
       track.innerHTML = offers.map((offer) => {
-        const meta = [offer.offer_type, offer.venue, formatOfferDate(offer.event_date)].filter(Boolean).join(' · ');
+        const meta = [offer.venue, formatOfferDate(offer.event_date)].filter(Boolean).join(' · ');
         return (
           '<article class="premium-deal-card">' +
             '<img src="' + escapeHtml(offer.image_url || 'assets/premium_image.avif') + '" alt="' + escapeHtml(offer.title || '') + '" />' +
             '<div class="premium-deal-card-body">' +
-              '<p class="premium-deal-tag">' + escapeHtml(offer.region || '') + '</p>' +
+              '<div class="premium-deal-tags">' +
+                '<p class="premium-deal-tag">' + escapeHtml(offer.region || '') + '</p>' +
+                (offer.offer_type ? '<p class="premium-deal-tag premium-deal-tag--secondary">' + escapeHtml(offer.offer_type) + '</p>' : '') +
+              '</div>' +
               '<h3>' + escapeHtml(offer.title || '') + '</h3>' +
-              (meta ? '<p class="premium-deal-meta">' + escapeHtml(meta) + '</p>' : '') +
-              '<p>' + escapeHtml(offer.description || '') + '</p>' +
+              (meta ? '<p class="premium-deal-meta premium-deal-meta--public">' + escapeHtml(meta) + '</p>' : '') +
             '</div>' +
           '</article>'
         );

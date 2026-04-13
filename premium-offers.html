@@ -454,6 +454,11 @@
 
       <form id="email-step" class="offers-form-grid">
         <input type="email" id="premium-email" placeholder="ton@email.com" required />
+        <button class="offers-button" type="submit">Recevoir mon code</button>
+      </form>
+
+      <form id="otp-step" class="offers-form-grid" hidden>
+        <input type="text" id="premium-otp" inputmode="numeric" maxlength="6" placeholder="Code a 6 chiffres" required />
         <button class="offers-button" type="submit">Voir les offres premium</button>
       </form>
 
@@ -520,6 +525,8 @@
       const offersApp = document.getElementById('offers-app');
       const emailForm = document.getElementById('email-step');
       const emailInput = document.getElementById('premium-email');
+      const otpForm = document.getElementById('otp-step');
+      const otpInput = document.getElementById('premium-otp');
       const authMessage = document.getElementById('auth-message');
       const logoutButton = document.getElementById('logout-button');
       const memberState = document.getElementById('member-state');
@@ -542,6 +549,7 @@
       let offers = [];
       let regions = [];
       let offerTypes = [];
+      let pendingOtpToken = '';
 
       function setMessage(kind, message) {
         authMessage.className = 'offers-message';
@@ -585,6 +593,12 @@
         offersApp.hidden = true;
         logoutButton.hidden = true;
         authPanel.hidden = false;
+      }
+
+      function resetOtpStep() {
+        pendingOtpToken = '';
+        otpInput.value = '';
+        otpForm.hidden = true;
       }
 
       function setLoading(isLoading) {
@@ -731,6 +745,7 @@
       emailForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         setMessage('', '');
+        resetOtpStep();
 
         const email = String(emailInput.value || '').trim();
         if (!email) return;
@@ -749,10 +764,46 @@
             return;
           }
 
+          pendingOtpToken = String(data.otpToken || '').trim();
+          if (!pendingOtpToken) {
+            setMessage('err', 'Code de verification introuvable.');
+            return;
+          }
+          otpForm.hidden = false;
+          otpInput.focus();
+          setMessage('ok', 'On vient de t’envoyer un code de verification par email.');
+        } finally {
+          setLoading(false);
+        }
+      });
+
+      otpForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        setMessage('', '');
+
+        const email = String(emailInput.value || '').trim();
+        const otpCode = String(otpInput.value || '').trim();
+        if (!email || !otpCode || !pendingOtpToken) return;
+
+        setLoading(true);
+        try {
+          const response = await fetch('/.netlify/functions/verify-premium-offers-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otpCode, otpToken: pendingOtpToken }),
+          });
+          const data = await response.json().catch(() => ({}));
+
+          if (!response.ok) {
+            setMessage('err', data.error || 'Verification impossible.');
+            return;
+          }
+
           setSession({
             email: data.email,
             accessToken: data.accessToken,
           });
+          resetOtpStep();
           await loadOffers();
         } finally {
           setLoading(false);
@@ -767,6 +818,7 @@
         offers = [];
         regions = [];
         offerTypes = [];
+        resetOtpStep();
         closeOffers();
         setMessage('', '');
       });
