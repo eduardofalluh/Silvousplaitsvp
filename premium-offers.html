@@ -312,6 +312,30 @@
       gap: 10px;
       flex-wrap: wrap;
     }
+    .offer-extra-fields {
+      display: grid;
+      gap: 8px;
+    }
+    .offer-extra-fields[hidden] {
+      display: none;
+    }
+    .offer-extra-field {
+      display: grid;
+      gap: 2px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: #f6f7fb;
+    }
+    .offer-extra-field strong {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: rgba(20, 33, 61, 0.58);
+    }
+    .offer-extra-field span {
+      line-height: 1.45;
+      color: var(--offers-ink);
+    }
     .offers-footer-link {
       margin-top: 24px;
       text-align: center;
@@ -493,6 +517,7 @@
         <h3 id="modal-title"></h3>
         <p id="modal-meta" class="offer-meta"></p>
         <p id="modal-desc" class="offer-desc"></p>
+        <div id="modal-extra-fields" class="offer-extra-fields" hidden></div>
         <div class="offer-code">
           <strong>Code promo</strong>
           <span id="modal-code"></span>
@@ -533,6 +558,7 @@
       const modalTitle = document.getElementById('modal-title');
       const modalMeta = document.getElementById('modal-meta');
       const modalDesc = document.getElementById('modal-desc');
+      const modalExtraFields = document.getElementById('modal-extra-fields');
       const modalCode = document.getElementById('modal-code');
       const modalLink = document.getElementById('modal-link');
       const closeModal = document.getElementById('close-modal');
@@ -621,7 +647,7 @@
         const currentValue = offerTypeFilter.value;
         const optionLabels = offerTypes.length
           ? offerTypes
-          : Array.from(new Set(offers.map((offer) => String(offer.offer_type || '').trim()).filter(Boolean)));
+          : Array.from(new Set(offers.map((offer) => String(offer.filtre_offre || offer.offer_type || '').trim()).filter(Boolean)));
         offerTypeFilter.innerHTML = [
           "<option value=\"\">Tous les types d’offres</option>",
           ...optionLabels.map((label) => `<option value="${escapeHtml(label)}">${escapeHtml(label)}</option>`),
@@ -646,8 +672,9 @@
 
         const filtered = offers.filter((offer) => {
           const regionMatch = !region || offer.region === region;
-          const offerTypeMatch = !offerType || String(offer.offer_type || '') === offerType;
-          const text = [offer.title, offer.venue, offer.description, offer.region, offer.offer_type].join(' ').toLowerCase();
+          const currentFilter = String(offer.filtre_offre || offer.offer_type || '');
+          const offerTypeMatch = !offerType || currentFilter === offerType;
+          const text = [offer.title, offer.venue, offer.description, offer.region, currentFilter].join(' ').toLowerCase();
           const searchMatch = !search || text.includes(search);
           return regionMatch && offerTypeMatch && searchMatch;
         });
@@ -663,7 +690,7 @@
             <div class="offer-card-body">
               <div class="offer-tags">
                 <div class="offer-region">${escapeHtml(formatRegionLabel(offer.region))}</div>
-                ${offer.offer_type ? `<div class="offer-type">${escapeHtml(offer.offer_type)}</div>` : ''}
+                ${(offer.filtre_offre || offer.offer_type) ? `<div class="offer-type">${escapeHtml(offer.filtre_offre || offer.offer_type)}</div>` : ''}
               </div>
               <h3>${escapeHtml(offer.title)}</h3>
               <p class="offer-meta">${escapeHtml([offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · '))}</p>
@@ -679,12 +706,25 @@
             if (!offer) return;
             modalImage.src = offer.image_url || 'assets/premium_image.avif';
             modalImage.alt = offer.title || 'Spectacle premium';
-            modalRegion.textContent = [formatRegionLabel(offer.region), offer.offer_type]
+            modalRegion.textContent = [formatRegionLabel(offer.region), offer.filtre_offre || offer.offer_type]
               .filter(Boolean)
               .join(' · ');
             modalTitle.textContent = offer.title || '';
             modalMeta.textContent = [offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · ');
             modalDesc.textContent = offer.description || '';
+            const extraFields = Object.entries(offer.extra_fields || {}).filter(([, value]) => String(value || '').trim());
+            if (extraFields.length) {
+              modalExtraFields.hidden = false;
+              modalExtraFields.innerHTML = extraFields.map(([key, value]) => `
+                <div class="offer-extra-field">
+                  <strong>${escapeHtml(String(key).replace(/[_-]+/g, ' '))}</strong>
+                  <span>${escapeHtml(value)}</span>
+                </div>
+              `).join('');
+            } else {
+              modalExtraFields.hidden = true;
+              modalExtraFields.innerHTML = '';
+            }
             modalCode.textContent = offer.promo_code || 'Code a venir';
             if (offer.ticket_url) {
               modalLink.href = offer.ticket_url;
@@ -721,7 +761,7 @@
           : [];
         offerTypes = Array.isArray(data.offerTypes)
           ? data.offerTypes.map((item) => String(item.label || item).trim()).filter(Boolean)
-          : [];
+          : Array.from(new Set(offers.map((offer) => String(offer.filtre_offre || offer.offer_type || '').trim()).filter(Boolean)));
         openOffers(session);
         syncOfferTypeFilterOptions();
         syncRegionFilterOptions();

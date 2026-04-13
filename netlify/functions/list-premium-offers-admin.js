@@ -1,5 +1,6 @@
 const { verifyAdminSessionToken } = require('../../utils/premium-offers-auth');
 const {
+  getSheetsClient,
   getMissingSheetEnvVars,
   listPremiumOffers,
   listPremiumOfferRegions,
@@ -42,12 +43,18 @@ exports.handler = async (event) => {
   }
 
   try {
-    const [offers, regions, offerTypes, showcaseItems] = await Promise.all([
-      listPremiumOffers({ includeInactive: true }),
-      listPremiumOfferRegions(),
-      listPremiumOfferTypes(),
-      listPremiumShowcaseItems({ includeInactive: true }),
+    const sheets = await getSheetsClient();
+    const [offers, regions, showcaseItems] = await Promise.all([
+      listPremiumOffers({ includeInactive: true, sheets }),
+      listPremiumOfferRegions({ sheets }),
+      listPremiumShowcaseItems({ includeInactive: true, sheets }),
     ]);
+    let offerTypes = [];
+    try {
+      offerTypes = await listPremiumOfferTypes({ sheets });
+    } catch (_) {
+      offerTypes = [];
+    }
     return {
       statusCode: 200,
       headers,

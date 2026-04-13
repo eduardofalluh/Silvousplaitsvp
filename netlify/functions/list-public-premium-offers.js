@@ -9,7 +9,7 @@ function sanitizePublicOffer(offer) {
     id: offer.id,
     title: offer.title,
     region: offer.region,
-    offer_type: offer.offer_type,
+    offer_type: offer.filtre_offre || offer.offer_type,
     venue: offer.venue,
     event_date: offer.event_date,
     image_url: offer.image_url,

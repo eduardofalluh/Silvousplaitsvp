@@ -179,6 +179,22 @@
     .region-row strong {
       font-size: 16px;
     }
+    .dynamic-fields {
+      display: grid;
+      gap: 12px;
+    }
+    .dynamic-fields[hidden] {
+      display: none;
+    }
+    .dynamic-field-group {
+      display: grid;
+      gap: 6px;
+    }
+    .dynamic-field-group label {
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(22, 32, 59, 0.72);
+    }
     #admin-app[hidden],
     #admin-login[hidden] {
       display: none;
@@ -254,6 +270,8 @@
             <select id="offer-type">
               <option value="">Choisir un type d’offre</option>
             </select>
+            <input type="text" id="offer-filter-tag" placeholder="Tag / filtre affiché (ex. Rabais)" />
+            <div id="offer-extra-fields" class="dynamic-fields" hidden></div>
             <input type="text" id="offer-venue" placeholder="Salle / lieu" />
             <input type="datetime-local" id="offer-date" />
             <input type="url" id="offer-image" placeholder="URL de l'image du spectacle" />
@@ -337,12 +355,14 @@
       const showcaseList = document.getElementById('showcase-list');
       const resetShowcaseFormButton = document.getElementById('reset-showcase-form');
       const accessLogList = document.getElementById('access-log-list');
+      const extraFieldsContainer = document.getElementById('offer-extra-fields');
 
       const fieldMap = {
         id: document.getElementById('offer-id'),
         title: document.getElementById('offer-title'),
         region: document.getElementById('offer-region'),
         offer_type: document.getElementById('offer-type'),
+        filtre_offre: document.getElementById('offer-filter-tag'),
         venue: document.getElementById('offer-venue'),
         event_date: document.getElementById('offer-date'),
         image_url: document.getElementById('offer-image'),
@@ -368,6 +388,8 @@
       let accessLogs = [];
       let adminAccessToken = '';
       let accessLogsRefreshTimer = null;
+      let dynamicExtraFieldKeys = [];
+      let currentEditingExtraFields = {};
 
       function setMessage(target, kind, message) {
         target.className = 'admin-message';
@@ -393,6 +415,8 @@
         form.reset();
         fieldMap.id.value = '';
         fieldMap.is_active.value = 'true';
+        currentEditingExtraFields = {};
+        renderDynamicExtraFields();
       }
 
       function resetShowcaseForm() {
@@ -433,6 +457,7 @@
         const labels = Array.from(
           new Set([
             ...offerTypes.map((item) => item.label),
+            ...offers.map((offer) => offer.filtre_offre || offer.offer_type),
             currentValue,
           ].filter(Boolean))
         ).sort((a, b) => a.localeCompare(b, 'fr-CA', { sensitivity: 'base' }));
@@ -442,6 +467,49 @@
           ...labels.map((label) => `<option value="${label}">${label}</option>`),
         ].join('');
         fieldMap.offer_type.value = labels.includes(currentValue) ? currentValue : '';
+      }
+
+      fieldMap.offer_type.addEventListener('change', () => {
+        if (!fieldMap.filtre_offre.value.trim()) {
+          fieldMap.filtre_offre.value = fieldMap.offer_type.value;
+        }
+      });
+
+      function toFieldLabel(key) {
+        return String(key || '')
+          .replace(/[_-]+/g, ' ')
+          .replace(/\b\w/g, (char) => char.toUpperCase());
+      }
+
+      function collectDynamicExtraFieldKeys() {
+        return Array.from(new Set(
+          offers.flatMap((offer) => Object.keys(offer.extra_fields || {}))
+        )).filter(Boolean).sort((a, b) => a.localeCompare(b, 'fr-CA', { sensitivity: 'base' }));
+      }
+
+      function renderDynamicExtraFields(values) {
+        const data = values || currentEditingExtraFields || {};
+        dynamicExtraFieldKeys = collectDynamicExtraFieldKeys();
+        if (!dynamicExtraFieldKeys.length) {
+          extraFieldsContainer.hidden = true;
+          extraFieldsContainer.innerHTML = '';
+          return;
+        }
+
+        extraFieldsContainer.hidden = false;
+        extraFieldsContainer.innerHTML = dynamicExtraFieldKeys.map((key) => `
+          <div class="dynamic-field-group">
+            <label for="extra-field-${key}">${toFieldLabel(key)}</label>
+            <input type="text" id="extra-field-${key}" data-extra-field="${key}" value="${String(data[key] || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}" />
+          </div>
+        `).join('');
+      }
+
+      function readDynamicExtraFields() {
+        return Array.from(extraFieldsContainer.querySelectorAll('[data-extra-field]')).reduce((acc, input) => {
+          acc[input.getAttribute('data-extra-field')] = input.value;
+          return acc;
+        }, {});
       }
 
       function toDateTimeLocalValue(value) {
@@ -552,7 +620,7 @@
           <article class="offer-admin-item">
             <img src="${offer.image_url || 'assets/premium_image.avif'}" alt="${offer.title || ''}" />
             <strong>${offer.title || ''}</strong>
-            <span>${[formatRegionLabel(offer.region), offer.offer_type, offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · ')}</span>
+            <span>${[formatRegionLabel(offer.region), offer.filtre_offre || offer.offer_type, offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · ')}</span>
             <span>${offer.is_active ? 'Active' : 'Inactive'}</span>
             <div class="offer-admin-actions">
               <button type="button" data-edit="${offer.id}" class="button-secondary">Modifier</button>
@@ -574,6 +642,8 @@
                 ? toDateTimeLocalValue(offer[key])
                 : (offer[key] || '');
             });
+            currentEditingExtraFields = Object.assign({}, offer.extra_fields || {});
+            renderDynamicExtraFields(currentEditingExtraFields);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           });
         });
@@ -726,6 +796,7 @@
         renderOfferTypes();
         renderOffers();
         renderShowcaseItems();
+        renderDynamicExtraFields(currentEditingExtraFields);
       }
 
       loginForm.addEventListener('submit', async (event) => {
@@ -755,6 +826,7 @@
           acc[key] = fieldMap[key].value;
           return acc;
         }, {});
+        payload.extra_fields = readDynamicExtraFields();
         payload.event_date = toIsoDateTimeValue(payload.event_date);
 
         const response = await authFetch('/.netlify/functions/save-premium-offer', {

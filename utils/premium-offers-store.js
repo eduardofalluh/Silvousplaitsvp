@@ -8,6 +8,7 @@ const PREMIUM_OFFERS_REGIONS_TAB = process.env.PREMIUM_OFFERS_REGIONS_TAB || 'pr
 const PREMIUM_OFFERS_TYPES_TAB = process.env.PREMIUM_OFFERS_TYPES_TAB || 'premium_offer_types';
 const PREMIUM_OFFERS_SHOWCASE_TAB = process.env.PREMIUM_OFFERS_SHOWCASE_TAB || 'premium_showcase';
 const PREMIUM_OFFERS_ACCESS_LOGS_TAB = process.env.PREMIUM_OFFERS_ACCESS_LOGS_TAB || 'premium_access_logs';
+const SPREADSHEET_META_CACHE_TTL_MS = 30 * 1000;
 
 const OFFER_HEADERS = [
   'id',
@@ -23,6 +24,7 @@ const OFFER_HEADERS = [
   'is_active',
   'created_at',
   'updated_at',
+  'filtre_offre',
 ];
 const LEGACY_OFFER_HEADERS = [
   'id',
@@ -62,6 +64,22 @@ const DEFAULT_OFFER_TYPES = [
   'Places VIP',
   'Invitations',
 ];
+const OFFER_HEADER_ALIASES = {
+  id: ['id'],
+  title: ['title', 'titre'],
+  region: ['region', 'ville'],
+  offer_type: ['offer_type', 'type_offre', 'type_d_offre'],
+  venue: ['venue', 'lieu', 'salle'],
+  event_date: ['event_date', 'date_evenement', 'date'],
+  image_url: ['image_url', 'image', 'image_link'],
+  description: ['description'],
+  promo_code: ['promo_code', 'code_promo'],
+  ticket_url: ['ticket_url', 'billetterie_url', 'ticket_link'],
+  is_active: ['is_active', 'active'],
+  created_at: ['created_at'],
+  updated_at: ['updated_at'],
+  filtre_offre: ['filtre_offre', 'filter_tag', 'offer_filter', 'tag_offre', 'tag'],
+};
 const DEFAULT_SHOWCASE_ITEMS = [
   {
     id: 'showcase_bleu_jeans_bleu',
@@ -109,6 +127,9 @@ const DEFAULT_SHOWCASE_ITEMS = [
     is_active: true,
   },
 ];
+let cachedSheetsClient = null;
+let cachedSpreadsheetMeta = null;
+let cachedSpreadsheetMetaAt = 0;
 
 function normalize(value) {
   return String(value || '').trim();
@@ -173,6 +194,83 @@ function slugifyLabel(value) {
 
 function canonicalizeOfferTypeLabel(value) {
   return normalize(value);
+}
+
+function canonicalizeFilterLabel(value) {
+  return normalize(value);
+}
+
+function buildHeaderIndexMap(headerRow) {
+  const normalizedHeaders = headerRow.map((value) => normalizeForCompare(value));
+  return Object.keys(OFFER_HEADER_ALIASES).reduce((acc, key) => {
+    const aliases = OFFER_HEADER_ALIASES[key].map((alias) => normalizeForCompare(alias));
+    const index = normalizedHeaders.findIndex((header) => aliases.includes(header));
+    if (index >= 0) acc[key] = index;
+    return acc;
+  }, {});
+}
+
+function getCanonicalHeaderKey(header) {
+  const normalizedHeader = normalizeForCompare(header);
+  for (const [key, aliases] of Object.entries(OFFER_HEADER_ALIASES)) {
+    if (aliases.some((alias) => normalizeForCompare(alias) === normalizedHeader)) {
+      return key;
+    }
+  }
+  return '';
+}
+
+function extractOfferExtraFields(headerRow, row) {
+  return headerRow.reduce((acc, header, index) => {
+    const headerLabel = normalize(header);
+    if (!headerLabel) return acc;
+    if (getCanonicalHeaderKey(headerLabel)) return acc;
+    acc[headerLabel] = normalize(row[index]);
+    return acc;
+  }, {});
+}
+
+function columnNumberToLetter(columnNumber) {
+  let value = Number(columnNumber) || 1;
+  let result = '';
+  while (value > 0) {
+    const remainder = (value - 1) % 26;
+    result = String.fromCharCode(65 + remainder) + result;
+    value = Math.floor((value - 1) / 26);
+  }
+  return result || 'A';
+}
+
+function mapOfferRowWithHeaderMap(row, rowNumber, headerMap) {
+  const headerRow = Object.keys(headerMap)
+    .sort((a, b) => headerMap[a] - headerMap[b]);
+  const values = OFFER_HEADERS.reduce((acc, header) => {
+    const index = Object.prototype.hasOwnProperty.call(headerMap, header) ? headerMap[header] : -1;
+    acc[header] = index >= 0 ? normalize(row[index]) : '';
+    return acc;
+  }, {});
+
+  const filterLabel = canonicalizeFilterLabel(values.filtre_offre);
+  const offerTypeLabel = canonicalizeOfferTypeLabel(values.offer_type);
+
+  return {
+    rowNumber,
+    id: values.id,
+    title: values.title,
+    region: canonicalizeRegionLabel(values.region),
+    offer_type: offerTypeLabel,
+    venue: values.venue,
+    event_date: values.event_date,
+    image_url: values.image_url,
+    description: values.description,
+    promo_code: values.promo_code,
+    ticket_url: values.ticket_url,
+    is_active: normalizeBoolean(values.is_active, true),
+    created_at: values.created_at,
+    updated_at: values.updated_at,
+    filtre_offre: filterLabel || offerTypeLabel,
+    extra_fields: extractOfferExtraFields(headerRow, row),
+  };
 }
 
 function dedupeRegionsForCleanup(regions) {
@@ -269,6 +367,9 @@ function getMissingSheetEnvVars() {
 }
 
 async function getSheetsClient() {
+  if (cachedSheetsClient) {
+    return cachedSheetsClient;
+  }
   const auth = new google.auth.JWT(
     GOOGLE_SERVICE_ACCOUNT_EMAIL,
     undefined,
@@ -276,7 +377,34 @@ async function getSheetsClient() {
     ['https://www.googleapis.com/auth/spreadsheets']
   );
   await auth.authorize();
-  return google.sheets({ version: 'v4', auth });
+  cachedSheetsClient = google.sheets({ version: 'v4', auth });
+  return cachedSheetsClient;
+}
+
+function invalidateSpreadsheetMetaCache() {
+  cachedSpreadsheetMeta = null;
+  cachedSpreadsheetMetaAt = 0;
+}
+
+async function getSpreadsheetMeta(sheets, { forceRefresh = false } = {}) {
+  const now = Date.now();
+  if (
+    !forceRefresh &&
+    cachedSpreadsheetMeta &&
+    cachedSpreadsheetMetaAt &&
+    now - cachedSpreadsheetMetaAt < SPREADSHEET_META_CACHE_TTL_MS
+  ) {
+    return cachedSpreadsheetMeta;
+  }
+
+  try {
+    const meta = await sheets.spreadsheets.get({ spreadsheetId: PREMIUM_OFFERS_SHEET_ID });
+    cachedSpreadsheetMeta = meta;
+    cachedSpreadsheetMetaAt = now;
+    return meta;
+  } catch (error) {
+    throw formatSheetsError(error, 'spreadsheet lookup');
+  }
 }
 
 function formatSheetsError(error, stage) {
@@ -315,6 +443,7 @@ async function safeWriteRange(sheets, range, values, stage) {
         values,
       },
     });
+    invalidateSpreadsheetMetaCache();
   } catch (error) {
     throw formatSheetsError(error, stage);
   }
@@ -329,18 +458,14 @@ async function safeAppendRows(sheets, range, values, stage) {
       insertDataOption: 'INSERT_ROWS',
       requestBody: { values },
     });
+    invalidateSpreadsheetMetaCache();
   } catch (error) {
     throw formatSheetsError(error, stage);
   }
 }
 
 async function ensurePremiumOffersSheet(sheets) {
-  let meta;
-  try {
-    meta = await sheets.spreadsheets.get({ spreadsheetId: PREMIUM_OFFERS_SHEET_ID });
-  } catch (error) {
-    throw formatSheetsError(error, 'spreadsheet lookup');
-  }
+  let meta = await getSpreadsheetMeta(sheets);
   const existing = (meta.data.sheets || []).find(
     (sheet) => String(sheet.properties && sheet.properties.title) === PREMIUM_OFFERS_TAB
   );
@@ -364,9 +489,11 @@ async function ensurePremiumOffersSheet(sheets) {
     } catch (error) {
       throw formatSheetsError(error, 'tab creation');
     }
+    invalidateSpreadsheetMetaCache();
+    meta = await getSpreadsheetMeta(sheets, { forceRefresh: true });
   }
 
-  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:M2`, 'header read');
+  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:N2`, 'header read');
   const rows = read.data.values || [];
   const headerRow = rows[0] || [];
   const legacyHeaders = [
@@ -389,6 +516,9 @@ async function ensurePremiumOffersSheet(sheets) {
   const matches =
     headerRow.length >= OFFER_HEADERS.length &&
     OFFER_HEADERS.every((header, index) => String(headerRow[index] || '').trim() === header);
+  const hasAllCurrentHeaders = OFFER_HEADERS.every((header) =>
+    headerRow.some((cell) => normalizeForCompare(cell) === normalizeForCompare(header))
+  );
 
   if (matchesLegacyHeaders && !matches) {
     const migratedRows = rows.slice(1).map((row) => [
@@ -405,12 +535,13 @@ async function ensurePremiumOffersSheet(sheets) {
       normalize(row[9]),
       normalize(row[10]),
       normalize(row[11]),
+      '',
     ]);
-    await safeWriteRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:M1`, [OFFER_HEADERS], 'header migration write');
+    await safeWriteRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:N1`, [OFFER_HEADERS], 'header migration write');
     if (migratedRows.length) {
       await safeWriteRange(
         sheets,
-        `${PREMIUM_OFFERS_TAB}!A2:M${migratedRows.length + 1}`,
+        `${PREMIUM_OFFERS_TAB}!A2:N${migratedRows.length + 1}`,
         migratedRows,
         'row migration write'
       );
@@ -418,8 +549,8 @@ async function ensurePremiumOffersSheet(sheets) {
     return;
   }
 
-  if (!matches) {
-    await safeWriteRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:M1`, [OFFER_HEADERS], 'header write');
+  if (!matches && !hasAllCurrentHeaders) {
+    await safeWriteRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:N1`, [OFFER_HEADERS], 'header write');
   }
 }
 
@@ -564,12 +695,7 @@ async function getPremiumOffersSheet(sheets) {
 }
 
 async function getOrCreateSheet(sheets, title, allowCreate = true) {
-  let meta;
-  try {
-    meta = await sheets.spreadsheets.get({ spreadsheetId: PREMIUM_OFFERS_SHEET_ID });
-  } catch (error) {
-    throw formatSheetsError(error, 'spreadsheet lookup');
-  }
+  let meta = await getSpreadsheetMeta(sheets);
   const existing = (meta.data.sheets || []).find(
     (sheet) => String(sheet.properties && sheet.properties.title) === title
   );
@@ -588,6 +714,8 @@ async function getOrCreateSheet(sheets, title, allowCreate = true) {
   } catch (error) {
     throw formatSheetsError(error, `${title} tab creation`);
   }
+
+  invalidateSpreadsheetMetaCache();
 
   return getOrCreateSheet(sheets, title, false);
 }
@@ -660,20 +788,31 @@ function mapOfferRow(row, rowNumber) {
     is_active: normalizeBoolean(values.is_active, true),
     created_at: values.created_at,
     updated_at: values.updated_at,
+    filtre_offre: canonicalizeFilterLabel(normalize(row[13])) || canonicalizeOfferTypeLabel(values.offer_type),
+    extra_fields: {},
   };
 }
 
-async function listPremiumOffers({ includeInactive = false } = {}) {
-  const sheets = await getSheetsClient();
+async function readPremiumOffersSheetData(sheets) {
   await ensurePremiumOffersSheet(sheets);
-  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_TAB}!A:M`, 'offers read');
-
+  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_TAB}!A:ZZ`, 'offers read');
   const rows = read.data.values || [];
+  const headerRow = (rows[0] || []).map((cell) => normalize(cell));
+  const headerMap = buildHeaderIndexMap(headerRow);
+  return { rows, headerRow, headerMap };
+}
+
+async function listPremiumOffers({ includeInactive = false, sheets: providedSheets } = {}) {
+  const sheets = providedSheets || await getSheetsClient();
+  const { rows, headerRow, headerMap } = await readPremiumOffersSheetData(sheets);
   if (rows.length < 2) return [];
 
   const offers = [];
   for (let i = 1; i < rows.length; i++) {
-    const offer = mapOfferRow(rows[i] || [], i + 1);
+    const row = rows[i] || [];
+    const offer = Object.keys(headerMap).length
+      ? mapOfferRowWithHeaderMap(row, i + 1, headerMap)
+      : mapOfferRow(row, i + 1);
     if (!offer.id || !offer.title) continue;
     offers.push(offer);
   }
@@ -693,13 +832,17 @@ async function listPremiumOffers({ includeInactive = false } = {}) {
   });
 }
 
-function createOfferRow(offer, existingOffer) {
+function createOfferRow(offer, existingOffer, headerRow) {
   const timestamp = new Date().toISOString();
   const current = existingOffer || {};
   const id = normalize(offer.id) || current.id || `offer_${Date.now()}`;
+  const extraFields = Object.assign({}, current.extra_fields || {}, offer.extra_fields || {});
+  const targetHeaders = headerRow && headerRow.length ? headerRow : OFFER_HEADERS;
 
-  return OFFER_HEADERS.map((header) => {
-    switch (header) {
+  return targetHeaders.map((header) => {
+    const headerLabel = normalize(header);
+    const canonicalKey = getCanonicalHeaderKey(headerLabel);
+    switch (canonicalKey) {
       case 'id':
         return id;
       case 'title':
@@ -731,30 +874,33 @@ function createOfferRow(offer, existingOffer) {
         return current.created_at || timestamp;
       case 'updated_at':
         return timestamp;
+      case 'filtre_offre':
+        return canonicalizeFilterLabel(offer.filtre_offre || current.filtre_offre || offer.offer_type || current.offer_type);
       default:
-        return '';
+        return normalize(extraFields[headerLabel]);
     }
   });
 }
 
 async function savePremiumOffer(offer) {
   const sheets = await getSheetsClient();
-  await ensurePremiumOffersSheet(sheets);
-  const offers = await listPremiumOffers({ includeInactive: true });
+  const { rows, headerRow } = await readPremiumOffersSheetData(sheets);
+  const offers = rows.length < 2 ? [] : await listPremiumOffers({ includeInactive: true, sheets });
   const existingOffer = offers.find((item) => item.id === normalize(offer.id));
-  const values = [createOfferRow(offer, existingOffer)];
+  const values = [createOfferRow(offer, existingOffer, headerRow)];
+  const endColumn = columnNumberToLetter((headerRow && headerRow.length) || OFFER_HEADERS.length);
 
   if (existingOffer) {
     await safeWriteRange(
       sheets,
-      `${PREMIUM_OFFERS_TAB}!A${existingOffer.rowNumber}:M${existingOffer.rowNumber}`,
+      `${PREMIUM_OFFERS_TAB}!A${existingOffer.rowNumber}:${endColumn}${existingOffer.rowNumber}`,
       values,
       'offer update'
     );
     return { id: existingOffer.id, updated: true };
   }
 
-  await safeAppendRows(sheets, `${PREMIUM_OFFERS_TAB}!A:M`, values, 'offer append');
+  await safeAppendRows(sheets, `${PREMIUM_OFFERS_TAB}!A:${endColumn}`, values, 'offer append');
 
   return { id: values[0][0], created: true };
 }
@@ -766,8 +912,7 @@ async function deletePremiumOffer(id) {
   }
 
   const sheets = await getSheetsClient();
-  await ensurePremiumOffersSheet(sheets);
-  const offers = await listPremiumOffers({ includeInactive: true });
+  const offers = await listPremiumOffers({ includeInactive: true, sheets });
   const existingOffer = offers.find((item) => item.id === normalizedId);
   if (!existingOffer) {
     throw new Error('Offer not found');
@@ -822,8 +967,8 @@ function mapShowcaseRow(row, rowNumber) {
   };
 }
 
-async function listPremiumOfferRegions() {
-  const sheets = await getSheetsClient();
+async function listPremiumOfferRegions({ sheets: providedSheets } = {}) {
+  const sheets = providedSheets || await getSheetsClient();
   await ensureRegionsSheet(sheets);
   const read = await safeReadRange(
     sheets,
@@ -851,28 +996,39 @@ async function listPremiumOfferRegions() {
   return kept;
 }
 
-async function listPremiumOfferTypes() {
-  const sheets = await getSheetsClient();
-  await ensureOfferTypesSheet(sheets);
-  const read = await safeReadRange(
-    sheets,
-    `${PREMIUM_OFFERS_TYPES_TAB}!A:D`,
-    'offer types list read'
-  );
-  const rows = read.data.values || [];
-  if (rows.length < 2) {
-    return DEFAULT_OFFER_TYPES.map((label, index) => ({
-      rowNumber: index + 2,
-      id: slugifyLabel(label),
-      label,
-    }));
+async function listPremiumOfferTypes({ sheets: providedSheets } = {}) {
+  try {
+    const sheets = providedSheets || await getSheetsClient();
+    await ensureOfferTypesSheet(sheets);
+    const read = await safeReadRange(
+      sheets,
+      `${PREMIUM_OFFERS_TYPES_TAB}!A:D`,
+      'offer types list read'
+    );
+    const rows = read.data.values || [];
+    if (rows.length >= 2) {
+      return rows
+        .slice(1)
+        .map((row, index) => mapOfferTypeRow(row, index + 2))
+        .filter((item) => item.label)
+        .sort((a, b) => a.label.localeCompare(b.label, 'fr-CA', { sensitivity: 'base' }));
+    }
+  } catch (error) {
+    // Fall through to derived offer types when the dedicated tab is unavailable or throttled.
   }
 
-  return rows
-    .slice(1)
-    .map((row, index) => mapOfferTypeRow(row, index + 2))
-    .filter((item) => item.label)
-    .sort((a, b) => a.label.localeCompare(b.label, 'fr-CA', { sensitivity: 'base' }));
+  const offers = await listPremiumOffers({ includeInactive: true, sheets: providedSheets });
+  const labels = Array.from(new Set(
+    offers
+      .map((offer) => canonicalizeFilterLabel(offer.filtre_offre || offer.offer_type))
+      .filter(Boolean)
+  )).sort((a, b) => a.localeCompare(b, 'fr-CA', { sensitivity: 'base' }));
+  const fallbackLabels = labels.length ? labels : DEFAULT_OFFER_TYPES;
+  return fallbackLabels.map((label, index) => ({
+    rowNumber: index + 2,
+    id: slugifyLabel(label),
+    label,
+  }));
 }
 
 async function savePremiumOfferRegion(region) {
@@ -882,8 +1038,7 @@ async function savePremiumOfferRegion(region) {
   }
 
   const sheets = await getSheetsClient();
-  await ensureRegionsSheet(sheets);
-  const regions = await listPremiumOfferRegions();
+  const regions = await listPremiumOfferRegions({ sheets });
   const existingRegion = regions.find(
     (item) => normalizeForCompare(item.label) === normalizeForCompare(label)
   );
@@ -909,8 +1064,7 @@ async function savePremiumOfferType(offerType) {
   }
 
   const sheets = await getSheetsClient();
-  await ensureOfferTypesSheet(sheets);
-  const offerTypes = await listPremiumOfferTypes();
+  const offerTypes = await listPremiumOfferTypes({ sheets });
   const existingItem = offerTypes.find(
     (item) => normalizeForCompare(item.label) === normalizeForCompare(label)
   );
@@ -936,10 +1090,9 @@ async function deletePremiumOfferRegion(id) {
   }
 
   const sheets = await getSheetsClient();
-  await ensureRegionsSheet(sheets);
   const [regions, offers] = await Promise.all([
-    listPremiumOfferRegions(),
-    listPremiumOffers({ includeInactive: true }),
+    listPremiumOfferRegions({ sheets }),
+    listPremiumOffers({ includeInactive: true, sheets }),
   ]);
   const existingRegion = regions.find((region) => region.id === normalizedId);
   if (!existingRegion) {
@@ -969,10 +1122,9 @@ async function deletePremiumOfferType(id) {
   }
 
   const sheets = await getSheetsClient();
-  await ensureOfferTypesSheet(sheets);
   const [offerTypes, offers] = await Promise.all([
-    listPremiumOfferTypes(),
-    listPremiumOffers({ includeInactive: true }),
+    listPremiumOfferTypes({ sheets }),
+    listPremiumOffers({ includeInactive: true, sheets }),
   ]);
   const existingItem = offerTypes.find((item) => item.id === normalizedId);
   if (!existingItem) {
@@ -980,7 +1132,7 @@ async function deletePremiumOfferType(id) {
   }
 
   const usedByOffer = offers.some(
-    (offer) => normalizeForCompare(offer.offer_type) === normalizeForCompare(existingItem.label)
+    (offer) => normalizeForCompare(offer.filtre_offre || offer.offer_type) === normalizeForCompare(existingItem.label)
   );
   if (usedByOffer) {
     throw new Error("Impossible de supprimer un type d'offre utilise par une offre");
@@ -995,8 +1147,8 @@ async function deletePremiumOfferType(id) {
   return { deleted: true, id: normalizedId };
 }
 
-async function listPremiumShowcaseItems({ includeInactive = false } = {}) {
-  const sheets = await getSheetsClient();
+async function listPremiumShowcaseItems({ includeInactive = false, sheets: providedSheets } = {}) {
+  const sheets = providedSheets || await getSheetsClient();
   await ensureShowcaseSheet(sheets);
   const read = await safeReadRange(
     sheets,
@@ -1055,8 +1207,7 @@ function createShowcaseRow(item, existingItem) {
 
 async function savePremiumShowcaseItem(item) {
   const sheets = await getSheetsClient();
-  await ensureShowcaseSheet(sheets);
-  const items = await listPremiumShowcaseItems({ includeInactive: true });
+  const items = await listPremiumShowcaseItems({ includeInactive: true, sheets });
   const existingItem = items.find((entry) => entry.id === normalize(item.id));
   const values = [createShowcaseRow(item, existingItem)];
 
@@ -1081,8 +1232,7 @@ async function deletePremiumShowcaseItem(id) {
   }
 
   const sheets = await getSheetsClient();
-  await ensureShowcaseSheet(sheets);
-  const items = await listPremiumShowcaseItems({ includeInactive: true });
+  const items = await listPremiumShowcaseItems({ includeInactive: true, sheets });
   const existingItem = items.find((item) => item.id === normalizedId);
   if (!existingItem) {
     throw new Error('Showcase item not found');
@@ -1092,8 +1242,8 @@ async function deletePremiumShowcaseItem(id) {
   return { deleted: true, id: normalizedId };
 }
 
-async function listPremiumOfferAccessLogs({ limit = 100 } = {}) {
-  const sheets = await getSheetsClient();
+async function listPremiumOfferAccessLogs({ limit = 100, sheets: providedSheets } = {}) {
+  const sheets = providedSheets || await getSheetsClient();
   await ensureAccessLogsSheet(sheets);
   const read = await safeReadRange(
     sheets,
@@ -1156,6 +1306,7 @@ module.exports = {
   parseEventStartDate,
   isExpiredOffer,
   buildDeleteRowsRequests,
+  getSheetsClient,
   getMissingSheetEnvVars,
   listPremiumOffers,
   listPremiumOfferRegions,
