@@ -12,15 +12,6 @@ function normalize(value) {
   return String(value || '').trim().toLowerCase();
 }
 
-function getClientIp(event) {
-  const raw =
-    event.headers['x-forwarded-for'] ||
-    event.headers['client-ip'] ||
-    event.headers['x-nf-client-connection-ip'] ||
-    '';
-  return String(raw).split(',')[0].trim();
-}
-
 exports.handler = async (event) => {
   const headers = buildJsonHeaders(event, { noStore: true });
 
@@ -61,7 +52,7 @@ exports.handler = async (event) => {
     };
   }
 
-  const rateLimit = checkRateLimit(`premium-offers-verify:${getClientIp(event)}:${email}`, {
+  const rateLimit = checkRateLimit(`premium-offers-verify:${email}`, {
     windowMs: 10 * 60 * 1000,
     max: 10,
   });
@@ -92,12 +83,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    await recordPremiumOfferAccessLog({
-      email,
-      event_type: 'sign_in',
-      ip_address: getClientIp(event),
-      user_agent: event.headers['user-agent'] || event.headers['User-Agent'] || '',
-    });
+    await recordPremiumOfferAccessLog({ email });
   } catch (error) {
     console.error('Premium access log write error:', error);
   }

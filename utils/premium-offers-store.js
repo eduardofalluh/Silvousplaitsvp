@@ -40,7 +40,8 @@ const LEGACY_OFFER_HEADERS = [
 ];
 const REGION_HEADERS = ['id', 'label', 'created_at', 'updated_at'];
 const OFFER_TYPE_HEADERS = ['id', 'label', 'created_at', 'updated_at'];
-const ACCESS_LOG_HEADERS = ['id', 'email', 'event_type', 'ip_address', 'user_agent', 'created_at'];
+const ACCESS_LOG_HEADERS = ['id', 'email', 'created_at'];
+const LEGACY_ACCESS_LOG_HEADERS = ['id', 'email', 'event_type', 'ip_address', 'user_agent', 'created_at'];
 const SHOWCASE_HEADERS = [
   'id',
   'title',
@@ -551,7 +552,7 @@ async function ensureAccessLogsSheet(sheets) {
   if (!hasExpectedHeaders) {
     await safeWriteRange(
       sheets,
-      `${PREMIUM_OFFERS_ACCESS_LOGS_TAB}!A1:F1`,
+      `${PREMIUM_OFFERS_ACCESS_LOGS_TAB}!A1:C1`,
       [ACCESS_LOG_HEADERS],
       'access logs header write'
     );
@@ -628,14 +629,12 @@ async function deleteOfferRows(sheets, offers, tabName = PREMIUM_OFFERS_TAB) {
 }
 
 function mapAccessLogRow(row, rowNumber) {
+  const createdAtIndex = row.length >= LEGACY_ACCESS_LOG_HEADERS.length ? 5 : 2;
   return {
     rowNumber,
     id: normalize(row[0]) || `access_log_${rowNumber}`,
     email: normalize(row[1]),
-    event_type: normalize(row[2]) || 'sign_in',
-    ip_address: normalize(row[3]),
-    user_agent: normalize(row[4]),
-    created_at: normalize(row[5]),
+    created_at: normalize(row[createdAtIndex]),
   };
 }
 
@@ -1124,14 +1123,11 @@ async function recordPremiumOfferAccessLog(entry) {
   const values = [[
     `access_log_${Date.now()}`,
     email,
-    normalize(entry && entry.event_type) || 'sign_in',
-    normalize(entry && entry.ip_address),
-    normalize(entry && entry.user_agent).slice(0, 500),
     timestamp,
   ]];
   await safeAppendRows(
     sheets,
-    `${PREMIUM_OFFERS_ACCESS_LOGS_TAB}!A:F`,
+    `${PREMIUM_OFFERS_ACCESS_LOGS_TAB}!A:C`,
     values,
     'access log append'
   );

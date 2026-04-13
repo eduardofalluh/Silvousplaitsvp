@@ -673,9 +673,7 @@
         accessLogList.innerHTML = accessLogs.map((entry) => `
           <article class="access-log-item">
             <strong>${entry.email || ''}</strong>
-            <div class="access-log-meta">${[formatDateTime(entry.created_at), entry.event_type || 'sign_in'].filter(Boolean).join(' · ')}</div>
-            <div class="access-log-meta">${entry.ip_address ? `IP: ${entry.ip_address}` : 'IP: indisponible'}</div>
-            <div class="access-log-meta">${entry.user_agent || 'Navigateur non disponible'}</div>
+            <div class="access-log-meta">${formatDateTime(entry.created_at)}</div>
           </article>
         `).join('');
       }
