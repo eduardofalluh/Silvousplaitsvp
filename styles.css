@@ -316,7 +316,12 @@ body.intro-fading .page-intro__visual {
 
 @media (max-width: 768px) {
   .page-intro__inner {
+    grid-template-columns: 1fr;
+    width: 100%;
+    max-width: 100%;
     justify-content: center;
+    justify-items: center;
+    align-items: center;
     padding: 24px 20px 64px 20px;
     min-height: auto;
     gap: 18px;
@@ -327,14 +332,16 @@ body.intro-fading .page-intro__visual {
   }
 
   .page-intro__title {
-    flex: 0 0 auto;
-    font-size: 40px;
-    line-height: 1.05;
-    text-align: center;
+    width: 100%;
     max-width: 100%;
-    overflow-wrap: anywhere;
-    word-break: normal;
-    hyphens: auto;
+    flex: 0 0 auto;
+    font-size: clamp(32px, 10.5vw, 40px);
+    line-height: 1;
+    text-align: center;
+    overflow-wrap: normal;
+    word-break: keep-all;
+    hyphens: none;
+    text-wrap: balance;
   }
 }
 
@@ -2446,10 +2453,16 @@ body.modal-open {
   }
 
   .hero-text h1 {
-    font-size: 40px;
-    line-height: 1.05;
+    width: 100%;
+    max-width: 100%;
+    font-size: clamp(32px, 10.5vw, 40px);
+    line-height: 1;
     margin-bottom: 24px;
     text-shadow: 0 2px 8px rgba(255, 255, 255, 0.8);
+    overflow-wrap: normal;
+    word-break: keep-all;
+    hyphens: none;
+    text-wrap: balance;
   }
 
   .hero-text p {
@@ -2895,8 +2908,8 @@ body.modal-open {
   }
 
   .hero-text h1 {
-    font-size: 32px !important;
-    line-height: 1.05;
+    font-size: clamp(30px, 10vw, 32px) !important;
+    line-height: 1;
     margin-bottom: 20px;
   }
 
@@ -4215,38 +4228,48 @@ video::-webkit-media-controls-panel {
   background: var(--bg);
 }
 
-.premium-proof-bubble-section {
-  padding: 14px 18px 28px;
+.premium-proof-quote-section {
   background: var(--bg);
+  padding: 8px 18px 32px;
 }
 
-.premium-proof-bubble {
+.premium-proof-quote {
   position: relative;
-  width: min(660px, 100%);
+  width: min(920px, 100%);
   margin: 0 auto;
-  padding: 14px 20px;
-  border: 1px solid rgba(51, 71, 202, 0.18);
-  border-radius: 16px;
-  background: #fffef5;
+  padding: 34px 54px;
+  border: 2px solid rgba(51, 71, 202, 0.14);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(223, 243, 111, 0.18) 0%, rgba(255, 254, 245, 0.98) 48%, #FFFEF5 100%);
   color: var(--blue);
-  font-size: clamp(14px, 1.2vw, 18px);
-  font-weight: 600;
-  line-height: 1.35;
+  font-size: clamp(20px, 1.55vw, 28px);
+  font-weight: 700;
+  line-height: 1.24;
   text-align: center;
-  box-shadow: 0 10px 18px rgba(51, 71, 202, 0.05);
+  box-shadow: 0 20px 40px rgba(51, 71, 202, 0.08);
 }
 
-.premium-proof-bubble::before {
-  content: "";
+.premium-proof-quote::before,
+.premium-proof-quote::after {
   position: absolute;
-  top: -8px;
-  left: 50%;
-  width: 14px;
-  height: 14px;
-  border-top: 1px solid rgba(51, 71, 202, 0.18);
-  border-left: 1px solid rgba(51, 71, 202, 0.18);
-  background: #fffef5;
-  transform: translateX(-50%) rotate(45deg);
+  color: rgba(51, 71, 202, 0.18);
+  font-family: 'Inter Display', sans-serif;
+  font-size: clamp(54px, 6vw, 84px);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.premium-proof-quote::before {
+  content: "“";
+  left: 18px;
+  top: 8px;
+}
+
+.premium-proof-quote::after {
+  content: "”";
+  right: 20px;
+  bottom: -18px;
 }
 
 .premium-trust-shell {
@@ -4323,14 +4346,16 @@ video::-webkit-media-controls-panel {
 }
 
 .premium-steps-title-emphasis {
-  display: inline-block;
-  padding: 0.04em 0.16em 0.08em;
-  border-radius: 2px;
-  background: var(--blue);
-  color: #fff;
+  display: inline;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-family: 'Inter Display', sans-serif;
   font-weight: 900;
-  line-height: 0.98;
-  vertical-align: baseline;
+  font-size: 1.18em;
+  letter-spacing: -0.045em;
+  line-height: inherit;
+  text-shadow: 0 0 0 currentColor;
 }
 
 .premium-steps-flow {
@@ -5044,6 +5069,33 @@ video::-webkit-media-controls-panel {
 
   .premium-offers-access-link {
     width: min(100%, 300px);
+  }
+
+  .premium-proof-quote-section {
+    padding: 10px 16px 24px;
+  }
+
+  .premium-proof-quote {
+    width: min(100%, 560px);
+    padding: 26px 22px;
+    border-radius: 18px;
+    font-size: 17px;
+    line-height: 1.26;
+  }
+
+  .premium-proof-quote::before,
+  .premium-proof-quote::after {
+    font-size: 52px;
+  }
+
+  .premium-proof-quote::before {
+    left: 10px;
+    top: 6px;
+  }
+
+  .premium-proof-quote::after {
+    right: 12px;
+    bottom: -10px;
   }
 
   .premium-proof-banner p {
