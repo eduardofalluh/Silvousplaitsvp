@@ -5195,6 +5195,12 @@ video::-webkit-media-controls-panel {
     padding-right: 16px;
   }
 
+  .premium-deals-section h2 {
+    margin-bottom: 26px;
+    font-size: clamp(24px, 7.2vw, 36px);
+    line-height: 1.08;
+  }
+
   .premium-step,
   .premium-step--center,
   .premium-step--right {
@@ -5218,35 +5224,53 @@ video::-webkit-media-controls-panel {
   }
 
   .premium-deals-carousel {
-    margin-top: 12px;
-    padding: 8px 0 0;
+    margin-top: 8px;
+    padding: 0;
   }
 
   .premium-deals-viewport {
-    padding: 8px 0 18px;
+    padding: 6px 2px 18px;
   }
 
   .premium-deals-track {
     gap: 16px;
-    padding: 0;
+    padding: 0 1px;
   }
 
   .premium-deal-card {
-    flex-basis: calc(100vw - 32px);
-    min-width: calc(100vw - 32px);
-    max-width: calc(100vw - 32px);
-    height: 400px;
+    flex-basis: min(calc(100vw - 36px), 420px);
+    min-width: min(calc(100vw - 36px), 420px);
+    max-width: min(calc(100vw - 36px), 420px);
+    height: 360px;
     transform: none !important;
     opacity: 1 !important;
   }
 
+  .premium-deal-card--loading,
+  .premium-deal-card--message {
+    min-width: min(calc(100vw - 36px), 420px);
+  }
+
+  .premium-deal-loading {
+    gap: 10px;
+    padding: 24px 18px;
+  }
+
   .premium-deal-loading-logo {
-    width: 88px;
-    height: 88px;
+    width: 72px;
+    height: 72px;
+  }
+
+  .premium-deal-loading p {
+    font-size: 18px;
   }
 
   .premium-deals-arrow {
     display: none;
+  }
+
+  .premium-deals-dots {
+    margin-top: 14px;
   }
 
   .premium-pricing-grid--framed {
@@ -5354,14 +5378,19 @@ video::-webkit-media-controls-panel {
   }
 
   .premium-deals-carousel {
-    padding-top: 6px;
+    padding-top: 0;
   }
 
   .premium-deal-card {
-    flex-basis: calc(100vw - 24px);
-    min-width: calc(100vw - 24px);
-    max-width: calc(100vw - 24px);
-    height: 360px;
+    flex-basis: calc(100vw - 28px);
+    min-width: calc(100vw - 28px);
+    max-width: calc(100vw - 28px);
+    height: 330px;
+  }
+
+  .premium-deal-card--loading,
+  .premium-deal-card--message {
+    min-width: calc(100vw - 28px);
   }
 
   .premium-deal-loading p {
