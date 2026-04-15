@@ -456,6 +456,8 @@ footer {
   padding: 0;
   text-decoration: none;
   line-height: 0;
+  transform-origin: left center;
+  transition: transform 180ms ease;
 }
 
 .logo img {
@@ -470,17 +472,91 @@ footer {
 }
 
 .nav a {
+  display: inline-flex;
+  align-items: center;
   margin-left: 24px;
   text-decoration: none;
   color: #3347CA;
   font-weight: 600;
   position: relative;
+  transform-origin: center center;
+  transition: transform 180ms ease, color 180ms ease;
+  will-change: transform;
 }
 
 .nav a::after {
   content: '▼';
   font-size: 10px;
   margin-left: 4px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nav a:hover,
+  .nav a:focus-visible {
+    transform: scale(1.12);
+  }
+
+  .logo a:hover,
+  .logo a:focus-visible {
+    transform: scale(1.05);
+  }
+
+  .email-form button:hover:not(:disabled),
+  .email-form button:focus-visible:not(:disabled),
+  ._form_1 button[type="submit"]:hover:not(:disabled),
+  ._form_1 ._submit:hover:not(:disabled),
+  ._form_1 button[type="submit"]:focus-visible:not(:disabled),
+  ._form_1 ._submit:focus-visible:not(:disabled),
+  #_form_1_ button[type="submit"]:hover:not(:disabled),
+  #_form_1_ ._submit:hover:not(:disabled),
+  #_form_1_ button[type="submit"]:focus-visible:not(:disabled),
+  #_form_1_ ._submit:focus-visible:not(:disabled),
+  .cta-button:hover,
+  .cta-button:focus-visible,
+  .price-card button:hover,
+  .price-card button:focus-visible,
+  .premium-hero-primary:hover,
+  .premium-hero-primary:focus-visible,
+  .premium-card-button:hover,
+  .premium-card-button:focus-visible,
+  .premium-bottom-button:hover,
+  .premium-bottom-button:focus-visible,
+  .premium-final-cta-button:hover,
+  .premium-final-cta-button:focus-visible,
+  .premium-offers-access-link:hover,
+  .premium-offers-access-link:focus-visible {
+    transform: translateY(-2px) scale(1.04);
+  }
+
+  .card:hover,
+  .card-final:hover,
+  .price-card:hover,
+  .faq-item:hover,
+  .premium-faq-card:hover,
+  .premium-faq-row:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 22px 42px rgba(51, 71, 202, 0.14);
+  }
+
+  .premium-faq-card:hover,
+  .premium-faq-row:hover {
+    border-color: rgba(51, 71, 202, 0.22);
+  }
+
+  .premium-deal-card:hover {
+    transform: translateY(-8px) scale(0.98);
+    box-shadow: 0 30px 74px rgba(51, 71, 202, 0.18);
+    opacity: 1;
+  }
+
+  .premium-deal-card.is-active:hover {
+    transform: translateY(-10px) scale(1.01);
+  }
+
+  .testimonial-slide.is-active:hover {
+    transform: translateX(-50%) translateZ(0) scale(1.03);
+    box-shadow: 0 20px 40px rgba(51, 71, 202, 0.12);
+  }
 }
 
 /* Remove arrow from Premium and Contact links on desktop */
@@ -533,7 +609,7 @@ footer {
 .hero {
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
-  padding: 40px 48px 125px 48px;
+  padding: 72px 48px 125px 48px;
   gap: 35px;
   align-items: center;
   max-width: 90%;
@@ -680,7 +756,8 @@ footer {
   font-weight: 600;
   font-size: 18px;
   white-space: nowrap;
-  transition: opacity 0.2s;
+  transition: transform 180ms ease, box-shadow 180ms ease, opacity 0.2s;
+  box-shadow: 0 10px 20px rgba(51, 71, 202, 0.16);
 }
 
 .email-form button:hover {
@@ -786,7 +863,8 @@ footer {
   font-weight: 600 !important;
   font-size: 18px !important;
   white-space: nowrap;
-  transition: opacity 0.2s;
+  transition: transform 180ms ease, box-shadow 180ms ease, opacity 0.2s;
+  box-shadow: 0 10px 20px rgba(51, 71, 202, 0.16);
 }
 ._form_1 button[type="submit"]:hover,
 ._form_1 ._submit:hover,
@@ -939,6 +1017,7 @@ footer {
   max-width: 100%;
   box-sizing: border-box;
   overflow: hidden;
+  transition: transform 220ms ease, box-shadow 220ms ease;
 }
 
 .card .cta-button {
@@ -990,6 +1069,7 @@ footer {
   max-width: 100%;
   box-sizing: border-box;
   overflow: hidden;
+  transition: transform 220ms ease, box-shadow 220ms ease;
 }
 
 .card-final .cta-button {
@@ -1035,6 +1115,8 @@ footer {
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  box-shadow: 0 10px 20px rgba(51, 71, 202, 0.16);
 }
 
 /* Pricing Section */
@@ -1072,6 +1154,7 @@ footer {
   flex-direction: column;
   height: 100%;
   align-items: flex-start;
+  transition: transform 220ms ease, box-shadow 220ms ease;
 }
 
 /* Card colors: left = gray (ex-Gratuit), middle = light purple (ex-Premium), right = blue (ex-Sans) */
@@ -1209,6 +1292,8 @@ footer {
   font-size: 18px;
   background: #3347CA;
   color: white;
+  transition: transform 180ms ease, box-shadow 180ms ease, opacity 0.2s;
+  box-shadow: 0 10px 20px rgba(51, 71, 202, 0.18);
 }
 
 .price-card.featured button {
@@ -1617,6 +1702,7 @@ body.modal-open {
   padding: 36px;
   border-radius: 72px;
   box-sizing: border-box;
+  transition: transform 220ms ease, box-shadow 220ms ease;
 }
 
 /* Laptop/Desktop view - Bigger gap between left and right cards */
@@ -2085,7 +2171,7 @@ body.modal-open {
 
   .hero {
     grid-template-columns: 1fr;
-    padding: 32px 32px 80px 32px;
+    padding: 52px 32px 80px 32px;
     gap: 60px;
     text-align: center;
   }
@@ -3370,9 +3456,10 @@ body.modal-open {
   font-weight: 600;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
   font-family: 'Inter', sans-serif;
   margin-top: auto;
+  box-shadow: 0 10px 20px rgba(51, 71, 202, 0.18);
 }
 
 .premium-card-button:hover {
@@ -3472,10 +3559,11 @@ body.modal-open {
   font-weight: 600;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
   font-family: 'Inter', sans-serif;
   width: min(100%, 400px);
   text-align: center;
+  box-shadow: 0 10px 20px rgba(51, 71, 202, 0.18);
 }
 
 .premium-bottom-button:hover {
@@ -3535,6 +3623,7 @@ body.modal-open {
   border-radius: 28px;
   padding: 28px;
   box-shadow: 0 16px 36px rgba(22, 26, 56, 0.08);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
 }
 
 .premium-faq-card h3 {
@@ -4211,14 +4300,17 @@ video::-webkit-media-controls-panel {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 252px;
-  padding: 13px 26px;
+  min-width: 308px;
+  padding: 17px 34px;
   border-radius: 12px;
   background: var(--blue);
   color: #fff;
   text-decoration: none;
   font-weight: 800;
+  font-size: 20px;
+  line-height: 1.1;
   box-shadow: 0 14px 28px rgba(51, 71, 202, 0.18);
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
 }
 
 .premium-steps-section,
@@ -4782,6 +4874,7 @@ video::-webkit-media-controls-panel {
   font-weight: 800;
   text-decoration: none;
   box-shadow: 0 8px 18px rgba(31, 41, 87, 0.08);
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, color 180ms ease;
 }
 
 .premium-offers-access-link:hover {
@@ -4872,6 +4965,7 @@ video::-webkit-media-controls-panel {
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid rgba(51, 71, 202, 0.12);
   box-shadow: 0 18px 34px rgba(51, 71, 202, 0.06);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
 }
 
 .premium-faq-row h3 {
@@ -4984,6 +5078,8 @@ video::-webkit-media-controls-panel {
   .premium-hero-primary {
     width: 100%;
     min-width: 0;
+    padding: 18px 24px;
+    font-size: 18px;
   }
 
   .premium-trust-logos {
