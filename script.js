@@ -531,8 +531,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateCards() {
+      const half = Math.floor(cards.length / 2);
+
       cards.forEach((card, index) => {
-        card.classList.toggle('is-active', index === currentIndex);
+        let offset = index - currentIndex;
+        if (offset > half) offset -= cards.length;
+        if (offset < -half) offset += cards.length;
+
+        card.classList.remove(
+          'is-active',
+          'is-prev',
+          'is-next',
+          'is-far-prev',
+          'is-far-next',
+          'is-off-left',
+          'is-off-right'
+        );
+
+        if (isMobileView()) {
+          card.classList.toggle('is-active', index === currentIndex);
+          return;
+        }
+
+        if (offset === 0) {
+          card.classList.add('is-active');
+        } else if (offset === -1) {
+          card.classList.add('is-prev');
+        } else if (offset === 1) {
+          card.classList.add('is-next');
+        } else if (offset === -2) {
+          card.classList.add('is-far-prev');
+        } else if (offset === 2) {
+          card.classList.add('is-far-next');
+        } else if (offset < 0) {
+          card.classList.add('is-off-left');
+        } else {
+          card.classList.add('is-off-right');
+        }
       });
     }
 
