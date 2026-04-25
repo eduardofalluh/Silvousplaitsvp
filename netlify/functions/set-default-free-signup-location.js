@@ -1,12 +1,7 @@
 const { verifyAdminSessionToken } = require('../../utils/premium-offers-auth');
 const {
-  getSheetsClient,
   getMissingSheetEnvVars,
-  listPremiumOffers,
-  listPremiumOfferRegions,
-  listPremiumOfferTypes,
-  listFreeSignupLocations,
-  listPremiumShowcaseItems,
+  setDefaultFreeSignupLocation,
 } = require('../../utils/premium-offers-store');
 const { buildJsonHeaders, isAllowedOrigin } = require('../../utils/http-security');
 
@@ -25,7 +20,7 @@ exports.handler = async (event) => {
   if (!isAllowedOrigin(event)) {
     return { statusCode: 403, headers, body: JSON.stringify({ error: 'Forbidden origin' }) };
   }
-  if (event.httpMethod !== 'GET') {
+  if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
@@ -43,30 +38,26 @@ exports.handler = async (event) => {
     return { statusCode: 401, headers, body: JSON.stringify({ error: 'Admin session invalide' }) };
   }
 
+  let body;
   try {
-    const sheets = await getSheetsClient();
-    const [offers, regions, showcaseItems, freeSignupLocations] = await Promise.all([
-      listPremiumOffers({ includeInactive: true, sheets }),
-      listPremiumOfferRegions({ sheets }),
-      listPremiumShowcaseItems({ includeInactive: true, sheets }),
-      listFreeSignupLocations({ sheets }),
-    ]);
-    let offerTypes = [];
-    try {
-      offerTypes = await listPremiumOfferTypes({ sheets });
-    } catch (_) {
-      offerTypes = [];
-    }
+    body = JSON.parse(event.body || '{}');
+  } catch {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid JSON body' }) };
+  }
+
+  try {
+    const result = await setDefaultFreeSignupLocation(body.id);
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ success: true, offers, regions, offerTypes, showcaseItems, freeSignupLocations }),
+      body: JSON.stringify({ success: true, ...result }),
     };
   } catch (error) {
+    const isNotFound = error.message === 'Free signup location not found';
     return {
-      statusCode: 500,
+      statusCode: isNotFound ? 404 : 500,
       headers,
-      body: JSON.stringify({ error: error.message || 'Failed to load admin premium offers' }),
+      body: JSON.stringify({ error: error.message || 'Failed to set default free signup location' }),
     };
   }
 };

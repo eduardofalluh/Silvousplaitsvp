@@ -896,6 +896,147 @@ document.addEventListener('DOMContentLoaded', () => {
   // =====================================================
   // ACTIVE CAMPAIGN SIGNUP (TOP + BOTTOM FORMS)
   // =====================================================
+  const fallbackFreeSignupLocations = [
+    {
+      id: 'montreal',
+      label: 'Montréal',
+      u: '1',
+      f: '1',
+      s: '',
+      c: '0',
+      m: '0',
+      act: 'sub',
+      v: '2',
+      or: '3984880d-52e1-445d-99b0-09aeef208544',
+      is_default: true,
+    },
+    {
+      id: 'quebec',
+      label: 'Québec',
+      u: '69ED120690823',
+      f: '9',
+      s: '',
+      c: '0',
+      m: '0',
+      act: 'sub',
+      v: '2',
+      or: '0b035bc1-fee2-41ea-b49c-c65e19a08016',
+      is_default: false,
+    },
+    {
+      id: 'trois_rivieres',
+      label: 'Trois-Rivières',
+      u: '69ED1206F0DD6',
+      f: '11',
+      s: '',
+      c: '0',
+      m: '0',
+      act: 'sub',
+      v: '2',
+      or: '77d982e4-b8c2-4a43-b59a-d54646f9c9ee',
+      is_default: false,
+    },
+    {
+      id: 'sherbrooke',
+      label: 'Sherbrooke',
+      u: '69ED12076A999',
+      f: '13',
+      s: '',
+      c: '0',
+      m: '0',
+      act: 'sub',
+      v: '2',
+      or: 'cbe7d463-4a76-4436-9d41-64003c44e753',
+      is_default: false,
+    },
+  ];
+  const freeSignupForms = Array.from(document.querySelectorAll('form[data-free-signup-form="true"]'));
+  const freeSignupLocationSelects = Array.from(document.querySelectorAll('[data-free-signup-location]'));
+  let freeSignupLocations = fallbackFreeSignupLocations.slice();
+
+  function getDefaultFreeSignupLocation() {
+    return freeSignupLocations.find((item) => item.is_default) || freeSignupLocations[0] || null;
+  }
+
+  function renderFreeSignupLocationOptions(selectedId) {
+    if (!freeSignupLocationSelects.length) return;
+    const fallbackSelected = selectedId || (getDefaultFreeSignupLocation() && getDefaultFreeSignupLocation().id) || 'montreal';
+    freeSignupLocationSelects.forEach(function (select) {
+      select.innerHTML = freeSignupLocations.map(function (item) {
+        return '<option value="' + item.id + '">' + item.label + '</option>';
+      }).join('');
+      select.value = freeSignupLocations.some(function (item) { return item.id === fallbackSelected; })
+        ? fallbackSelected
+        : (getDefaultFreeSignupLocation() ? getDefaultFreeSignupLocation().id : '');
+    });
+  }
+
+  function applyFreeSignupLocation(locationId) {
+    const location = freeSignupLocations.find(function (item) { return item.id === locationId; }) || getDefaultFreeSignupLocation();
+    if (!location) return;
+
+    freeSignupLocationSelects.forEach(function (select) {
+      select.value = location.id;
+    });
+
+    freeSignupForms.forEach(function (form) {
+      Array.from(form.querySelectorAll('[data-signup-config]')).forEach(function (input) {
+        const key = input.getAttribute('data-signup-config');
+        input.value = location[key] || '';
+      });
+    });
+  }
+
+  async function initFreeSignupLocations() {
+    if (!freeSignupForms.length || !freeSignupLocationSelects.length) return;
+
+    renderFreeSignupLocationOptions();
+    applyFreeSignupLocation((getDefaultFreeSignupLocation() || {}).id);
+
+    freeSignupLocationSelects.forEach(function (select) {
+      select.addEventListener('change', function () {
+        applyFreeSignupLocation(select.value);
+      });
+    });
+
+    try {
+      const response = await fetch('/.netlify/functions/list-free-signup-locations');
+      const data = await response.json().catch(function () { return {}; });
+      if (!response.ok || !Array.isArray(data.locations) || !data.locations.length) return;
+
+      freeSignupLocations = data.locations
+        .map(function (item) {
+          return {
+            id: String(item.id || '').trim(),
+            label: String(item.label || '').trim(),
+            u: String(item.u || '').trim(),
+            f: String(item.f || '').trim(),
+            s: String(item.s || '').trim(),
+            c: String(item.c || '0').trim(),
+            m: String(item.m || '0').trim(),
+            act: String(item.act || 'sub').trim(),
+            v: String(item.v || '2').trim(),
+            or: String(item.or || '').trim(),
+            is_default: !!item.is_default,
+          };
+        })
+        .filter(function (item) {
+          return item.id && item.label && item.u && item.f && item.or;
+        });
+
+      if (!freeSignupLocations.length) {
+        freeSignupLocations = fallbackFreeSignupLocations.slice();
+      }
+
+      renderFreeSignupLocationOptions();
+      applyFreeSignupLocation((getDefaultFreeSignupLocation() || {}).id);
+    } catch (error) {
+      console.error('Free signup locations load error:', error);
+    }
+  }
+
+  initFreeSignupLocations();
+
   const formFeedbackTimeouts = new WeakMap();
 
   function setFormFeedback(form, message, type = 'info') {

@@ -50,6 +50,15 @@
       padding: 12px 14px;
       background: #fff;
     }
+    input[type="checkbox"] {
+      width: auto;
+      padding: 0;
+    }
+    .checkbox-inline {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
     textarea {
       min-height: 100px;
       resize: vertical;
@@ -186,6 +195,11 @@
     .region-row strong {
       font-size: 16px;
     }
+    .region-row__meta {
+      color: rgba(22, 32, 59, 0.74);
+      font-size: 14px;
+      word-break: break-word;
+    }
     .dynamic-fields {
       display: grid;
       gap: 12px;
@@ -257,6 +271,32 @@
             </form>
             <div id="offer-type-form-message" class="admin-message" aria-live="polite"></div>
             <div id="offer-type-list" class="region-manager"></div>
+          </div>
+
+          <div>
+            <h2>Inscriptions gratuites par ville</h2>
+            <form id="free-signup-location-form">
+              <input type="hidden" id="free-signup-location-id" />
+              <input type="text" id="free-signup-location-label" placeholder="Ville affichée (ex. Québec)" required />
+              <input type="text" id="free-signup-location-u" placeholder="Champ u ActiveCampaign" required />
+              <input type="text" id="free-signup-location-f" placeholder="Champ f ActiveCampaign" required />
+              <input type="text" id="free-signup-location-s" placeholder="Champ s ActiveCampaign (optionnel)" />
+              <input type="text" id="free-signup-location-c" placeholder="Champ c ActiveCampaign" value="0" required />
+              <input type="text" id="free-signup-location-m" placeholder="Champ m ActiveCampaign" value="0" required />
+              <input type="text" id="free-signup-location-act" placeholder="Champ act ActiveCampaign" value="sub" required />
+              <input type="text" id="free-signup-location-v" placeholder="Champ v ActiveCampaign" value="2" required />
+              <input type="text" id="free-signup-location-or" placeholder="Champ or ActiveCampaign" required />
+              <label class="checkbox-inline">
+                <input type="checkbox" id="free-signup-location-default" />
+                Définir comme ville par défaut
+              </label>
+              <div class="form-actions">
+                <button type="submit">Enregistrer la ville</button>
+                <button type="button" id="reset-free-signup-location-form" class="button-secondary">Vider le formulaire</button>
+              </div>
+            </form>
+            <div id="free-signup-location-form-message" class="admin-message" aria-live="polite"></div>
+            <div id="free-signup-location-list" class="region-manager"></div>
           </div>
         </div>
       </div>
@@ -358,6 +398,10 @@
       const offerTypeLabelInput = document.getElementById('offer-type-label');
       const offerTypeFormMessage = document.getElementById('offer-type-form-message');
       const offerTypeList = document.getElementById('offer-type-list');
+      const freeSignupLocationForm = document.getElementById('free-signup-location-form');
+      const freeSignupLocationFormMessage = document.getElementById('free-signup-location-form-message');
+      const freeSignupLocationList = document.getElementById('free-signup-location-list');
+      const resetFreeSignupLocationFormButton = document.getElementById('reset-free-signup-location-form');
       const offerList = document.getElementById('offer-list');
       const resetFormButton = document.getElementById('reset-form');
       const showcaseForm = document.getElementById('showcase-form');
@@ -394,6 +438,7 @@
       let offers = [];
       let regions = [];
       let offerTypes = [];
+      let freeSignupLocations = [];
       let showcaseItems = [];
       let accessLogs = [];
       let adminAccessToken = '';
@@ -433,6 +478,16 @@
         showcaseForm.reset();
         showcaseFieldMap.id.value = '';
         showcaseFieldMap.is_active.value = 'true';
+      }
+
+      function resetFreeSignupLocationForm() {
+        freeSignupLocationForm.reset();
+        document.getElementById('free-signup-location-id').value = '';
+        document.getElementById('free-signup-location-c').value = '0';
+        document.getElementById('free-signup-location-m').value = '0';
+        document.getElementById('free-signup-location-act').value = 'sub';
+        document.getElementById('free-signup-location-v').value = '2';
+        document.getElementById('free-signup-location-default').checked = false;
       }
 
       function formatRegionLabel(value) {
@@ -620,6 +675,83 @@
         });
       }
 
+      function renderFreeSignupLocations() {
+        if (!freeSignupLocations.length) {
+          freeSignupLocationList.innerHTML = '<p>Aucune ville pour le moment.</p>';
+          return;
+        }
+
+        freeSignupLocationList.innerHTML = freeSignupLocations.map((item) => `
+          <div class="region-row">
+            <div>
+              <strong>${item.label}${item.is_default ? ' · par défaut' : ''}</strong>
+              <div class="region-row__meta">u=${item.u} · f=${item.f} · or=${item.or}</div>
+            </div>
+            <div class="offer-admin-actions">
+              <button type="button" class="button-secondary" data-edit-free-signup-location="${item.id}">Modifier</button>
+              ${item.is_default ? '' : `<button type="button" class="button-secondary" data-set-default-free-signup-location="${item.id}">Définir par défaut</button>`}
+              <button type="button" class="button-danger" data-delete-free-signup-location="${item.id}">Supprimer</button>
+            </div>
+          </div>
+        `).join('');
+
+        freeSignupLocationList.querySelectorAll('[data-edit-free-signup-location]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const item = freeSignupLocations.find((entry) => entry.id === button.getAttribute('data-edit-free-signup-location'));
+            if (!item) return;
+            document.getElementById('free-signup-location-id').value = item.id || '';
+            document.getElementById('free-signup-location-label').value = item.label || '';
+            document.getElementById('free-signup-location-u').value = item.u || '';
+            document.getElementById('free-signup-location-f').value = item.f || '';
+            document.getElementById('free-signup-location-s').value = item.s || '';
+            document.getElementById('free-signup-location-c').value = item.c || '0';
+            document.getElementById('free-signup-location-m').value = item.m || '0';
+            document.getElementById('free-signup-location-act').value = item.act || 'sub';
+            document.getElementById('free-signup-location-v').value = item.v || '2';
+            document.getElementById('free-signup-location-or').value = item.or || '';
+            document.getElementById('free-signup-location-default').checked = !!item.is_default;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        });
+
+        freeSignupLocationList.querySelectorAll('[data-set-default-free-signup-location]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            const response = await authFetch('/.netlify/functions/set-default-free-signup-location', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: button.getAttribute('data-set-default-free-signup-location') }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              setMessage(freeSignupLocationFormMessage, 'err', data.error || 'Mise à jour impossible.');
+              return;
+            }
+            setMessage(freeSignupLocationFormMessage, 'ok', 'Ville par défaut mise à jour.');
+            await loadOffers();
+          });
+        });
+
+        freeSignupLocationList.querySelectorAll('[data-delete-free-signup-location]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            if (!window.confirm('Supprimer cette ville du formulaire gratuit ?')) return;
+
+            const response = await authFetch('/.netlify/functions/delete-free-signup-location', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: button.getAttribute('data-delete-free-signup-location') }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              setMessage(freeSignupLocationFormMessage, 'err', data.error || 'Suppression impossible.');
+              return;
+            }
+            setMessage(freeSignupLocationFormMessage, 'ok', 'Ville supprimée.');
+            await loadOffers();
+            resetFreeSignupLocationForm();
+          });
+        });
+      }
+
       function renderOffers() {
         if (!offers.length) {
           offerList.innerHTML = '<p>Aucune offre pour le moment.</p>';
@@ -800,10 +932,26 @@
               label: item.label || String(item),
             })).filter((item) => item.label)
           : [];
+        freeSignupLocations = Array.isArray(data.freeSignupLocations)
+          ? data.freeSignupLocations.map((item) => ({
+              id: item.id || '',
+              label: item.label || '',
+              u: item.u || '',
+              f: item.f || '',
+              s: item.s || '',
+              c: item.c || '0',
+              m: item.m || '0',
+              act: item.act || 'sub',
+              v: item.v || '2',
+              or: item.or || '',
+              is_default: !!item.is_default,
+            })).filter((item) => item.label)
+          : [];
         syncRegionOptions();
         syncOfferTypeOptions();
         renderRegions();
         renderOfferTypes();
+        renderFreeSignupLocations();
         renderOffers();
         renderShowcaseItems();
         renderDynamicExtraFields(currentEditingExtraFields);
@@ -897,7 +1045,40 @@
         await loadOffers();
       });
 
+      freeSignupLocationForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const payload = {
+          id: document.getElementById('free-signup-location-id').value,
+          label: document.getElementById('free-signup-location-label').value,
+          u: document.getElementById('free-signup-location-u').value,
+          f: document.getElementById('free-signup-location-f').value,
+          s: document.getElementById('free-signup-location-s').value,
+          c: document.getElementById('free-signup-location-c').value,
+          m: document.getElementById('free-signup-location-m').value,
+          act: document.getElementById('free-signup-location-act').value,
+          v: document.getElementById('free-signup-location-v').value,
+          or: document.getElementById('free-signup-location-or').value,
+          is_default: document.getElementById('free-signup-location-default').checked,
+        };
+
+        const response = await authFetch('/.netlify/functions/save-free-signup-location', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setMessage(freeSignupLocationFormMessage, 'err', data.error || 'Enregistrement impossible.');
+          return;
+        }
+
+        setMessage(freeSignupLocationFormMessage, 'ok', 'Ville enregistrée avec succès.');
+        resetFreeSignupLocationForm();
+        await loadOffers();
+      });
+
       resetFormButton.addEventListener('click', resetForm);
+      resetFreeSignupLocationFormButton.addEventListener('click', resetFreeSignupLocationForm);
       showcaseForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const payload = Object.keys(showcaseFieldMap).reduce((acc, key) => {
@@ -923,6 +1104,7 @@
 
       resetShowcaseFormButton.addEventListener('click', resetShowcaseForm);
       resetForm();
+      resetFreeSignupLocationForm();
       resetShowcaseForm();
     })();
   </script>

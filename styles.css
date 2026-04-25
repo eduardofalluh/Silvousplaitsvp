@@ -747,6 +747,7 @@ footer {
   gap: 16px;
   margin-top: 0;
   flex-wrap: wrap;
+  align-items: flex-end;
 }
 
 .email-form input {
@@ -757,6 +758,54 @@ footer {
   border: 2px solid #ddd;
   font-family: 'Inter', sans-serif;
   min-width: 300px;
+  min-height: 72px;
+}
+
+.signup-location-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 300px;
+  width: 100%;
+  max-width: 400px;
+  flex: 0 0 100%;
+  margin: 0;
+  align-self: center;
+}
+
+.signup-location-field--inline {
+  margin: 0;
+}
+
+.signup-location-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(20, 33, 61, 0.78);
+  line-height: 1;
+  padding-left: 8px;
+}
+
+.signup-location-field select {
+  width: 100%;
+  padding: 20px 24px;
+  font-size: 18px;
+  border-radius: 24px;
+  border: 2px solid #ddd;
+  font-family: 'Inter', sans-serif;
+  background: #fff;
+  color: #14213d;
+  min-height: 72px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(20, 33, 61, 0.78) 50%),
+    linear-gradient(135deg, rgba(20, 33, 61, 0.78) 50%, transparent 50%);
+  background-position:
+    calc(100% - 24px) calc(50% + 2px),
+    calc(100% - 18px) calc(50% + 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 48px;
 }
 
 .email-form button {
@@ -771,6 +820,7 @@ footer {
   white-space: nowrap;
   transition: transform 180ms ease, box-shadow 180ms ease, opacity 0.2s;
   box-shadow: 0 10px 20px rgba(51, 71, 202, 0.16);
+  min-height: 72px;
 }
 
 .email-form button:hover {
@@ -900,7 +950,7 @@ footer {
   display: flex !important;
   flex-wrap: wrap;
   gap: 16px;
-  align-items: center;
+  align-items: flex-end;
   flex: 1 1 auto;
   min-width: 0;
   margin: 0 !important;
@@ -2212,6 +2262,7 @@ body.modal-open {
     flex-direction: column;
     max-width: 500px;
     margin: 0 auto;
+    align-items: stretch;
   }
 
   #_form_1_ ._form-content,
@@ -2220,11 +2271,33 @@ body.modal-open {
     flex-direction: column;
   }
 
-  #_form_1_ ._form-content input[name="email"],
-  ._form_1 input[name="email"],
-  ._form_1 input[type="email"] {
-    min-width: auto !important;
+  #_form_1_ ._button-wrapper,
+  ._form_1 ._button-wrapper {
     width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+#_form_1_ ._form-content input[name="email"],
+._form_1 input[name="email"],
+._form_1 input[type="email"] {
+  min-width: auto !important;
+  width: 100%;
+}
+
+  .signup-location-field,
+  .signup-location-field select {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .signup-location-field {
+    align-self: stretch;
+    gap: 8px;
+  }
+
+  .signup-location-label {
+    padding-left: 2px;
   }
 
   .email-form input {
@@ -2586,6 +2659,7 @@ body.modal-open {
     gap: 12px;
     flex-direction: column;
     margin-bottom: 0;
+    align-items: stretch;
   }
 
   #_form_1_ ._form-content,
@@ -2594,10 +2668,32 @@ body.modal-open {
     flex-direction: column;
   }
 
+  #_form_1_ ._button-wrapper,
+  ._form_1 ._button-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
   ._form_1 input[name="email"],
   ._form_1 input[type="email"] {
     min-width: auto !important;
     width: 100%;
+  }
+
+  .signup-location-field,
+  .signup-location-field select {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .signup-location-field {
+    align-self: stretch;
+    gap: 8px;
+  }
+
+  .signup-location-label {
+    padding-left: 2px;
   }
 
   .email-form input {
@@ -2605,12 +2701,23 @@ body.modal-open {
     font-size: 16px;
     min-width: auto;
     width: 100%;
+    min-height: 60px;
+  }
+
+  .signup-location-field select {
+    padding: 16px 20px;
+    font-size: 16px;
+    min-height: 60px;
+    background-position:
+      calc(100% - 22px) calc(50% + 1px),
+      calc(100% - 16px) calc(50% + 1px);
   }
 
   .email-form button {
     padding: 16px 32px;
     font-size: 16px;
     width: 100%;
+    min-height: 60px;
   }
 
   .how {

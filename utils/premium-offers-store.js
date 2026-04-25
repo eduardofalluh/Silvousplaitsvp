@@ -6,6 +6,7 @@ const PREMIUM_OFFERS_SHEET_ID = process.env.PREMIUM_OFFERS_SHEET_ID || process.e
 const PREMIUM_OFFERS_TAB = process.env.PREMIUM_OFFERS_TAB || 'premium_offers';
 const PREMIUM_OFFERS_REGIONS_TAB = process.env.PREMIUM_OFFERS_REGIONS_TAB || 'premium_regions';
 const PREMIUM_OFFERS_TYPES_TAB = process.env.PREMIUM_OFFERS_TYPES_TAB || 'premium_offer_types';
+const FREE_SIGNUP_LOCATIONS_TAB = process.env.FREE_SIGNUP_LOCATIONS_TAB || 'free_signup_locations';
 const PREMIUM_OFFERS_SHOWCASE_TAB = process.env.PREMIUM_OFFERS_SHOWCASE_TAB || 'premium_showcase';
 const PREMIUM_OFFERS_ACCESS_LOGS_TAB = process.env.PREMIUM_OFFERS_ACCESS_LOGS_TAB || 'premium_access_logs';
 const SPREADSHEET_META_CACHE_TTL_MS = 30 * 1000;
@@ -42,6 +43,21 @@ const LEGACY_OFFER_HEADERS = [
 ];
 const REGION_HEADERS = ['id', 'label', 'created_at', 'updated_at'];
 const OFFER_TYPE_HEADERS = ['id', 'label', 'created_at', 'updated_at'];
+const FREE_SIGNUP_LOCATION_HEADERS = [
+  'id',
+  'label',
+  'u',
+  'f',
+  's',
+  'c',
+  'm',
+  'act',
+  'v',
+  'or',
+  'is_default',
+  'created_at',
+  'updated_at',
+];
 const ACCESS_LOG_HEADERS = ['id', 'email', 'created_at'];
 const LEGACY_ACCESS_LOG_HEADERS = ['id', 'email', 'event_type', 'ip_address', 'user_agent', 'created_at'];
 const SHOWCASE_HEADERS = [
@@ -63,6 +79,60 @@ const DEFAULT_OFFER_TYPES = [
   '2 pour 1',
   'Places VIP',
   'Invitations',
+];
+const DEFAULT_FREE_SIGNUP_LOCATIONS = [
+  {
+    id: 'montreal',
+    label: 'Montréal',
+    u: '1',
+    f: '1',
+    s: '',
+    c: '0',
+    m: '0',
+    act: 'sub',
+    v: '2',
+    or: '3984880d-52e1-445d-99b0-09aeef208544',
+    is_default: true,
+  },
+  {
+    id: 'quebec',
+    label: 'Québec',
+    u: '69ED120690823',
+    f: '9',
+    s: '',
+    c: '0',
+    m: '0',
+    act: 'sub',
+    v: '2',
+    or: '0b035bc1-fee2-41ea-b49c-c65e19a08016',
+    is_default: false,
+  },
+  {
+    id: 'trois_rivieres',
+    label: 'Trois-Rivières',
+    u: '69ED1206F0DD6',
+    f: '11',
+    s: '',
+    c: '0',
+    m: '0',
+    act: 'sub',
+    v: '2',
+    or: '77d982e4-b8c2-4a43-b59a-d54646f9c9ee',
+    is_default: false,
+  },
+  {
+    id: 'sherbrooke',
+    label: 'Sherbrooke',
+    u: '69ED12076A999',
+    f: '13',
+    s: '',
+    c: '0',
+    m: '0',
+    act: 'sub',
+    v: '2',
+    or: 'cbe7d463-4a76-4436-9d41-64003c44e753',
+    is_default: false,
+  },
 ];
 const OFFER_HEADER_ALIASES = {
   id: ['id'],
@@ -639,6 +709,50 @@ async function ensureOfferTypesSheet(sheets) {
   }
 }
 
+async function ensureFreeSignupLocationsSheet(sheets) {
+  await getOrCreateSheet(sheets, FREE_SIGNUP_LOCATIONS_TAB);
+  const read = await safeReadRange(sheets, `${FREE_SIGNUP_LOCATIONS_TAB}!A1:M200`, 'free signup locations read');
+  const rows = read.data.values || [];
+  const headerRow = rows[0] || [];
+  const hasExpectedHeaders =
+    headerRow.length >= FREE_SIGNUP_LOCATION_HEADERS.length &&
+    FREE_SIGNUP_LOCATION_HEADERS.every((header, index) => String(headerRow[index] || '').trim() === header);
+
+  if (!hasExpectedHeaders) {
+    await safeWriteRange(
+      sheets,
+      `${FREE_SIGNUP_LOCATIONS_TAB}!A1:M1`,
+      [FREE_SIGNUP_LOCATION_HEADERS],
+      'free signup locations header write'
+    );
+  }
+
+  const hasAnyLocation = rows.slice(1).some((row) => row && normalize(row[1]));
+  if (!hasAnyLocation) {
+    const timestamp = new Date().toISOString();
+    await safeAppendRows(
+      sheets,
+      `${FREE_SIGNUP_LOCATIONS_TAB}!A:M`,
+      DEFAULT_FREE_SIGNUP_LOCATIONS.map((location) => [
+        location.id,
+        location.label,
+        location.u,
+        location.f,
+        location.s,
+        location.c,
+        location.m,
+        location.act,
+        location.v,
+        location.or,
+        location.is_default ? 'true' : 'false',
+        timestamp,
+        timestamp,
+      ]),
+      'free signup locations seed write'
+    );
+  }
+}
+
 async function ensureShowcaseSheet(sheets) {
   await getOrCreateSheet(sheets, PREMIUM_OFFERS_SHOWCASE_TAB);
   const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_SHOWCASE_TAB}!A1:I200`, 'showcase read');
@@ -965,6 +1079,25 @@ function mapOfferTypeRow(row, rowNumber) {
   };
 }
 
+function mapFreeSignupLocationRow(row, rowNumber) {
+  return {
+    rowNumber,
+    id: normalize(row[0]) || `free_signup_location_${rowNumber}`,
+    label: normalize(row[1]),
+    u: normalize(row[2]),
+    f: normalize(row[3]),
+    s: normalize(row[4]),
+    c: normalize(row[5]),
+    m: normalize(row[6]),
+    act: normalize(row[7]) || 'sub',
+    v: normalize(row[8]) || '2',
+    or: normalize(row[9]),
+    is_default: normalizeBoolean(row[10], false),
+    created_at: normalize(row[11]),
+    updated_at: normalize(row[12]),
+  };
+}
+
 function mapShowcaseRow(row, rowNumber) {
   const values = SHOWCASE_HEADERS.reduce((acc, header, index) => {
     acc[header] = normalize(row[index]);
@@ -1038,6 +1171,57 @@ async function listPremiumOfferTypes({ sheets: providedSheets } = {}) {
     .sort((a, b) => a.label.localeCompare(b.label, 'fr-CA', { sensitivity: 'base' }));
 }
 
+async function listFreeSignupLocations({ sheets: providedSheets } = {}) {
+  const sheets = providedSheets || await getSheetsClient();
+  await ensureFreeSignupLocationsSheet(sheets);
+  const read = await safeReadRange(
+    sheets,
+    `${FREE_SIGNUP_LOCATIONS_TAB}!A:M`,
+    'free signup locations list read'
+  );
+  const rows = read.data.values || [];
+  if (rows.length < 2) {
+    return DEFAULT_FREE_SIGNUP_LOCATIONS.slice();
+  }
+
+  const seen = new Set();
+  let hasDefault = false;
+  const items = rows
+    .slice(1)
+    .map((row, index) => mapFreeSignupLocationRow(row, index + 2))
+    .filter((item) => item.label && item.u && item.f && item.or)
+    .filter((item) => {
+      const key = normalizeForCompare(item.label);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((item) => {
+      if (item.is_default && !hasDefault) {
+        hasDefault = true;
+        return item;
+      }
+      if (item.is_default && hasDefault) {
+        return Object.assign({}, item, { is_default: false });
+      }
+      return item;
+    })
+    .sort((a, b) => {
+      if (a.is_default !== b.is_default) return a.is_default ? -1 : 1;
+      return a.label.localeCompare(b.label, 'fr-CA', { sensitivity: 'base' });
+    });
+
+  if (!items.length) {
+    return DEFAULT_FREE_SIGNUP_LOCATIONS.slice();
+  }
+
+  if (!items.some((item) => item.is_default)) {
+    items[0].is_default = true;
+  }
+
+  return items;
+}
+
 async function savePremiumOfferRegion(region) {
   const label = canonicalizeRegionLabel(region && region.label);
   if (!label) {
@@ -1088,6 +1272,128 @@ async function savePremiumOfferType(offerType) {
     'offer type append'
   );
   return { id: values[0][0], created: true };
+}
+
+async function writeFreeSignupLocationsSheet(sheets, items) {
+  const timestamp = new Date().toISOString();
+  const existingRead = await safeReadRange(
+    sheets,
+    `${FREE_SIGNUP_LOCATIONS_TAB}!A:M`,
+    'free signup locations rewrite read'
+  );
+  const existingRowCount = Math.max((existingRead.data.values || []).length, 1);
+  const normalizedItems = items.map((item, index) => ({
+    id: normalize(item.id) || slugifyLabel(item.label) || `free_signup_location_${Date.now()}_${index}`,
+    label: normalize(item.label),
+    u: normalize(item.u),
+    f: normalize(item.f),
+    s: normalize(item.s),
+    c: normalize(item.c || '0'),
+    m: normalize(item.m || '0'),
+    act: normalize(item.act || 'sub'),
+    v: normalize(item.v || '2'),
+    or: normalize(item.or),
+    is_default: index === 0 ? true : normalizeBoolean(item.is_default, false),
+    created_at: normalize(item.created_at) || timestamp,
+    updated_at: timestamp,
+  }));
+
+  const rows = normalizedItems.map((item) => [
+    item.id,
+    item.label,
+    item.u,
+    item.f,
+    item.s,
+    item.c,
+    item.m,
+    item.act,
+    item.v,
+    item.or,
+    item.is_default ? 'true' : 'false',
+    item.created_at,
+    item.updated_at,
+  ]);
+  const totalDataRows = Math.max(rows.length + 1, existingRowCount);
+  const blankRow = new Array(FREE_SIGNUP_LOCATION_HEADERS.length).fill('');
+  const paddedRows = rows.concat(
+    Array.from({ length: Math.max(0, totalDataRows - (rows.length + 1)) }, () => blankRow.slice())
+  );
+
+  await safeWriteRange(
+    sheets,
+    `${FREE_SIGNUP_LOCATIONS_TAB}!A1:M${totalDataRows}`,
+    [FREE_SIGNUP_LOCATION_HEADERS, ...paddedRows],
+    'free signup locations overwrite'
+  );
+}
+
+async function saveFreeSignupLocation(location) {
+  const label = normalize(location && location.label);
+  if (!label) {
+    throw new Error('Le nom de la ville est requis');
+  }
+
+  const requiredKeys = ['u', 'f', 'c', 'm', 'act', 'v', 'or'];
+  for (const key of requiredKeys) {
+    if (!normalize(location && location[key])) {
+      throw new Error(`Le champ ${key} est requis`);
+    }
+  }
+
+  const sheets = await getSheetsClient();
+  const existingItems = await listFreeSignupLocations({ sheets });
+  const requestedId = normalize(location.id);
+  const duplicateByLabel = existingItems.find(
+    (item) =>
+      normalizeForCompare(item.label) === normalizeForCompare(label) &&
+      item.id !== requestedId
+  );
+  if (duplicateByLabel) {
+    throw new Error('Une ville avec ce nom existe deja');
+  }
+
+  const nextItems = existingItems.map((item) => Object.assign({}, item));
+  const existingIndex = nextItems.findIndex((item) => item.id === requestedId);
+  const current = existingIndex >= 0 ? nextItems[existingIndex] : null;
+  const nextItem = {
+    id: requestedId || slugifyLabel(label) || `free_signup_location_${Date.now()}`,
+    label,
+    u: normalize(location.u),
+    f: normalize(location.f),
+    s: normalize(location.s),
+    c: normalize(location.c || '0'),
+    m: normalize(location.m || '0'),
+    act: normalize(location.act || 'sub'),
+    v: normalize(location.v || '2'),
+    or: normalize(location.or),
+    is_default: normalizeBoolean(location.is_default, current ? current.is_default : false),
+    created_at: current ? current.created_at : '',
+  };
+
+  if (existingIndex >= 0) {
+    nextItems[existingIndex] = Object.assign({}, current, nextItem);
+  } else {
+    nextItems.push(nextItem);
+  }
+
+  let finalItems = nextItems;
+  if (nextItem.is_default) {
+    finalItems = nextItems.map((item) =>
+      Object.assign({}, item, { is_default: item.id === nextItem.id })
+    );
+  } else if (!nextItems.some((item) => item.is_default)) {
+    finalItems = nextItems.map((item, index) =>
+      Object.assign({}, item, { is_default: index === 0 })
+    );
+  }
+
+  finalItems.sort((a, b) => {
+    if (a.is_default !== b.is_default) return a.is_default ? -1 : 1;
+    return a.label.localeCompare(b.label, 'fr-CA', { sensitivity: 'base' });
+  });
+
+  await writeFreeSignupLocationsSheet(sheets, finalItems);
+  return { id: nextItem.id, updated: existingIndex >= 0, created: existingIndex < 0 };
 }
 
 async function deletePremiumOfferRegion(id) {
@@ -1151,6 +1457,62 @@ async function deletePremiumOfferType(id) {
     PREMIUM_OFFERS_TYPES_TAB
   );
 
+  return { deleted: true, id: normalizedId };
+}
+
+async function setDefaultFreeSignupLocation(id) {
+  const normalizedId = normalize(id);
+  if (!normalizedId) {
+    throw new Error('Free signup location id is required');
+  }
+
+  const sheets = await getSheetsClient();
+  const items = await listFreeSignupLocations({ sheets });
+  const existingItem = items.find((item) => item.id === normalizedId);
+  if (!existingItem) {
+    throw new Error('Free signup location not found');
+  }
+
+  const nextItems = items.map((item) =>
+    Object.assign({}, item, { is_default: item.id === normalizedId })
+  );
+  nextItems.sort((a, b) => {
+    if (a.is_default !== b.is_default) return a.is_default ? -1 : 1;
+    return a.label.localeCompare(b.label, 'fr-CA', { sensitivity: 'base' });
+  });
+
+  await writeFreeSignupLocationsSheet(sheets, nextItems);
+  return { updated: true, id: normalizedId };
+}
+
+async function deleteFreeSignupLocation(id) {
+  const normalizedId = normalize(id);
+  if (!normalizedId) {
+    throw new Error('Free signup location id is required');
+  }
+
+  const sheets = await getSheetsClient();
+  const items = await listFreeSignupLocations({ sheets });
+  const existingItem = items.find((item) => item.id === normalizedId);
+  if (!existingItem) {
+    throw new Error('Free signup location not found');
+  }
+  if (items.length <= 1) {
+    throw new Error('Impossible de supprimer la derniere ville');
+  }
+
+  let nextItems = items.filter((item) => item.id !== normalizedId);
+  if (existingItem.is_default && nextItems.length) {
+    nextItems = nextItems.map((item, index) =>
+      Object.assign({}, item, { is_default: index === 0 })
+    );
+  }
+  nextItems.sort((a, b) => {
+    if (a.is_default !== b.is_default) return a.is_default ? -1 : 1;
+    return a.label.localeCompare(b.label, 'fr-CA', { sensitivity: 'base' });
+  });
+
+  await writeFreeSignupLocationsSheet(sheets, nextItems);
   return { deleted: true, id: normalizedId };
 }
 
@@ -1295,15 +1657,18 @@ module.exports = {
   PREMIUM_OFFERS_TAB,
   PREMIUM_OFFERS_REGIONS_TAB,
   PREMIUM_OFFERS_TYPES_TAB,
+  FREE_SIGNUP_LOCATIONS_TAB,
   PREMIUM_OFFERS_SHOWCASE_TAB,
   PREMIUM_OFFERS_ACCESS_LOGS_TAB,
   OFFER_HEADERS,
   REGION_HEADERS,
   OFFER_TYPE_HEADERS,
+  FREE_SIGNUP_LOCATION_HEADERS,
   SHOWCASE_HEADERS,
   ACCESS_LOG_HEADERS,
   DEFAULT_REGIONS,
   DEFAULT_OFFER_TYPES,
+  DEFAULT_FREE_SIGNUP_LOCATIONS,
   DEFAULT_SHOWCASE_ITEMS,
   normalize,
   normalizeForCompare,
@@ -1318,15 +1683,19 @@ module.exports = {
   listPremiumOffers,
   listPremiumOfferRegions,
   listPremiumOfferTypes,
+  listFreeSignupLocations,
   listPremiumOfferAccessLogs,
   listPremiumShowcaseItems,
   recordPremiumOfferAccessLog,
   savePremiumOffer,
   savePremiumOfferRegion,
   savePremiumOfferType,
+  saveFreeSignupLocation,
   savePremiumShowcaseItem,
   deletePremiumOffer,
   deletePremiumOfferRegion,
   deletePremiumOfferType,
+  setDefaultFreeSignupLocation,
+  deleteFreeSignupLocation,
   deletePremiumShowcaseItem,
 };
