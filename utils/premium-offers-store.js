@@ -1098,6 +1098,92 @@ function mapFreeSignupLocationRow(row, rowNumber) {
   };
 }
 
+function buildFreeSignupEmbedUrlFromFormId(formId) {
+  const normalizedFormId = normalize(formId);
+  if (!normalizedFormId) return '';
+  return `https://silvousplait.activehosted.com/f/embed.php?id=${encodeURIComponent(normalizedFormId)}`;
+}
+
+function extractActiveCampaignEmbedConfig(text) {
+  const source = String(text || '');
+  const keys = ['u', 'f', 's', 'c', 'm', 'act', 'v', 'or'];
+  const config = {};
+
+  for (const key of keys) {
+    const patterns = [
+      new RegExp(`name=["']${key}["'][^>]*value=["']([^"']*)["']`, 'i'),
+      new RegExp(`name=\\\\["']${key}\\\\["'][^>]*value=\\\\["']([^\\\\"']*)`, 'i'),
+    ];
+    for (const pattern of patterns) {
+      const match = source.match(pattern);
+      if (match) {
+        config[key] = match[1];
+        break;
+      }
+    }
+  }
+
+  return config;
+}
+
+async function resolveFreeSignupEmbedConfig(location) {
+  const embedUrl = normalize(location && location.embed_url);
+  if (!embedUrl) {
+    return {
+      u: normalize(location && location.u),
+      f: normalize(location && location.f),
+      s: normalize(location && location.s),
+      c: normalize(location && location.c || '0'),
+      m: normalize(location && location.m || '0'),
+      act: normalize(location && location.act || 'sub'),
+      v: normalize(location && location.v || '2'),
+      or: normalize(location && location.or),
+    };
+  }
+
+  let url;
+  try {
+    url = new URL(embedUrl);
+  } catch {
+    throw new Error("L'URL embed est invalide");
+  }
+
+  if (!/^https?:$/i.test(url.protocol)) {
+    throw new Error("L'URL embed est invalide");
+  }
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      'User-Agent': 'Mozilla/5.0',
+      Referer: 'https://silvousplaitsvp.com/',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    },
+  });
+  if (!response.ok) {
+    throw new Error("Impossible de lire l'URL embed ActiveCampaign");
+  }
+
+  const text = await response.text();
+  const config = extractActiveCampaignEmbedConfig(text);
+  const requiredKeys = ['u', 'f', 'c', 'm', 'act', 'v', 'or'];
+  for (const key of requiredKeys) {
+    if (!normalize(config[key])) {
+      throw new Error("Impossible d'extraire la configuration de l'URL embed");
+    }
+  }
+
+  return {
+    u: normalize(config.u),
+    f: normalize(config.f),
+    s: normalize(config.s),
+    c: normalize(config.c || '0'),
+    m: normalize(config.m || '0'),
+    act: normalize(config.act || 'sub'),
+    v: normalize(config.v || '2'),
+    or: normalize(config.or),
+  };
+}
+
 function mapShowcaseRow(row, rowNumber) {
   const values = SHOWCASE_HEADERS.reduce((acc, header, index) => {
     acc[header] = normalize(row[index]);
@@ -1333,12 +1419,7 @@ async function saveFreeSignupLocation(location) {
     throw new Error('Le nom de la ville est requis');
   }
 
-  const requiredKeys = ['u', 'f', 'c', 'm', 'act', 'v', 'or'];
-  for (const key of requiredKeys) {
-    if (!normalize(location && location[key])) {
-      throw new Error(`Le champ ${key} est requis`);
-    }
-  }
+  const resolvedConfig = await resolveFreeSignupEmbedConfig(location);
 
   const sheets = await getSheetsClient();
   const existingItems = await listFreeSignupLocations({ sheets });
@@ -1358,14 +1439,14 @@ async function saveFreeSignupLocation(location) {
   const nextItem = {
     id: requestedId || slugifyLabel(label) || `free_signup_location_${Date.now()}`,
     label,
-    u: normalize(location.u),
-    f: normalize(location.f),
-    s: normalize(location.s),
-    c: normalize(location.c || '0'),
-    m: normalize(location.m || '0'),
-    act: normalize(location.act || 'sub'),
-    v: normalize(location.v || '2'),
-    or: normalize(location.or),
+    u: resolvedConfig.u,
+    f: resolvedConfig.f,
+    s: resolvedConfig.s,
+    c: resolvedConfig.c,
+    m: resolvedConfig.m,
+    act: resolvedConfig.act,
+    v: resolvedConfig.v,
+    or: resolvedConfig.or,
     is_default: normalizeBoolean(location.is_default, current ? current.is_default : false),
     created_at: current ? current.created_at : '',
   };

@@ -49,6 +49,9 @@ exports.handler = async (event) => {
   if (!normalize(body.label)) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Le nom de la ville est requis' }) };
   }
+  if (!normalize(body.embed_url) && !normalize(body.u)) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: "L'URL embed ActiveCampaign est requise" }) };
+  }
 
   try {
     const result = await saveFreeSignupLocation(body);
