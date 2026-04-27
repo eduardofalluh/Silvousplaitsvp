@@ -1507,5 +1507,5 @@ window.initScrollReveal = initScrollReveal;
   }, 2550);
   setTimeout(function() {
     document.body.classList.add('intro-complete');
-  }, 3225);
+  }, 3800);
 })();
