@@ -566,10 +566,6 @@ footer {
     box-shadow: 0 18px 30px rgba(51, 71, 202, 0.18);
   }
 
-  .testimonial-slide.is-active:hover {
-    transform: translateX(-50%) translateZ(0) scale(1.03);
-    box-shadow: 0 20px 40px rgba(51, 71, 202, 0.12);
-  }
 }
 
 /* Remove arrow from Premium and Contact links on desktop */
