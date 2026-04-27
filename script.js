@@ -1121,10 +1121,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data && data.alreadyRegistered) {
           setFormFeedback(form, "Cette adresse est déjà inscrite à notre liste. Tu recevras nos prochains emails.", 'error');
         } else if (response.ok && isActiveCampaignSuccess(data)) {
-          setFormFeedback(form, "Merci ! Un email de confirmation t'a été envoyé. Clique sur le lien dans le message pour confirmer ton inscription et rejoindre la liste.");
+          setFormFeedback(form, "Merci pour ton inscription, tu recevras la première infolettre sous peu :)");
           if (emailInput) emailInput.value = '';
         } else if (response.ok && data) {
-          setFormFeedback(form, "Merci ! Un email de confirmation t'a été envoyé. Clique sur le lien dans le message pour confirmer ton inscription et rejoindre la liste.");
+          setFormFeedback(form, "Merci pour ton inscription, tu recevras la première infolettre sous peu :)");
           if (emailInput) emailInput.value = '';
         } else if (response.status === 500 && data && data.hint) {
           setFormFeedback(form, "Erreur serveur : " + (data.hint || data.error || "Réessaie plus tard."), 'error');

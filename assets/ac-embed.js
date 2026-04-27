@@ -7,7 +7,7 @@ window._show_thank_you = function(id, message, trackcmp_url, email) {
   if (window._form1FeedbackTimeout) { clearTimeout(window._form1FeedbackTimeout); window._form1FeedbackTimeout = null; }
   var content = form.querySelector('._form-content');
   if (content) content.style.display = 'none';
-  thank_you.innerHTML = message || "Merci ! Un email de confirmation t'a été envoyé. Clique sur le lien dans le message pour confirmer ton inscription et rejoindre la liste.";
+  thank_you.innerHTML = message || "Merci pour ton inscription, tu recevras la première infolettre sous peu :)";
   thank_you.style.display = 'block';
   var visitorObject = typeof visitorGlobalObjectAlias !== 'undefined' ? window[visitorGlobalObjectAlias] : window.vgo;
   if (email && typeof visitorObject !== 'undefined') {
@@ -245,10 +245,10 @@ function _attachForm1Submit() {
         if (data && data.alreadyRegistered) {
           window._show_error('1', "Cette adresse est déjà inscrite à notre liste. Tu recevras nos prochains emails.");
         } else if (ok && data && (data.result_code === 1 || data.result === 'success' || data.success === 1 || (data.js && data.js.indexOf('_show_thank_you') !== -1))) {
-          window._show_thank_you('1', "Merci ! Un email de confirmation t'a été envoyé. Clique sur le lien dans le message pour confirmer ton inscription et rejoindre la liste.");
+          window._show_thank_you('1', "Merci pour ton inscription, tu recevras la première infolettre sous peu :)");
           if (emailEl) emailEl.value = '';
         } else if (ok && data) {
-          window._show_thank_you('1', "Merci ! Un email de confirmation t'a été envoyé. Clique sur le lien dans le message pour confirmer ton inscription et rejoindre la liste.");
+          window._show_thank_you('1', "Merci pour ton inscription, tu recevras la première infolettre sous peu :)");
           if (emailEl) emailEl.value = '';
         } else {
           window._show_error('1', "L'inscription n'a pas fonctionné. Vérifie ton email et réessaie.");
