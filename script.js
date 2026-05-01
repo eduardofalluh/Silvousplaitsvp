@@ -48,6 +48,7 @@ setTimeout(styleACEmbedForms, 1500);
   if ('scrollRestoration' in history) {
     history.scrollRestoration = 'manual';
   }
+  if (window.location.hash) return;
   window.scrollTo(0, 0);
 })();
 
@@ -713,10 +714,20 @@ document.addEventListener('DOMContentLoaded', () => {
     viewport.onfocusout = startAutoplay;
 
     viewport.onclick = (event) => {
-      if (!hasDragged) return;
-      event.preventDefault();
-      event.stopPropagation();
-      hasDragged = false;
+      const cardLink = event.target.closest && event.target.closest('a.premium-deal-card[href]');
+      if (hasDragged) {
+        event.preventDefault();
+        event.stopPropagation();
+        hasDragged = false;
+        return;
+      }
+      if (cardLink) {
+        window.location.href = cardLink.href;
+        return;
+      }
+      if (options.cardHref) {
+        window.location.href = options.cardHref;
+      }
     };
 
     viewport.onscroll = syncFromScroll;
@@ -755,6 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
       dotsId: 'home-premium-deals-dots',
       prevButtonId: 'home-premium-deals-prev',
       nextButtonId: 'home-premium-deals-next',
+      cardHref: 'premium.html#premium-offers',
       forceRebuild,
     });
   };
@@ -791,7 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
       track.innerHTML = offers.map((offer) => {
         const meta = [offer.venue, formatOfferDate(offer.event_date)].filter(Boolean).join(' · ');
         return (
-          '<article class="premium-deal-card">' +
+          '<a class="premium-deal-card" href="premium.html#premium-offers" aria-label="Voir les offres premium">' +
             '<img src="' + escapeHtml(offer.image_url || 'assets/premium_image.avif') + '" alt="' + escapeHtml(offer.title || '') + '" onerror="this.onerror=null;this.src=\'assets/premium_image.avif\';" />' +
             '<div class="premium-deal-card-body">' +
               '<div class="premium-deal-tags">' +
@@ -801,7 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
               '<h3>' + escapeHtml(offer.title || '') + '</h3>' +
               (meta ? '<p class="premium-deal-meta premium-deal-meta--public">' + escapeHtml(meta) + '</p>' : '') +
             '</div>' +
-          '</article>'
+          '</a>'
         );
       }).join('');
       window.initHomePremiumDealsCarousel(true);
