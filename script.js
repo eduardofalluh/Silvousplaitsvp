@@ -4,6 +4,30 @@
 
 console.log("Silvousplait landing loaded");
 
+function trackMetaEvent(method, eventName, parameters) {
+  if (typeof window.fbq !== 'function') return false;
+  if (parameters) {
+    window.fbq(method, eventName, parameters);
+  } else {
+    window.fbq(method, eventName);
+  }
+  return true;
+}
+
+function trackMetaEventOnce(key, method, eventName, parameters) {
+  window.__svpMetaTrackedEvents = window.__svpMetaTrackedEvents || {};
+  if (window.__svpMetaTrackedEvents[key]) return false;
+  window.__svpMetaTrackedEvents[key] = true;
+  return trackMetaEvent(method, eventName, parameters);
+}
+
+window.trackMetaEvent = trackMetaEvent;
+window.trackMetaEventOnce = trackMetaEventOnce;
+
+if (window.location.pathname === '/premium.html' || window.location.pathname.endsWith('/premium.html')) {
+  trackMetaEventOnce('premium-view', 'trackCustom', 'PremiumView');
+}
+
 // =====================================================
 // ACTIVE CAMPAIGN EMBED – same look as .email-form (hero + CTA)
 // Runs when AC injects form into ._form_1: placeholder + button text
@@ -1133,9 +1157,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data && data.alreadyRegistered) {
           setFormFeedback(form, "Cette adresse est déjà inscrite à notre liste. Tu recevras nos prochains emails.", 'error');
         } else if (response.ok && isActiveCampaignSuccess(data)) {
+          trackMetaEventOnce('free-signup-lead', 'track', 'Lead');
           setFormFeedback(form, "Merci pour ton inscription, tu recevras la première infolettre sous peu :)");
           if (emailInput) emailInput.value = '';
         } else if (response.ok && data) {
+          trackMetaEventOnce('free-signup-lead', 'track', 'Lead');
           setFormFeedback(form, "Merci pour ton inscription, tu recevras la première infolettre sous peu :)");
           if (emailInput) emailInput.value = '';
         } else if (response.status === 500 && data && data.hint) {
@@ -1189,6 +1215,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sessionStorage.setItem('stripeCheckoutPending', '1');
     sessionStorage.setItem('stripeCheckoutReturnPath', normalizeStripeReturnPath(window.location.pathname));
     sessionStorage.removeItem('stripeCheckoutReloaded');
+    trackMetaEvent('track', 'InitiateCheckout');
 
     try {
       const response = await fetch('/.netlify/functions/create-checkout-session', {

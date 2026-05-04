@@ -14,22 +14,6 @@
   <meta name="description" content="Confirmation d'abonnement Premium Silvousplait." />
   <meta name="robots" content="noindex, nofollow" />
   <meta name="theme-color" content="#dff35f" />
-
-  <!-- Meta Pixel Code -->
-  <script>
-    !function(f,b,e,v,n,t,s)
-    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-    n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];
-    s.parentNode.insertBefore(t,s)}(window, document,'script',
-    'https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '930964623159302');
-    fbq('track', 'PageView');
-  </script>
-  <!-- End Meta Pixel Code -->
-
   <script type="text/javascript">
     (function(c,l,a,r,i,t,y){
       c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
@@ -50,15 +34,6 @@
   <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NWXBT8XB"
   height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- End Google Tag Manager (noscript) -->
-  <noscript>
-    <img
-      height="1"
-      width="1"
-      style="display:none"
-      src="https://www.facebook.com/tr?id=930964623159302&ev=PageView&noscript=1"
-      alt=""
-    />
-  </noscript>
   <div class="page-transition-overlay"></div>
 
   <main class="premium-confirmation">
@@ -82,71 +57,8 @@
   <script>if (typeof window.initScrollReveal === 'function') window.initScrollReveal();</script>
   <script>
     (function () {
-      var params = new URLSearchParams(window.location.search);
-      var sessionId = params.get('session_id');
-      var plan = (params.get('plan') || '').trim().toLowerCase();
       if (typeof window.fbq !== 'function') return;
-
-      var hasTrackedPurchase = false;
-      var fallbackTimer = null;
-
-      function getFallbackPayload(planKey) {
-        if (planKey === 'monthly') {
-          return { value: 9.20, currency: 'CAD' };
-        }
-        if (planKey === 'yearly') {
-          return { value: 69.00, currency: 'CAD' };
-        }
-        if (planKey === 'trial') {
-          return { value: 0.00, currency: 'CAD' };
-        }
-        return null;
-      }
-
-      function trackPurchase(payload) {
-        if (hasTrackedPurchase || !payload) return;
-        hasTrackedPurchase = true;
-        if (fallbackTimer) {
-          clearTimeout(fallbackTimer);
-          fallbackTimer = null;
-        }
-        fbq('track', 'Purchase', {
-          value: payload.value,
-          currency: payload.currency
-        });
-      }
-
-      var fallbackPayload = getFallbackPayload(plan);
-      if (fallbackPayload) {
-        fallbackTimer = setTimeout(function () {
-          trackPurchase(fallbackPayload);
-        }, 1500);
-      }
-
-      if (!sessionId) {
-        trackPurchase(fallbackPayload);
-        return;
-      }
-
-      fetch('/.netlify/functions/get-checkout-session?session_id=' + encodeURIComponent(sessionId))
-        .then(function (response) {
-          if (!response.ok) throw new Error('Unable to load checkout session');
-          return response.json();
-        })
-        .then(function (data) {
-          if (!data || typeof data.amountTotal !== 'number' || !data.currency) {
-            trackPurchase(fallbackPayload);
-            return;
-          }
-          trackPurchase({
-            value: data.amountTotal,
-            currency: data.currency
-          });
-        })
-        .catch(function (error) {
-          console.error('Meta Purchase tracking error:', error);
-          trackPurchase(fallbackPayload);
-        });
+      fbq('track', 'Purchase', { value: 68.99, currency: 'CAD' });
     })();
   </script>
 </body>
