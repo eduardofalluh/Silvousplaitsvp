@@ -929,6 +929,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  document.querySelectorAll('[data-premium-step-link]').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      const targetId = link.getAttribute('href')?.replace('#', '');
+      const target = targetId ? document.getElementById(targetId) : null;
+      if (!target) return;
+      e.preventDefault();
+      smoothScrollTo(target, 120);
+      window.history.pushState(null, '', '#' + targetId);
+    });
+  });
+
   // =====================================================
   // ACTIVE CAMPAIGN SIGNUP (TOP + BOTTOM FORMS)
   // =====================================================
