@@ -279,6 +279,13 @@
         </div>
       </div>
     </div>
+    <div class="premium-trial-offer scroll-reveal" data-reveal="fade-in" data-reveal-delay="1">
+      <a
+        class="premium-trial-link"
+        href="https://buy.stripe.com/aFafZj3TV7I7c9Q4DCb7y01"
+        data-trial-checkout-url
+      >Pas convaincu? Essayez-le gratuitement.</a>
+    </div>
     <div class="premium-offers-access scroll-reveal" data-reveal="fade-in" data-reveal-delay="1">
       <a
         class="premium-offers-access-link"
@@ -329,6 +336,23 @@
   <div class="footer-copyright">
   </div>
 </footer>
+
+<div class="modal-overlay trial-modal" id="premium-trial-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="premium-trial-modal-title">
+  <div class="modal-content trial-modal-content" role="document">
+    <button class="modal-close" type="button" aria-label="Fermer" data-trial-modal-close>×</button>
+    <p class="trial-modal-kicker">14 jours gratuits</p>
+    <h3 id="premium-trial-modal-title">Pas convaincu? Essayez-le gratuitement.</h3>
+    <p>Découvrez les offres Premium sans engagement et voyez combien vous pouvez économiser sur vos prochaines sorties.</p>
+    <div class="trial-modal-actions">
+      <a
+        class="modal-cta-button trial-modal-primary"
+        href="https://buy.stripe.com/aFafZj3TV7I7c9Q4DCb7y01"
+        data-trial-checkout-url
+      >Essayer gratuitement</a>
+      <button class="trial-modal-secondary" type="button" data-trial-modal-close>Plus tard</button>
+    </div>
+  </div>
+</div>
 
 <script src="script.js"></script>
 <script>

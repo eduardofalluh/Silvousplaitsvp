@@ -601,7 +601,9 @@ footer {
   .premium-final-cta-button:hover,
   .premium-final-cta-button:focus-visible,
   .premium-offers-access-link:hover,
-  .premium-offers-access-link:focus-visible {
+  .premium-offers-access-link:focus-visible,
+  .premium-trial-link:hover,
+  .premium-trial-link:focus-visible {
     transform: translateY(-2px) scale(1.04);
   }
 
@@ -1793,6 +1795,9 @@ body.modal-open {
 }
 
 .modal-cta-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   padding: 16px 24px;
   background: var(--blue);
@@ -1804,6 +1809,8 @@ body.modal-open {
   font-size: 16px;
   transition: opacity 0.2s;
   font-family: 'Inter', sans-serif;
+  text-align: center;
+  text-decoration: none;
 }
 
 .modal-cta-button:hover {
@@ -5195,6 +5202,83 @@ video::-webkit-media-controls-panel {
   background: var(--blue);
   color: #fff;
   transform: translateY(-1px);
+}
+
+.premium-trial-offer {
+  display: flex;
+  justify-content: center;
+  margin-top: 34px;
+}
+
+.premium-trial-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  padding: 14px 18px;
+  border: 2px solid var(--blue);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--blue);
+  font-size: 17px;
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 10px 0 rgba(51, 71, 202, 0.12), 0 18px 32px rgba(31, 41, 87, 0.1);
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+.premium-trial-link:hover,
+.premium-trial-link:focus-visible {
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 8px 0 rgba(31, 41, 87, 0.18), 0 18px 32px rgba(31, 41, 87, 0.14);
+}
+
+.trial-modal-content {
+  max-width: 520px;
+  border: 3px solid var(--blue);
+  border-radius: 12px;
+}
+
+.trial-modal-kicker {
+  display: inline-flex;
+  margin: 0 0 12px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  background: #DFF36F;
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.trial-modal .modal-content p:not(.trial-modal-kicker) {
+  text-align: left;
+}
+
+.trial-modal-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.trial-modal-primary {
+  border-radius: 8px;
+  font-weight: 800;
+}
+
+.trial-modal-secondary {
+  width: 100%;
+  padding: 13px 20px;
+  border: 1px solid rgba(51, 71, 202, 0.24);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--blue);
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
 }
 
 .premium-proof-faq-section {

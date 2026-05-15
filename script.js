@@ -1186,6 +1186,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const premiumClose = premiumModal?.querySelector('.modal-close');
   const premiumModalSignup = document.getElementById('premium-modal-signup');
   const premiumCheckoutButtons = Array.from(document.querySelectorAll('[data-stripe-plan]'));
+  const premiumTrialModal = document.getElementById('premium-trial-modal');
+  const premiumTrialCloseButtons = Array.from(document.querySelectorAll('[data-trial-modal-close]'));
+  const premiumTrialLinks = Array.from(document.querySelectorAll('[data-trial-checkout-url]'));
+  let hasShownPremiumTrialModal = false;
 
   function normalizeStripeReturnPath(pathname) {
     if (pathname === '/' || pathname === '/index.html') return '/index.html';
@@ -1204,6 +1208,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!premiumModal) return;
     premiumModal.classList.remove('open');
     premiumModal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('modal-open');
+  }
+
+  function openPremiumTrialModal() {
+    if (!premiumTrialModal || hasShownPremiumTrialModal) return;
+    hasShownPremiumTrialModal = true;
+    premiumTrialModal.classList.add('open');
+    premiumTrialModal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+
+    const closeButton = premiumTrialModal.querySelector('[data-trial-modal-close]');
+    if (closeButton) closeButton.focus({ preventScroll: true });
+  }
+
+  function closePremiumTrialModal() {
+    if (!premiumTrialModal) return;
+    premiumTrialModal.classList.remove('open');
+    premiumTrialModal.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('modal-open');
   }
 
@@ -1346,10 +1368,39 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && premiumModal?.classList.contains('open')) {
-      closePremiumModal();
+  premiumTrialLinks.forEach((link) => {
+    link.addEventListener('click', () => {
+      trackMetaEvent('track', 'InitiateCheckout');
+      trackMetaEventOnce('premium-trial-click', 'trackCustom', 'PremiumTrialClick');
+    });
+  });
+
+  premiumTrialCloseButtons.forEach((button) => {
+    button.addEventListener('click', closePremiumTrialModal);
+  });
+
+  if (premiumTrialModal) {
+    premiumTrialModal.addEventListener('click', (e) => {
+      if (e.target === premiumTrialModal) {
+        closePremiumTrialModal();
+      }
+    });
+
+    if (window.location.pathname === '/premium.html' || window.location.pathname.endsWith('/premium.html')) {
+      window.setTimeout(() => {
+        if (document.visibilityState === 'hidden') return;
+        openPremiumTrialModal();
+      }, 20000);
     }
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (premiumTrialModal?.classList.contains('open')) {
+      closePremiumTrialModal();
+      return;
+    }
+    if (premiumModal?.classList.contains('open')) closePremiumModal();
   });
 
   window.addEventListener('pageshow', triggerSmoothStripeReload);
