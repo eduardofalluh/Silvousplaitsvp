@@ -36,7 +36,7 @@
 
 ⚠️ **Important** : Assurez-vous que votre configuration EmailJS est correcte dans `contact.html` :
 - Service ID : `service_vyzrc2p`
-- Template ID : `52tt8qu`
+- Template ID : `template_uhedeli`
 - Public Key : `qKYgMRIeyCUiAPs6Z`
 - Email de destination : `spectacles@silvousplaitsvp.com`
 

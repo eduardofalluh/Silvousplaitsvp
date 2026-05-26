@@ -68,7 +68,7 @@
   <script type="text/javascript">
     const EMAILJS_PUBLIC_KEY = "qKYgMRIeyCUiAPs6Z";
     const EMAILJS_SERVICE_ID = "service_vyzrc2p";
-    const EMAILJS_TEMPLATE_ID = "52tt8qu";
+    const EMAILJS_TEMPLATE_ID = "template_uhedeli";
 
     (function(){
       if (window.emailjs) {
@@ -236,7 +236,7 @@
       
       // More specific error messages
       if (error.status === 400) {
-        errorMessage = 'Erreur de configuration. Vérifiez que le template EmailJS est correctement configuré.';
+        errorMessage = 'Erreur de configuration EmailJS: ' + (error.text || 'vérifiez le Service ID, le Template ID et les variables du template.');
       } else if (error.status === 401) {
         errorMessage = 'Erreur d\'authentification. Vérifiez votre clé publique EmailJS.';
       } else if (error.status === 403) {
