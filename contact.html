@@ -66,8 +66,14 @@
   <!-- EmailJS SDK -->
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script type="text/javascript">
+    const EMAILJS_PUBLIC_KEY = "qKYgMRIeyCUiAPs6Z";
+    const EMAILJS_SERVICE_ID = "service_vyzrc2p";
+    const EMAILJS_TEMPLATE_ID = "52tt8qu";
+
     (function(){
-      emailjs.init("qKYgMRIeyCUiAPs6Z");
+      if (window.emailjs) {
+        emailjs.init(EMAILJS_PUBLIC_KEY);
+      }
     })();
   </script>
 </head>
@@ -183,14 +189,23 @@
       return;
     }
     
-    console.log('Sending email with data:', formData);
+    if (!window.emailjs) {
+      messageDiv.className = 'form-message error';
+      messageDiv.innerHTML = '<strong>Erreur lors de l\'envoi</strong><br>Le service de messagerie n\'a pas pu se charger. Écrivez-nous directement à <a href="mailto:spectacles@silvousplaitsvp.com">spectacles@silvousplaitsvp.com</a>.';
+      messageDiv.style.display = 'block';
+      btnText.style.display = 'inline';
+      btnLoading.style.display = 'none';
+      submitBtn.disabled = false;
+      return;
+    }
     
     // Send email using EmailJS
-    emailjs.send('service_vyzrc2p', 'template_uhedeli', {
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
       from_name: formData.name,
       from_email: formData.email,
       subject: formData.subject,
-      message: formData.message
+      message: formData.message,
+      to_email: 'spectacles@silvousplaitsvp.com'
     })
     .then(function() {
       // Success

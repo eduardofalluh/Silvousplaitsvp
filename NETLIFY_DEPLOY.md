@@ -36,7 +36,7 @@
 
 ⚠️ **Important** : Assurez-vous que votre configuration EmailJS est correcte dans `contact.html` :
 - Service ID : `service_vyzrc2p`
-- Template ID : `template_uhedeli`
+- Template ID : `52tt8qu`
 - Public Key : `qKYgMRIeyCUiAPs6Z`
 - Email de destination : `spectacles@silvousplaitsvp.com`
 
@@ -51,4 +51,3 @@
 
 - **Avec Git** : Faites `git push` et Netlify redéploiera automatiquement
 - **Sans Git** : Glissez-déposez à nouveau le dossier mis à jour
-
