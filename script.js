@@ -101,6 +101,7 @@ function initPageTransitions() {
       
       // Only handle internal HTML page links
       const isInternalPage = href.includes('index.html') || 
+                            href.includes('premium.html') ||
                             href.includes('faq.html') || 
                             href.includes('politique.html') || 
                             href.includes('termes.html') || 
@@ -790,7 +791,7 @@ document.addEventListener('DOMContentLoaded', () => {
       dotsId: 'home-premium-deals-dots',
       prevButtonId: 'home-premium-deals-prev',
       nextButtonId: 'home-premium-deals-next',
-      cardHref: 'premium.html#premium-offers',
+      cardHref: 'premium.html',
       forceRebuild,
     });
   };
@@ -827,7 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
       track.innerHTML = offers.map((offer) => {
         const meta = [offer.venue, formatOfferDate(offer.event_date)].filter(Boolean).join(' · ');
         return (
-          '<a class="premium-deal-card" href="premium.html#premium-offers" aria-label="Voir les offres premium">' +
+          '<a class="premium-deal-card" href="premium.html" aria-label="Voir les offres premium">' +
             '<img src="' + escapeHtml(offer.image_url || 'assets/premium_image.avif') + '" alt="' + escapeHtml(offer.title || '') + '" onerror="this.onerror=null;this.src=\'assets/premium_image.avif\';" />' +
             '<div class="premium-deal-card-body">' +
               '<div class="premium-deal-tags">' +
