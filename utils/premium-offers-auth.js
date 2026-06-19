@@ -51,6 +51,7 @@ function createPremiumOffersSessionToken(email) {
     {
       type: 'premium_offers_session',
       email: normalizeEmail(email),
+      auth: 'otp',
       exp: Math.floor(Date.now() / 1000) + PREMIUM_OFFERS_SESSION_DAYS * 24 * 60 * 60,
     },
     getOffersSecret()
@@ -62,6 +63,9 @@ function verifyPremiumOffersSessionToken(token) {
   if (!result.valid) return result;
   if ((result.payload || {}).type !== 'premium_offers_session') {
     return { valid: false, reason: 'invalid_session' };
+  }
+  if ((result.payload || {}).auth !== 'otp') {
+    return { valid: false, reason: 'otp_required' };
   }
   return result;
 }

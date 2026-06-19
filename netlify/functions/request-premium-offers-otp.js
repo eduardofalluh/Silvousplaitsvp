@@ -1,14 +1,32 @@
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const premiumChecker = require('../../utils/premium-checker');
 const {
   getOffersSecret,
-  createPremiumOffersSessionToken,
+  PREMIUM_OFFERS_OTP_TTL_MINUTES,
+  createPremiumOffersOtpToken,
 } = require('../../utils/premium-offers-auth');
-const { recordPremiumOfferAccessLog } = require('../../utils/premium-offers-store');
 const { checkRateLimit } = require('../../utils/rate-limit');
 const { buildJsonHeaders, isAllowedOrigin } = require('../../utils/http-security');
 
+const SMTP_HOST = process.env.SMTP_HOST;
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
+const SENDER_EMAIL = process.env.SENDER_EMAIL;
+const SENDER_NAME = process.env.SENDER_NAME || 'Silvousplait';
+
 function normalize(value) {
   return String(value || '').trim().toLowerCase();
+}
+
+function createTransporter() {
+  return nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+  });
 }
 
 exports.handler = async (event) => {
@@ -24,7 +42,7 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  if (!getOffersSecret()) {
+  if (!getOffersSecret() || !SMTP_HOST || !SMTP_USER || !SMTP_PASS || !SENDER_EMAIL) {
     return {
       statusCode: 500,
       headers,
@@ -46,7 +64,7 @@ exports.handler = async (event) => {
 
   const rateLimit = checkRateLimit(`premium-offers-login:${email}`, {
     windowMs: 10 * 60 * 1000,
-    max: 10,
+    max: 5,
   });
   if (!rateLimit.allowed) {
     return {
@@ -65,10 +83,29 @@ exports.handler = async (event) => {
     };
   }
 
+  const otpCode = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+  const otpToken = createPremiumOffersOtpToken(email, otpCode);
+
   try {
-    await recordPremiumOfferAccessLog({ email });
+    await createTransporter().sendMail({
+      from: `"${SENDER_NAME}" <${SENDER_EMAIL}>`,
+      to: email,
+      subject: 'Code de verification - Offres premium Silvousplait',
+      html: `
+        <p>Bonjour,</p>
+        <p>Voici ton code de verification pour acceder aux offres premium Silvousplait:</p>
+        <p style="font-size:24px;font-weight:700;letter-spacing:2px;">${otpCode}</p>
+        <p>Ce code expire dans ${PREMIUM_OFFERS_OTP_TTL_MINUTES} minutes.</p>
+        <p>Si tu n'as pas demande ce code, tu peux ignorer ce courriel.</p>
+      `,
+    });
   } catch (error) {
-    console.error('Premium access log write error:', error);
+    console.error('Premium offers OTP email error:', error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: 'Impossible d’envoyer le code de verification pour le moment.' }),
+    };
   }
 
   return {
@@ -76,7 +113,9 @@ exports.handler = async (event) => {
     headers,
     body: JSON.stringify({
       success: true,
-      accessToken: createPremiumOffersSessionToken(email),
+      message: 'OTP sent',
+      otpToken,
+      expiresInMinutes: PREMIUM_OFFERS_OTP_TTL_MINUTES,
       email,
     }),
   };
