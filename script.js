@@ -1111,15 +1111,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function isActiveCampaignSuccess(data) {
-    if (!data || typeof data !== 'object') return false;
-    if (data.success === 1 || data.success === true) return true;
-    if (data.result === 'success' || data.status === 'success' || data.type === 'success') return true;
-    if (data.result_code === 1) return true;
-    if (typeof data.js === 'string' && data.js.includes('_show_thank_you')) return true;
-    return false;
-  }
-
   /** Build JSON body from form, POST to Netlify function (honeypot blocks bots) */
   async function submitActiveCampaign(form) {
     var honeypot = form.querySelector('input[name="website"]');
@@ -1168,12 +1159,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (data && data.alreadyRegistered) {
           setFormFeedback(form, "Cette adresse est déjà inscrite à notre liste. Tu recevras nos prochains emails.", 'error');
-        } else if (response.ok && isActiveCampaignSuccess(data)) {
+        } else if (response.ok && data && data.subscribed === true) {
+          // Only fire the Meta Lead pixel when a contact actually entered the list.
           trackMetaEventOnce('free-signup-lead', 'track', 'Lead');
           setFormFeedback(form, "Merci pour ton inscription, tu recevras la première infolettre sous peu :)");
           if (emailInput) emailInput.value = '';
-        } else if (response.ok && data) {
-          trackMetaEventOnce('free-signup-lead', 'track', 'Lead');
+        } else if (response.ok && data && data.botBlocked) {
+          // Honeypot bot: show the same confirmation, but never fire the pixel.
           setFormFeedback(form, "Merci pour ton inscription, tu recevras la première infolettre sous peu :)");
           if (emailInput) emailInput.value = '';
         } else if (response.status === 500 && data && data.hint) {

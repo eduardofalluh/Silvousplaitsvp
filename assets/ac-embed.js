@@ -244,12 +244,13 @@ function _attachForm1Submit() {
         var ok = result.res.ok;
         if (data && data.alreadyRegistered) {
           window._show_error('1', "Cette adresse est déjà inscrite à notre liste. Tu recevras nos prochains emails.");
-        } else if (ok && data && (data.result_code === 1 || data.result === 'success' || data.success === 1 || (data.js && data.js.indexOf('_show_thank_you') !== -1))) {
+        } else if (ok && data && data.subscribed === true) {
+          // Only fire the Meta Lead pixel when a contact actually entered the list.
           if (typeof window.trackMetaEventOnce === 'function') window.trackMetaEventOnce('free-signup-lead', 'track', 'Lead');
           window._show_thank_you('1', "Merci pour ton inscription, tu recevras la première infolettre sous peu :)");
           if (emailEl) emailEl.value = '';
-        } else if (ok && data) {
-          if (typeof window.trackMetaEventOnce === 'function') window.trackMetaEventOnce('free-signup-lead', 'track', 'Lead');
+        } else if (ok && data && data.botBlocked) {
+          // Honeypot bot: show the same confirmation, but never fire the pixel.
           window._show_thank_you('1', "Merci pour ton inscription, tu recevras la première infolettre sous peu :)");
           if (emailEl) emailEl.value = '';
         } else {
