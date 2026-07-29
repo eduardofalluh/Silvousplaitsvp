@@ -56,6 +56,8 @@ exports.handler = async (event) => {
     }
     return { statusCode: 200, headers, body: JSON.stringify({ snapshotted: n }) };
   } catch (err) {
-    return { statusCode: 502, headers, body: JSON.stringify({ error: err.message || 'snapshot failed' }) };
+    // Fire-and-forget background call — never surface a 5xx (would log a console
+    // error on the page). Blobs is dormant under manual staging deploys.
+    return { statusCode: 200, headers, body: JSON.stringify({ snapshotted: 0, note: err.message || 'unavailable' }) };
   }
 };
