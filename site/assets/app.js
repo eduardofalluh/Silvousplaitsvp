@@ -161,7 +161,38 @@
     });
   }
 
-  function init() { wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); }
+  // ---- Live countdown to the next Monday 9:00 (newsletter send) ----
+  function nextMondayNine() {
+    var now = new Date();
+    var t = new Date(now);
+    t.setHours(9, 0, 0, 0);
+    var add = (1 - t.getDay() + 7) % 7; // days until Monday (getDay: 0=Sun..6=Sat)
+    if (add === 0 && now.getTime() >= t.getTime()) add = 7; // Monday after 9h -> next week
+    t.setDate(t.getDate() + add);
+    return t;
+  }
+  function wireCountdown() {
+    var els = Array.prototype.slice.call(document.querySelectorAll('[data-svp="countdown"]'));
+    if (!els.length) return;
+    function tick() {
+      var target = nextMondayNine().getTime();
+      var diff = Math.max(0, target - Date.now());
+      var d = Math.floor(diff / 86400000);
+      var h = Math.floor((diff % 86400000) / 3600000);
+      var m = Math.floor((diff % 3600000) / 60000);
+      var s = Math.floor((diff % 60000) / 1000);
+      els.forEach(function (el) {
+        var txt = d + 'j ' + h + 'h ' + m + 'min';
+        if (el.getAttribute('data-countdown-seconds') === '1') txt += ' ' + s + 's';
+        el.textContent = txt;
+      });
+    }
+    tick();
+    var anySeconds = els.some(function (el) { return el.getAttribute('data-countdown-seconds') === '1'; });
+    setInterval(tick, anySeconds ? 1000 : 30000);
+  }
+
+  function init() { wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
