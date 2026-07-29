@@ -504,8 +504,25 @@
     });
   }
 
+  // ---- FAQ accordion (design's toggle JS was lost in flattening) ----
+  function wireFaq() {
+    document.querySelectorAll('.faq-answer').forEach(function (ans) {
+      var item = ans.parentElement;
+      if (!item) return;
+      item.style.cursor = 'pointer';
+      var chev = [].slice.call(item.querySelectorAll('span')).filter(function (s) { return (s.textContent || '').trim() === '⌄'; })[0];
+      if (chev) { chev.style.display = 'inline-block'; chev.style.transition = 'transform .18s'; }
+      item.addEventListener('click', function (e) {
+        if (e.target && e.target.tagName === 'A') return;
+        var open = ans.style.display !== 'none';
+        ans.style.display = open ? 'none' : 'block';
+        if (chev) chev.style.transform = open ? '' : 'rotate(180deg)';
+      });
+    });
+  }
+
   function init() {
-    wireBackLinks();
+    wireBackLinks(); wireFaq();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers();
