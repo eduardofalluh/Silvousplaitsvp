@@ -480,6 +480,24 @@
       + '<a href="premium-offers.html" style="margin-top:10px;text-align:center;background:#3347CA;color:#FFFEF5;border-radius:100px;padding:11px;font:700 13px \'Instrument Sans\',sans-serif;text-decoration:none">Voir l\'offre</a>'
       + '</div></div>';
   }
+  // ---- Archive (past offers, from Netlify Blobs; read-only) ----
+  function wireArchive() {
+    var grid = document.querySelector('[data-svp="archive-grid"]');
+    if (!grid) return;
+    var empty = document.querySelector('[data-svp="archive-empty"]');
+    fetch(FN + 'list-archived-offers').then(function (r) { return r.json(); }).then(function (d) {
+      var offers = (d && d.offers) || [];
+      if (!offers.length) { if (empty) empty.style.display = 'block'; return; }
+      grid.innerHTML = offers.map(compteCard).join('');
+    }).catch(function () { if (empty) empty.style.display = 'block'; });
+  }
+  // On the premium page, snapshot current offers to the archive (fire-and-forget,
+  // read-only on the Sheet) so offers are captured before they expire.
+  function triggerSnapshot() {
+    if (!document.querySelector('[data-scroller="offres"]')) return;
+    try { fetch(FN + 'snapshot-offers', { method: 'POST', keepalive: true }); } catch (e) {}
+  }
+
   function wireLiveOffers() {
     var carousel = document.querySelector('[data-scroller="offres"]');
     var grid = document.querySelector('[data-svp="offers-grid"]');
@@ -492,6 +510,16 @@
       document.querySelectorAll('[data-svp="offer"]').forEach(observeOffer);
       wirePremiumCtas();
       if (typeof window.__svpApplyFilters === 'function') window.__svpApplyFilters();
+      // link to the archive of past offers (once)
+      var anchor = carousel || grid;
+      if (anchor && !document.querySelector('[data-svp="archive-link"]')) {
+        var a = document.createElement('a');
+        a.setAttribute('data-svp', 'archive-link');
+        a.href = 'archive.html';
+        a.textContent = 'Voir les offres passées →';
+        a.setAttribute('style', "display:inline-block;margin:16px 0 0;color:#3347CA;font:700 13.5px 'Instrument Sans',sans-serif;text-decoration:none");
+        anchor.parentNode.insertBefore(a, anchor.nextSibling);
+      }
     }).catch(function () {});
   }
 
@@ -526,6 +554,7 @@
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers();
+    wireArchive(); triggerSnapshot();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
