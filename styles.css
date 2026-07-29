@@ -5104,7 +5104,8 @@ video::-webkit-media-controls-panel {
 
 .premium-pricing-grid--framed {
   align-items: end;
-  grid-template-columns: minmax(240px, 306px) minmax(300px, 382px);
+  /* auto-fit keeps the layout clean whether one plan or two are shown */
+  grid-template-columns: repeat(auto-fit, minmax(300px, 382px));
 }
 
 .premium-plan-column {
