@@ -326,9 +326,70 @@
     });
   }
 
+  // ---- P2b/B: render LIVE premium offers from the backend ----
+  var FR_MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  function frDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.getUTCDate() + ' ' + FR_MONTHS[d.getUTCMonth()];
+  }
+  function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]; }); }
+  function observeOffer(card) {
+    if (typeof IntersectionObserver === 'undefined') return;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        io.unobserve(en.target);
+        pixel('trackCustom', 'OfferView');
+        var email = getEmail();
+        if (email) { try { fetch(FN + 'track-offer-view', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, offerId: en.target.getAttribute('data-offer-id') || '' }), keepalive: true }); } catch (e) {} }
+      });
+    }, { threshold: 0.5 });
+    io.observe(card);
+  }
+  function premiumCard(o) {
+    var img = o.image_url ? 'background:#0b1030 url(' + esc(o.image_url) + ') center/cover no-repeat;' : 'background:repeating-linear-gradient(135deg,#4155DE,#4155DE 14px,#3347CA 14px,#3347CA 28px);';
+    return '<div data-svp="offer" data-offer-id="' + esc(o.id) + '" style="position:relative;flex:0 0 auto;width:290px;max-width:86vw;height:400px;scroll-snap-align:start;border-radius:20px;overflow:hidden;box-shadow:rgba(142,160,245,.3) 5px 6px 0;' + img + 'display:flex;flex-direction:column;justify-content:space-between;padding:18px">'
+      + '<div style="position:absolute;inset:0;z-index:1;background:linear-gradient(rgba(8,10,26,0) 42%,rgba(8,10,26,.85) 74%)"></div>'
+      + '<div style="position:relative;z-index:2;display:flex;justify-content:flex-end"><div style="background:#F5E642;color:#16182B;font:800 12px \'Instrument Sans\',sans-serif;padding:5px 11px;border-radius:100px">' + esc(o.offer_type || 'Premium') + '</div></div>'
+      + '<div style="position:relative;z-index:2">'
+      + '<div style="font:700 16.5px/1.3 \'Bricolage Grotesque\',sans-serif;color:#FFFEF5;margin-bottom:4px">' + esc(o.title) + '</div>'
+      + '<div style="font:400 13px \'Instrument Sans\',sans-serif;color:#C3C8E4;margin-bottom:12px">' + esc(o.venue || '') + (o.event_date ? ' · ' + esc(frDate(o.event_date)) : '') + '</div>'
+      + '<a href="#pricing" data-svp="premium-cta" style="display:inline-block;font:700 12.5px \'Instrument Sans\',sans-serif;color:#16182B;background:#F5E642;padding:9px 17px;border-radius:100px;text-decoration:none">Réserver</a>'
+      + '</div></div>';
+  }
+  function compteCard(o) {
+    var img = o.image_url ? '<div style="height:110px;background:#EEF0FD center/cover no-repeat;background-image:url(' + esc(o.image_url) + ')"></div>'
+      : '<div style="height:110px;background:#EEF0FD;display:flex;align-items:center;justify-content:center"><div style="width:70px;height:70px;background:url(assets/icon-mic-circle.png) center/contain no-repeat;mix-blend-mode:multiply"></div></div>';
+    return '<div data-svp="offer" data-offer-id="' + esc(o.id) + '" style="background:#fff;border:1.5px solid #ECEAE0;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">'
+      + '<div style="position:relative">' + img
+      + '<span style="position:absolute;top:10px;left:10px;background:#F5E642;color:#16182B;font:700 11px \'Instrument Sans\',sans-serif;padding:4px 11px;border-radius:100px">' + esc(o.offer_type || 'Offre') + '</span>'
+      + '<span style="position:absolute;top:10px;right:10px;background:#fff;color:#4A4D66;font:600 11px \'Instrument Sans\',sans-serif;padding:4px 11px;border-radius:100px;border:1px solid #ECEAE0">' + esc(o.region || '') + '</span></div>'
+      + '<div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px;flex:1">'
+      + '<div style="font:700 15px/1.25 \'Bricolage Grotesque\',sans-serif">' + esc(o.title) + '</div>'
+      + '<div style="font:500 12.5px \'Instrument Sans\',sans-serif;color:#8B8DA0;flex:1">' + esc(o.venue || '') + (o.event_date ? ' · ' + esc(frDate(o.event_date)) : '') + '</div>'
+      + '<a href="premium-offers.html" style="margin-top:10px;text-align:center;background:#3347CA;color:#FFFEF5;border-radius:100px;padding:11px;font:700 13px \'Instrument Sans\',sans-serif;text-decoration:none">Voir l\'offre</a>'
+      + '</div></div>';
+  }
+  function wireLiveOffers() {
+    var carousel = document.querySelector('[data-scroller="offres"]');
+    var grid = document.querySelector('[data-svp="offers-grid"]');
+    if (!carousel && !grid) return;
+    fetch(FN + 'list-public-premium-offers').then(function (r) { return r.json(); }).then(function (d) {
+      var offers = (d && d.offers) || [];
+      if (!offers.length) return;
+      if (carousel) { carousel.innerHTML = offers.map(premiumCard).join(''); }
+      if (grid) { grid.innerHTML = offers.map(compteCard).join(''); }
+      document.querySelectorAll('[data-svp="offer"]').forEach(observeOffer);
+      wirePremiumCtas();
+    }).catch(function () {});
+  }
+
   function init() {
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireCompteGate(); wireAdmin(); wirePartenariat(); wireExitIntent();
+    wireLiveOffers();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
