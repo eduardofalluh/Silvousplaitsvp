@@ -716,6 +716,12 @@ async function syncSubscriptionTypeTags(email, subscriptionTypeValue) {
 
   if (!monthlyTagName && !yearlyTagName) return;
 
+  // If we could not resolve the subscription interval, do NOT strip existing
+  // interval tags — only ever remove the *opposite* tag once we know the type.
+  // (Previously an unresolved type fell through and removed both tags, which is
+  // why active subscribers ended up with neither `monthly` nor `yearly`.)
+  if (!activeTagName) return;
+
   if (activeTagName && activeTagName === monthlyTagName) {
     await addPremiumTag(normalizedEmail, monthlyTagName);
     if (yearlyTagName && yearlyTagName !== monthlyTagName) {

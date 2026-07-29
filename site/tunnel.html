@@ -1,110 +1,87 @@
 <!DOCTYPE html>
-<html><head><style>
-    .sc-placeholder{background:color-mix(in srgb,currentColor 8%,transparent);
-      border:1px solid color-mix(in srgb,currentColor 50%,transparent);
-      border-radius:2px;box-sizing:border-box;overflow:hidden}
-    @keyframes sc-shine{0%{background-position:100% 50%}100%{background-position:0% 50%}}
-    html.sc-dc-streaming .sc-placeholder,
-    html.sc-dc-streaming .sc-interp.sc-missing{position:relative;
-      background:color-mix(in srgb,currentColor 5%,transparent);
-      border-color:transparent}
-    html.sc-dc-streaming .sc-placeholder::before,
-    html.sc-dc-streaming .sc-interp.sc-missing::before{content:'';
-      position:absolute;inset:0;pointer-events:none;
-      background:linear-gradient(90deg,rgba(217,119,87,0) 25%,rgba(247,225,211,.95) 37%,rgba(217,119,87,0) 63%);
-      background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
-    html.sc-dc-streaming .sc-placeholder:nth-child(n+9 of .sc-placeholder)::before,
-    html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n+9 of .sc-interp.sc-missing)::before{animation:none;
-      background:color-mix(in srgb,currentColor 8%,transparent)}
-    .sc-placeholder-error{padding:4px 8px;font:11px/1.4 ui-monospace,monospace;
-      color:color-mix(in srgb,currentColor 70%,transparent);word-break:break-word}
-    .sc-interp.sc-missing{display:inline-block;width:2em;height:1em;overflow:hidden;
-      vertical-align:text-bottom;background:rgba(255,255,255,.3);border:1px solid rgba(0,0,0,.5);
-      border-radius:2px;box-sizing:border-box;color:transparent;
-      user-select:none}
-    .sc-interp.sc-unresolved{font-family:ui-monospace,monospace;font-size:.85em;
-      color:color-mix(in srgb,currentColor 50%,transparent);
-      background:color-mix(in srgb,currentColor 10%,transparent);border-radius:3px;
-      padding:0 3px}
-    .sc-host.sc-has-error{position:relative}
-    .sc-logic-error{position:absolute;top:8px;left:8px;z-index:2147483647;max-width:60ch;
-      padding:6px 10px;background:#b00020;color:#fff;font:12px/1.4 ui-monospace,monospace;
-      border-radius:4px;white-space:pre-wrap;pointer-events:none}
-    /* Mirrors PRINT_BASELINE_CSS in apps/web deck-stage-export.ts — keep both
-       in sync until dc-runtime regains a build step. */
-    @media print {
-      @page { margin: 0.5cm; }
-      figure, table { break-inside: avoid; }
-      #dc-root, #dc-root > .sc-host { height: auto; }
-      *, *::before, *::after {
-        print-color-adjust: exact; -webkit-print-color-adjust: exact;
-        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
-        animation-delay: -99s !important; animation-duration: .001s !important;
-        animation-iteration-count: 1 !important; animation-fill-mode: both !important;
-        animation-play-state: running !important; transition-duration: 0s !important;
-      }
-    }
-  </style>
+<html lang="fr"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>x-dc{display:none!important}</style>
-<style></style><link rel="preconnect" href="https://fonts.googleapis.com" data-dc-tpl="1"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&amp;family=Instrument+Sans:wght@400;500;600;700&amp;display=swap" data-dc-tpl="2"><style data-dc-tpl="3">
+<title>Inscription — Silvousplait</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<style>
   body{margin:0;background:#FFFEF5;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#16182B}
   h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;margin:0}
   a{color:#3347CA}a:hover{color:#25349B}
   input,select,button{font-family:'Instrument Sans',system-ui,sans-serif}
   input:focus{outline:none;border-color:#3347CA !important}
-</style></head>
+  .chip{border-radius:10px;padding:11px 6px;text-align:center;font-size:13px;cursor:pointer;user-select:none;transition:.13s;border:1.5px solid #E1E0D4;background:#fff;color:#16182B;font-weight:500}
+  .chip--pill{border-radius:100px;padding:10px 16px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .wrap{display:flex;flex-wrap:wrap;gap:8px}
+  .qlabel{font-weight:700;font-size:12.5px;margin-bottom:9px}
+  .qlabel span{font-weight:400;color:#8B8DA0}
+  .field{width:100%;box-sizing:border-box;border:1.5px solid #E1E0D4;border-radius:10px;padding:12px 14px;font-size:14.5px;font-weight:500;color:#16182B;background:#FFFEF5}
+  @media(max-width:520px){.grid4{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
 <body>
-<div id="dc-root"><div class="" data-sc-name="tunnel"><div data-dc-tpl="4" style="min-height: 100vh; padding: 28px 16px 80px;">
-  <div data-dc-tpl="6" style="max-width: 540px; margin: 0px auto 26px; display: flex; gap: 6px; background: rgb(255, 255, 255); border: 1.5px solid rgb(236, 234, 224); border-radius: 100px; padding: 5px;">
-    
-      <button data-dc-tpl="8" style="flex: 1 1 0%; border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 100px; padding: 10px 4px; cursor: pointer; font: 700 12.5px &quot;Instrument Sans&quot;, sans-serif; letter-spacing: 0.01em; transition: 0.15s; background: rgb(51, 71, 202); color: rgb(255, 254, 245);"><span class="">1 · Quiz</span></button>
-    
-      <button data-dc-tpl="8" style="flex: 1 1 0%; border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 100px; padding: 10px 4px; cursor: pointer; font: 700 12.5px &quot;Instrument Sans&quot;, sans-serif; letter-spacing: 0.01em; transition: 0.15s; background: transparent; color: rgb(139, 141, 160);"><span class="">2 · Premium</span></button>
-    
-      <button data-dc-tpl="8" style="flex: 1 1 0%; border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 100px; padding: 10px 4px; cursor: pointer; font: 700 12.5px &quot;Instrument Sans&quot;, sans-serif; letter-spacing: 0.01em; transition: 0.15s; background: transparent; color: rgb(139, 141, 160);"><span class="">3 · Invitation</span></button>
-    
-      <button data-dc-tpl="8" style="flex: 1 1 0%; border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 100px; padding: 10px 4px; cursor: pointer; font: 700 12.5px &quot;Instrument Sans&quot;, sans-serif; letter-spacing: 0.01em; transition: 0.15s; background: transparent; color: rgb(139, 141, 160);"><span class="">Bienvenue</span></button>
-    
-  </div><div data-dc-tpl="10" style="max-width: 540px; margin: 0px auto; background: rgb(255, 255, 255); border: 1.5px solid rgb(22, 24, 43); border-radius: 18px; padding: 30px 28px; box-shadow: rgb(51, 71, 202) 6px 6px 0px;">
-  <div data-dc-tpl="11" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-    <div data-dc-tpl="12" style="height: 34px; width: 145px; overflow: hidden; display: flex; align-items: center;"><img data-dc-tpl="13" src="assets/logo-mot.png" alt="Silvousplait" style="width: 145px; flex: 0 0 auto; margin-top: -7px;"></div>
-    <span data-dc-tpl="14" style="font: 700 11.5px &quot;Instrument Sans&quot;, sans-serif; letter-spacing: 0.05em; padding: 5px 13px; border-radius: 100px; background: rgb(238, 240, 253); color: rgb(51, 71, 202);">ÉTAPE 1 / 3</span>
-  </div>
-  <div data-dc-tpl="15" style="height: 6px; background: rgb(238, 240, 253); border-radius: 100px; margin-bottom: 24px; overflow: hidden;"><div data-dc-tpl="16" style="width: 33%; height: 100%; background: rgb(51, 71, 202); border-radius: 100px;"></div></div>
-
-  <h1 data-dc-tpl="17" style="font-size: 26px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 800; margin-bottom: 8px;">Bienvenue&nbsp;! On veut <span data-dc-tpl="18" style="color: rgb(51, 71, 202);">apprendre à te connaître</span></h1>
-  <p data-dc-tpl="19" style="font-size: 14.5px; line-height: 1.55; color: rgb(74, 77, 102); margin: 0px 0px 26px;">Quelques questions rapides pour t'envoyer seulement les sorties qui te ressemblent.</p>
-
-  <div data-dc-tpl="20" style="margin-bottom: 22px;">
-    <div data-dc-tpl="21" style="font: 700 12.5px &quot;Instrument Sans&quot;, sans-serif; margin-bottom: 9px;">Ta ville <span data-dc-tpl="22" style="font-weight: 400; color: rgb(139, 141, 160);">— pour ta bonne infolettre</span></div>
-    <div data-dc-tpl="23" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
-      <div data-dc-tpl="25" style="border-radius: 10px; padding: 11px 6px; text-align: center; font: 700 13px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer; user-select: none; transition: 0.13s; border: 1.5px solid rgb(51, 71, 202); background: rgb(238, 240, 253); color: rgb(51, 71, 202);"><span class="">Montréal</span></div><div data-dc-tpl="25" style="border-radius: 10px; padding: 11px 6px; text-align: center; font: 500 13px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer; user-select: none; transition: 0.13s; border: 1.5px solid rgb(225, 224, 212); background: rgb(255, 255, 255); color: rgb(22, 24, 43);"><span class="">Québec</span></div><div data-dc-tpl="25" style="border-radius: 10px; padding: 11px 6px; text-align: center; font: 500 13px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer; user-select: none; transition: 0.13s; border: 1.5px solid rgb(225, 224, 212); background: rgb(255, 255, 255); color: rgb(22, 24, 43);"><span class="">Sherbrooke</span></div><div data-dc-tpl="25" style="border-radius: 10px; padding: 11px 6px; text-align: center; font: 500 13px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer; user-select: none; transition: 0.13s; border: 1.5px solid rgb(225, 224, 212); background: rgb(255, 255, 255); color: rgb(22, 24, 43);"><span class="">Trois-Rivières</span></div>
+<div data-svp="funnel" style="min-height:100vh;padding:28px 16px 80px">
+  <div data-svp="funnel-card" style="max-width:540px;margin:0 auto;background:#fff;border:1.5px solid #16182B;border-radius:18px;padding:30px 28px;box-shadow:6px 6px 0 #3347CA">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="height:34px;width:145px;overflow:hidden;display:flex;align-items:center"><img src="assets/logo-mot.png" alt="Silvousplait" style="width:145px;flex:0 0 auto;margin-top:-7px"></div>
+      <span style="font-weight:700;font-size:11.5px;letter-spacing:.05em;padding:5px 13px;border-radius:100px;background:#EEF0FD;color:#3347CA">QUIZ EXPRESS</span>
     </div>
-  </div>
+    <div style="height:6px;background:#EEF0FD;border-radius:100px;margin-bottom:24px;overflow:hidden"><div style="width:100%;height:100%;background:#3347CA;border-radius:100px"></div></div>
 
-  <div data-dc-tpl="26" style="margin-bottom: 22px;">
-    <div data-dc-tpl="27" style="font: 700 12.5px &quot;Instrument Sans&quot;, sans-serif; margin-bottom: 9px;">Qu'est-ce que tu aimes sortir voir&nbsp;? <span data-dc-tpl="28" style="font-weight: 400; color: rgb(139, 141, 160);">— plusieurs choix</span></div>
-    <div data-dc-tpl="29" style="display: flex; flex-wrap: wrap; gap: 8px;">
-      <div data-dc-tpl="31" style="border-radius: 100px; padding: 10px 16px; text-align: center; font: 700 13px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer; user-select: none; transition: 0.13s; border: 1.5px solid rgb(51, 71, 202); background: rgb(238, 240, 253); color: rgb(51, 71, 202);"><span class="">Théâtre</span></div><div data-dc-tpl="31" style="border-radius: 100px; padding: 10px 16px; text-align: center; font: 700 13px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer; user-select: none; transition: 0.13s; border: 1.5px solid rgb(51, 71, 202); background: rgb(238, 240, 253); color: rgb(51, 71, 202);"><span class="">Musique</span></div><div data-dc-tpl="31" style="border-radius: 100px; padding: 10px 16px; text-align: center; font: 500 13px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer; user-select: none; transition: 0.13s; border: 1.5px solid rgb(225, 224, 212); background: rgb(255, 255, 255); color: rgb(22, 24, 43);"><span class="">Humour</span></div><div data-dc-tpl="31" style="border-radius: 100px; padding: 10px 16px; text-align: center; font: 500 13px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer; user-select: none; transition: 0.13s; border: 1.5px solid rgb(225, 224, 212); background: rgb(255, 255, 255); color: rgb(22, 24, 43);"><span class="">Cinéma</span></div><div data-dc-tpl="31" style="border-radius: 100px; padding: 10px 16px; text-align: center; font: 500 13px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer; user-select: none; transition: 0.13s; border: 1.5px solid rgb(225, 224, 212); background: rgb(255, 255, 255); color: rgb(22, 24, 43);"><span class="">Arts visuels</span></div><div data-dc-tpl="31" style="border-radius: 100px; padding: 10px 16px; text-align: center; font: 500 13px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer; user-select: none; transition: 0.13s; border: 1.5px solid rgb(225, 224, 212); background: rgb(255, 255, 255); color: rgb(22, 24, 43);"><span class="">Festivals</span></div><div data-dc-tpl="31" style="border-radius: 100px; padding: 10px 16px; text-align: center; font: 500 13px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer; user-select: none; transition: 0.13s; border: 1.5px solid rgb(225, 224, 212); background: rgb(255, 255, 255); color: rgb(22, 24, 43);"><span class="">Sport</span></div>
+    <h1 style="font-size:26px;line-height:1.15;letter-spacing:-.01em;font-weight:800;margin-bottom:8px">Bienvenue&nbsp;! On veut <span style="color:#3347CA">apprendre à te connaître</span></h1>
+    <p style="font-size:14.5px;line-height:1.55;color:#4A4D66;margin:0 0 26px">Quelques questions rapides pour t'envoyer seulement les sorties qui te ressemblent.</p>
+
+    <div style="margin-bottom:22px">
+      <div class="qlabel">Ta ville <span>— pour ta bonne infolettre</span></div>
+      <div class="grid4">
+        <div class="chip" data-svp-ville="montreal" data-selected="1" style="border-color:#3347CA;background:#EEF0FD;color:#3347CA;font-weight:700">Montréal</div>
+        <div class="chip" data-svp-ville="quebec">Québec</div>
+        <div class="chip" data-svp-ville="sherbrooke">Sherbrooke</div>
+        <div class="chip" data-svp-ville="trois-rivieres">Trois-Rivières</div>
+      </div>
     </div>
-  </div>
 
-  <div data-dc-tpl="32" style="margin-bottom: 22px;">
-    <div data-dc-tpl="33" style="font: 700 12.5px &quot;Instrument Sans&quot;, sans-serif; margin-bottom: 9px;">Tu sors combien de fois par mois&nbsp;? <span data-dc-tpl="34" style="font-weight: 400; color: rgb(139, 141, 160);">— environ</span></div>
-    <div data-dc-tpl="35" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
-      <div data-dc-tpl="37" style="border-radius: 10px; padding: 11px 6px; text-align: center; font: 500 13px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer; user-select: none; transition: 0.13s; border: 1.5px solid rgb(225, 224, 212); background: rgb(255, 255, 255); color: rgb(22, 24, 43);"><span class="">0–1</span></div><div data-dc-tpl="37" style="border-radius: 10px; padding: 11px 6px; text-align: center; font: 700 13px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer; user-select: none; transition: 0.13s; border: 1.5px solid rgb(51, 71, 202); background: rgb(238, 240, 253); color: rgb(51, 71, 202);"><span class="">2–3</span></div><div data-dc-tpl="37" style="border-radius: 10px; padding: 11px 6px; text-align: center; font: 500 13px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer; user-select: none; transition: 0.13s; border: 1.5px solid rgb(225, 224, 212); background: rgb(255, 255, 255); color: rgb(22, 24, 43);"><span class="">4–6</span></div><div data-dc-tpl="37" style="border-radius: 10px; padding: 11px 6px; text-align: center; font: 500 13px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer; user-select: none; transition: 0.13s; border: 1.5px solid rgb(225, 224, 212); background: rgb(255, 255, 255); color: rgb(22, 24, 43);"><span class="">7+</span></div>
+    <div style="margin-bottom:22px">
+      <div class="qlabel">Qu'est-ce que tu aimes sortir voir&nbsp;? <span>— plusieurs choix</span></div>
+      <div class="wrap">
+        <div class="chip chip--pill" data-svp-interest="Théâtre">Théâtre</div>
+        <div class="chip chip--pill" data-svp-interest="Musique">Musique</div>
+        <div class="chip chip--pill" data-svp-interest="Humour">Humour</div>
+        <div class="chip chip--pill" data-svp-interest="Cinéma">Cinéma</div>
+        <div class="chip chip--pill" data-svp-interest="Arts visuels">Arts visuels</div>
+        <div class="chip chip--pill" data-svp-interest="Festivals">Festivals</div>
+        <div class="chip chip--pill" data-svp-interest="Sport">Sport</div>
+      </div>
     </div>
+
+    <div style="margin-bottom:22px">
+      <div class="qlabel">Tu sors combien de fois par mois&nbsp;? <span>— environ</span></div>
+      <div class="grid4">
+        <div class="chip" data-svp-tranche="0-1">0–1</div>
+        <div class="chip" data-svp-tranche="2-3">2–3</div>
+        <div class="chip" data-svp-tranche="4-6">4–6</div>
+        <div class="chip" data-svp-tranche="7+">7+</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:18px">
+      <div class="qlabel">Ton prénom</div>
+      <input data-svp="prenom" placeholder="Alex" class="field">
+    </div>
+
+    <div style="margin-bottom:22px">
+      <div class="qlabel">Ton courriel</div>
+      <input data-svp="funnel-email" type="email" placeholder="ton.courriel@exemple.com" class="field">
+    </div>
+
+    <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
+
+    <button data-svp="funnel-submit" style="display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:16px;font-weight:700;font-size:15.5px;cursor:pointer">M'inscrire gratuitement →</button>
+    <p data-svp="funnel-feedback" role="status" aria-live="polite" style="min-height:18px;margin:12px 0 0;text-align:center;font-weight:600;font-size:13px;color:#3347CA"></p>
+    <p style="margin:6px 0 0;text-align:center;font-size:11.5px;color:#B3B1A4">Gratuit pour toujours · Désabonnement en 1 clic</p>
   </div>
-
-  <div data-dc-tpl="38" style="margin-bottom: 26px;">
-    <div data-dc-tpl="39" style="font: 700 12.5px &quot;Instrument Sans&quot;, sans-serif; margin-bottom: 9px;">Ton prénom</div>
-    <input data-dc-tpl="40" placeholder="Alex" style="width: 100%; box-sizing: border-box; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 12px 14px; font: 500 14.5px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245);">
-  </div>
-
-  <button data-dc-tpl="41" class="scp0" style="display: block; width: 100%; background: rgb(51, 71, 202); color: rgb(255, 254, 245); border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 100px; padding: 16px; font: 700 15.5px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer;">Continuer →</button></div><p data-dc-tpl="154" style="max-width: 540px; margin: 18px auto 0px; text-align: center; font: 500 11.5px &quot;Instrument Sans&quot;, sans-serif; color: rgb(179, 177, 164);">Aperçu navigable · Clique les onglets ou les boutons pour parcourir le tunnel · <span data-dc-tpl="155" style="text-decoration: underline; cursor: pointer; color: rgb(139, 141, 160);">voir la modale de sortie</span></p></div></div></div>
-
-
-
+</div>
+<script src="assets/app.js"></script>
 </body></html>
