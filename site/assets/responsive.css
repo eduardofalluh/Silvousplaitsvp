@@ -1,0 +1,53 @@
+/* Mobile responsiveness overrides for the flattened (desktop-fixed) design.
+   Uses !important inside media queries to override the design's inline styles. */
+
+@media (max-width: 900px) {
+  html, body { overflow-x: hidden !important; max-width: 100% !important; }
+  img { max-width: 100% !important; height: auto !important; }
+}
+
+@media (max-width: 760px) {
+  /* Predictable sizing so padded blocks never exceed their container */
+  * { box-sizing: border-box !important; }
+
+  /* Collapse every multi-column grid to a single column */
+  [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+
+  /* Fixed max-width content blocks (cards, paragraphs) fill available width */
+  [style*="max-width: 480px"], [style*="max-width:480px"],
+  [style*="max-width: 540px"], [style*="max-width: 460px"],
+  [style*="max-width: 420px"] { width: auto !important; max-width: 100% !important; }
+
+  /* Trim big desktop horizontal padding on full-bleed sections */
+  [style*="padding: 64px 32px"], [style*="padding: 48px 32px"], [style*="padding: 14px 32px"],
+  [style*="padding: 0px 32px"], [style*="padding:0 32px"] { padding-left: 16px !important; padding-right: 16px !important; }
+
+  /* Make fixed-width blocks fluid */
+  [style*="width: 360px"], [style*="width:360px"],
+  [style*="width: 520px"], [style*="width:520px"],
+  [style*="width: 480px"], [style*="width:480px"],
+  [style*="width: 340px"], [style*="width:340px"],
+  [style*="width: 320px"], [style*="width:320px"],
+  [style*="width: 300px"], [style*="width:300px"],
+  [style*="width: 280px"], [style*="width:280px"],
+  [style*="width: 170px"], [style*="width: 1160px"], [style*="width: 1100px"] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  [style*="max-width"] { max-width: 100% !important; }
+
+  /* Let side-by-side flex rows wrap on small screens */
+  [style*="display: flex"] { flex-wrap: wrap !important; }
+
+  /* Tame oversized display type */
+  h1 { font-size: clamp(28px, 8vw, 44px) !important; line-height: 1.12 !important; }
+  h2 { font-size: clamp(22px, 6vw, 34px) !important; }
+
+  /* Comfortable side padding for full-bleed sections */
+  body { padding-left: 0 !important; }
+}
+
+/* Keep header logo from being forced full-width by the rule above */
+@media (max-width: 760px) {
+  header img, [alt="Silvousplait"] { width: auto !important; max-width: 170px !important; }
+}
