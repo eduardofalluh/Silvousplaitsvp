@@ -1,6 +1,24 @@
 /* Mobile responsiveness overrides for the flattened (desktop-fixed) design.
    Uses !important inside media queries to override the design's inline styles. */
 
+/* ---- Global fixes (all viewports) ---- */
+/* Logo was cropped by a negative margin inside a fixed-height clip box */
+img[alt="Silvousplait"] {
+  margin-top: 0 !important;
+  height: auto !important;
+  width: auto !important;
+  max-height: 34px !important;
+  display: block;
+}
+/* Nicer, consistent primary buttons/links */
+[data-svp="checkout"], [data-svp="login-submit"], [data-svp="login-verify"],
+[data-svp="funnel-submit"], [data-svp="contact-submit"], [data-svp="partner-submit"],
+[data-svp="admin-submit"] { cursor: pointer; transition: filter .15s, transform .05s; }
+[data-svp="checkout"]:hover, [data-svp="login-submit"]:hover, [data-svp="login-verify"]:hover,
+[data-svp="funnel-submit"]:hover, [data-svp="contact-submit"]:hover, [data-svp="partner-submit"]:hover,
+[data-svp="admin-submit"]:hover { filter: brightness(1.08); }
+[data-svp="checkout"]:active, [data-svp="funnel-submit"]:active { transform: translateY(1px); }
+
 @media (max-width: 900px) {
   html, body { overflow-x: hidden !important; max-width: 100% !important; }
   img { max-width: 100% !important; height: auto !important; }
@@ -38,6 +56,18 @@
 
   /* Let side-by-side flex rows wrap on small screens */
   [style*="display: flex"] { flex-wrap: wrap !important; }
+
+  /* Decorative animated marquees (trust logos, testimonials) use a very wide
+     max-content track + transform animation -> they clip content on mobile.
+     Neutralize the animation and let the cards stack/wrap so nothing is cut. */
+  [style*="max-content"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    transform: none !important;
+    animation: none !important;
+  }
 
   /* Tame oversized display type */
   h1 { font-size: clamp(28px, 8vw, 44px) !important; line-height: 1.12 !important; }

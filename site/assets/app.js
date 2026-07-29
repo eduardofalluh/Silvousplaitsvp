@@ -238,12 +238,100 @@
     });
   }
 
-  // ---- compte gate: require a session ----
-  function wireCompteGate() {
+  function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+  // ---- compte: require a session, then populate REAL account data ----
+  function wireAccount() {
     if (!document.querySelector('[data-svp="compte"]')) return;
-    if (!getSession()) { window.location.href = 'connexion.html'; return; }
-    var slot = document.querySelector('[data-svp="account-email"]');
-    if (slot) slot.textContent = getEmail() || '';
+    var session = getSession();
+    if (!session) { window.location.href = 'connexion.html'; return; }
+    fetch(FN + 'get-account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: session }) })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        if (!res.ok || !res.d || !res.d.ok) { setSession(''); window.location.href = 'connexion.html'; return; }
+        var a = res.d; setEmail(a.email);
+        var greet = document.querySelector('[data-svp="compte"] h1');
+        if (greet) greet.textContent = 'Bonjour, ' + (a.firstName || a.email.split('@')[0]);
+        var ln = document.querySelector('input[placeholder="Nom"]'); if (ln) ln.value = a.lastName || '';
+        var fn = document.querySelector('input[placeholder="Prénom"]'); if (fn) fn.value = a.firstName || '';
+        var ph = document.querySelector('input[type="tel"]'); if (ph) ph.value = a.phone || '';
+        // badge: find element whose text is exactly "Membre Premium"
+        var badge = [].slice.call(document.querySelectorAll('span')).filter(function (s) { return (s.textContent || '').trim() === 'Membre Premium'; })[0];
+        if (badge && !a.isPremium) { badge.textContent = 'Membre gratuit'; badge.style.background = '#EEF0FD'; badge.style.color = '#3347CA'; }
+      })
+      .catch(function () { /* leave placeholders on network error */ });
+  }
+
+  // ---- compte: client-side offer filters ----
+  function wireCompteFilters() {
+    if (!document.querySelector('[data-svp="offers-grid"]')) return;
+    var search = document.querySelector('input[placeholder^="Rechercher"]');
+    var selects = [].slice.call(document.querySelectorAll('[data-svp="compte"] select'));
+    // type select has "Type d'offre" option; region select has "Région"
+    var type = selects.filter(function (s) { return /type d'offre/i.test(s.textContent); })[0];
+    var region = selects.filter(function (s) { return /r[ée]gion/i.test(s.textContent); })[0];
+    function tokens(s) { return norm(s).split(/[^a-z0-9%]+/).filter(function (w) { return w.length >= 4; }); }
+    function apply() {
+      var q = norm(search && search.value);
+      var tv = type && type.value; var tSel = tv && !/^tous$/i.test(tv);
+      var rv = region && region.value; var rSel = rv && !/^toutes$/i.test(rv);
+      var tTokens = tSel ? tokens(tv) : [];
+      document.querySelectorAll('[data-svp="offer"]').forEach(function (card) {
+        var hay = norm(card.getAttribute('data-offer-search'));
+        var ct = norm(card.getAttribute('data-offer-type'));
+        var cr = norm(card.getAttribute('data-offer-region'));
+        var okQ = !q || hay.indexOf(q) !== -1;
+        var okT = !tSel || tTokens.some(function (w) { return ct.indexOf(w.replace(/s$/, '')) !== -1; });
+        var okR = !rSel || cr.indexOf(norm(rv)) !== -1 || norm(rv).indexOf(cr) !== -1;
+        card.style.display = (okQ && okT && okR) ? '' : 'none';
+      });
+    }
+    [search, type, region].forEach(function (el) { if (el) { el.addEventListener('input', apply); el.addEventListener('change', apply); } });
+    window.__svpApplyFilters = apply;
+  }
+
+  // ---- contact form (inputs aren't in a <form>, so drive off the button) ----
+  function wireContact() {
+    var btn = document.querySelector('[data-svp="contact-submit"]');
+    if (!btn) return;
+    var msg = document.querySelector('[data-svp="contact-msg"]');
+    var v = function (sel) { var el = document.querySelector(sel); return el ? el.value : ''; };
+    function say(t, err) { if (msg) { msg.textContent = t || ''; msg.style.color = err ? '#b00020' : '#3347CA'; } }
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      var data = { name: v('[name="name"]'), email: v('[name="email"]'), subject: v('[name="subject"]'), message: v('[name="message"]'), website: v('[name="website"]') };
+      if (!validEmail(data.email.trim()) || !data.message.trim()) { say('Courriel valide et message requis.', true); return; }
+      btn.disabled = true; say('Envoi…');
+      fetch(FN + 'send-contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+        .then(function (r) { return r.json(); }).then(function (d) {
+          btn.disabled = false;
+          if (d && d.sent) {
+            ['[name="name"]', '[name="email"]', '[name="subject"]', '[name="message"]'].forEach(function (s) { var el = document.querySelector(s); if (el) el.value = ''; });
+            say('Message envoyé ! On te revient rapidement.');
+          } else { say((d && d.error) || "L'envoi a échoué.", true); }
+        }).catch(function () { btn.disabled = false; say('Erreur. Réessaie plus tard.', true); });
+    });
+  }
+
+  // ---- premium Stripe checkout ----
+  function wirePremiumCheckout() {
+    var btns = document.querySelectorAll('[data-svp="checkout"]');
+    if (!btns.length) return;
+    btns.forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        var plan = btn.getAttribute('data-plan') || 'yearly';
+        var email = getEmail();
+        if (email) { try { fetch(FN + 'tag-contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, tag: 'a-cliqué-premium-siteweb' }), keepalive: true }); } catch (er) {} }
+        pixel('track', 'InitiateCheckout');
+        var original = btn.textContent; btn.textContent = 'Redirection…';
+        fetch(FN + 'create-checkout-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planKey: plan, returnPath: '/premium.html' }) })
+          .then(function (r) { return r.json(); }).then(function (d) {
+            if (d && d.url) { window.location.href = d.url; }
+            else { btn.textContent = original; alert("Le paiement n'a pas pu démarrer. Réessaie."); }
+          }).catch(function () { btn.textContent = original; alert('Erreur. Réessaie plus tard.'); });
+      });
+    });
   }
 
   // ---- P5: admin gate ----
@@ -362,7 +450,7 @@
   function compteCard(o) {
     var img = o.image_url ? '<div style="height:110px;background:#EEF0FD center/cover no-repeat;background-image:url(' + esc(o.image_url) + ')"></div>'
       : '<div style="height:110px;background:#EEF0FD;display:flex;align-items:center;justify-content:center"><div style="width:70px;height:70px;background:url(assets/icon-mic-circle.png) center/contain no-repeat;mix-blend-mode:multiply"></div></div>';
-    return '<div data-svp="offer" data-offer-id="' + esc(o.id) + '" style="background:#fff;border:1.5px solid #ECEAE0;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">'
+    return '<div data-svp="offer" data-offer-id="' + esc(o.id) + '" data-offer-type="' + esc(o.offer_type || '') + '" data-offer-region="' + esc(o.region || '') + '" data-offer-search="' + esc((o.title || '') + ' ' + (o.venue || '')) + '" style="background:#fff;border:1.5px solid #ECEAE0;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">'
       + '<div style="position:relative">' + img
       + '<span style="position:absolute;top:10px;left:10px;background:#F5E642;color:#16182B;font:700 11px \'Instrument Sans\',sans-serif;padding:4px 11px;border-radius:100px">' + esc(o.offer_type || 'Offre') + '</span>'
       + '<span style="position:absolute;top:10px;right:10px;background:#fff;color:#4A4D66;font:600 11px \'Instrument Sans\',sans-serif;padding:4px 11px;border-radius:100px;border:1px solid #ECEAE0">' + esc(o.region || '') + '</span></div>'
@@ -383,13 +471,14 @@
       if (grid) { grid.innerHTML = offers.map(compteCard).join(''); }
       document.querySelectorAll('[data-svp="offer"]').forEach(observeOffer);
       wirePremiumCtas();
+      if (typeof window.__svpApplyFilters === 'function') window.__svpApplyFilters();
     }).catch(function () {});
   }
 
   function init() {
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
-    wireConnexion(); wireCompteGate(); wireAdmin(); wirePartenariat(); wireExitIntent();
-    wireLiveOffers();
+    wireConnexion(); wireAccount(); wireCompteFilters(); wireAdmin(); wirePartenariat();
+    wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

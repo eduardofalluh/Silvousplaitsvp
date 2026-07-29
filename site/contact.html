@@ -70,7 +70,7 @@
     <a href="partenariat.html" class="scp0" style="color: rgb(74, 77, 102); text-decoration: none;">Partenariat</a>
     <a href="connexion.html" class="scp0" style="color: rgb(74, 77, 102); text-decoration: none;">Connexion</a>
     <a href="accueil.html" class="scp1" style="background: rgb(51, 71, 202); color: rgb(255, 254, 245); padding: 11px 22px; border-radius: 100px; font-weight: 700; text-decoration: none;">S'inscrire</a>
-    <a href="accueil.html" instrument="" class="scp2" style="font: 600 13.5px �;">← Retour au site</a>
+    <a href="accueil.html" instrument="" class="scp2" style="display:inline-flex;align-items:center;gap:6px;background:#EEF0FD;color:#3347CA;font:700 13px 'Instrument Sans',sans-serif;padding:9px 16px;border-radius:100px;text-decoration:none">← Retour au site</a>
   </div></div><div style="flex: 1 1 0%; max-width: 640px; width: 100%; margin: 0px auto; padding: 56px 24px 80px; box-sizing: border-box;">
   <div style="text-align: center; margin-bottom: 36px;">
     <img src="assets/logo-yeux.png" alt="" style="width: 96px; margin-bottom: 12px;">
@@ -81,12 +81,12 @@
   
   <div style="background: rgb(255, 255, 255); border: 1.5px solid rgb(22, 24, 43); border-radius: 18px; padding: 28px; box-shadow: rgb(51, 71, 202) 6px 6px 0px;">
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-      <input placeholder="Nom complet" style="box-sizing: border-box; width: 100%; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 13px 14px; font: 500 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245);">
-      <input type="email" placeholder="Courriel" style="box-sizing: border-box; width: 100%; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 13px 14px; font: 500 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245);">
+      <input name="name" placeholder="Nom complet" style="box-sizing: border-box; width: 100%; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 13px 14px; font: 500 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245);">
+      <input type="email" name="email" placeholder="Courriel" style="box-sizing: border-box; width: 100%; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 13px 14px; font: 500 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245);">
     </div>
-    <input placeholder="Sujet" style="box-sizing: border-box; width: 100%; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 13px 14px; font: 500 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245); margin-bottom: 12px;">
-    <textarea placeholder="Message" rows="6" style="box-sizing: border-box; width: 100%; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 13px 14px; font: 500 14px / 1.55 &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245); resize: vertical; margin-bottom: 16px;"></textarea>
-    <button class="scp3" style="display: block; width: 100%; background: rgb(51, 71, 202); color: rgb(255, 254, 245); border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 100px; padding: 16px; font: 700 15.5px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer;">Envoyer le message</button>
+    <input name="subject" placeholder="Sujet" style="box-sizing: border-box; width: 100%; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 13px 14px; font: 500 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245); margin-bottom: 12px;">
+    <textarea name="message" placeholder="Message" rows="6" style="box-sizing: border-box; width: 100%; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 13px 14px; font: 500 14px / 1.55 &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245); resize: vertical; margin-bottom: 16px;"></textarea>
+    <button class="scp3" style="display: block; width: 100%; background: rgb(51, 71, 202); color: rgb(255, 254, 245); border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 100px; padding: 16px; font: 700 15.5px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer;" data-svp="contact-submit">Envoyer le message</button><input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"><p data-svp="contact-msg" role="status" aria-live="polite" style="min-height:18px;margin:12px 0 0;text-align:center;font-weight:600;font-size:13px;color:#3347CA"></p>
   </div>
   
 
