@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html><head><style>
+    .sc-placeholder{background:color-mix(in srgb,currentColor 8%,transparent);
+      border:1px solid color-mix(in srgb,currentColor 50%,transparent);
+      border-radius:2px;box-sizing:border-box;overflow:hidden}
+    @keyframes sc-shine{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+    html.sc-dc-streaming .sc-placeholder,
+    html.sc-dc-streaming .sc-interp.sc-missing{position:relative;
+      background:color-mix(in srgb,currentColor 5%,transparent);
+      border-color:transparent}
+    html.sc-dc-streaming .sc-placeholder::before,
+    html.sc-dc-streaming .sc-interp.sc-missing::before{content:'';
+      position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(90deg,rgba(217,119,87,0) 25%,rgba(247,225,211,.95) 37%,rgba(217,119,87,0) 63%);
+      background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
+    html.sc-dc-streaming .sc-placeholder:nth-child(n+9 of .sc-placeholder)::before,
+    html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n+9 of .sc-interp.sc-missing)::before{animation:none;
+      background:color-mix(in srgb,currentColor 8%,transparent)}
+    .sc-placeholder-error{padding:4px 8px;font:11px/1.4 ui-monospace,monospace;
+      color:color-mix(in srgb,currentColor 70%,transparent);word-break:break-word}
+    .sc-interp.sc-missing{display:inline-block;width:2em;height:1em;overflow:hidden;
+      vertical-align:text-bottom;background:rgba(255,255,255,.3);border:1px solid rgba(0,0,0,.5);
+      border-radius:2px;box-sizing:border-box;color:transparent;
+      user-select:none}
+    .sc-interp.sc-unresolved{font-family:ui-monospace,monospace;font-size:.85em;
+      color:color-mix(in srgb,currentColor 50%,transparent);
+      background:color-mix(in srgb,currentColor 10%,transparent);border-radius:3px;
+      padding:0 3px}
+    .sc-host.sc-has-error{position:relative}
+    .sc-logic-error{position:absolute;top:8px;left:8px;z-index:2147483647;max-width:60ch;
+      padding:6px 10px;background:#b00020;color:#fff;font:12px/1.4 ui-monospace,monospace;
+      border-radius:4px;white-space:pre-wrap;pointer-events:none}
+    /* Mirrors PRINT_BASELINE_CSS in apps/web deck-stage-export.ts — keep both
+       in sync until dc-runtime regains a build step. */
+    @media print {
+      @page { margin: 0.5cm; }
+      figure, table { break-inside: avoid; }
+      #dc-root, #dc-root > .sc-host { height: auto; }
+      *, *::before, *::after {
+        print-color-adjust: exact; -webkit-print-color-adjust: exact;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        animation-delay: -99s !important; animation-duration: .001s !important;
+        animation-iteration-count: 1 !important; animation-fill-mode: both !important;
+        animation-play-state: running !important; transition-duration: 0s !important;
+      }
+    }
+  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>x-dc{display:none!important}</style>
+<style></style><style>html,body{height:100%;margin:0}#dc-root,#dc-root>.sc-host{height:100%}</style><link rel="preconnect" href="https://fonts.googleapis.com" data-dc-tpl="1"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&amp;family=Instrument+Sans:wght@400;500;600;700&amp;display=swap" data-dc-tpl="2"><style data-dc-tpl="3">
+  body{margin:0;background:#FFFEF5;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#16182B}
+  h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;margin:0}
+  a{color:#3347CA}a:hover{color:#25349B}
+</style></head>
+<body>
+<div id="dc-root"><div class="" data-sc-name="termes"><div data-dc-tpl="4" style="min-height: 100vh; display: flex; flex-direction: column;"><div data-dc-tpl="5" style="display: flex; align-items: center; justify-content: space-between; padding: 18px 32px; border-bottom: 1.5px solid rgb(236, 234, 224); background: rgb(255, 254, 245);">
+  <a data-dc-tpl="6" href="/accueil" style="display: flex; align-items: center; height: 34px; width: 145px; overflow: hidden;"><img data-dc-tpl="7" src="assets/logo-mot.png" alt="Silvousplait" style="width: 145px; flex: 0 0 auto; margin-top: -7px;"></a>
+  <a data-dc-tpl="8" href="/accueil" instrument="" class="scp0" style="font: 600 13.5px �;">← Retour au site</a></div><div data-dc-tpl="9" style="flex: 1 1 0%; max-width: 720px; width: 100%; margin: 0px auto; padding: 52px 24px 80px; box-sizing: border-box;">
+  <h1 data-dc-tpl="10" style="font-size: 34px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 6px;">Conditions d'utilisation</h1>
+  <p data-dc-tpl="11" style="font: 400 13.5px &quot;Instrument Sans&quot;, sans-serif; color: rgb(139, 141, 160); margin: 0px 0px 36px;">Dernière mise à jour&nbsp;: juillet 2026</p>
+
+  
+    <div data-dc-tpl="13" style="margin-bottom: 26px;">
+      <h2 data-dc-tpl="14" style="font-size: 17px; font-weight: 700; letter-spacing: -0.005em; margin-bottom: 7px;"><span data-dc-tpl="15" style="color: rgb(51, 71, 202);"><span class="">1</span>.</span> <span class="">Acceptation des conditions</span></h2>
+      <p data-dc-tpl="16" style="font: 400 14.5px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin: 0px;"><span class="">Les présentes conditions d'utilisation régissent l'accès et l'utilisation du site web et des services offerts par Silvousplait. En utilisant les services, incluant l'inscription à l'infolettre gratuite ou au Forfait Premium, vous acceptez les présentes conditions.</span></p>
+    </div>
+  
+    <div data-dc-tpl="13" style="margin-bottom: 26px;">
+      <h2 data-dc-tpl="14" style="font-size: 17px; font-weight: 700; letter-spacing: -0.005em; margin-bottom: 7px;"><span data-dc-tpl="15" style="color: rgb(51, 71, 202);"><span class="">2</span>.</span> <span class="">Description du service</span></h2>
+      <p data-dc-tpl="16" style="font: 400 14.5px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin: 0px;"><span class="">Silvousplait offre un service de recommandation culturelle diffusé principalement sous la forme d'une infolettre hebdomadaire. Le service vise à faciliter la découvrabilité de spectacles à prix abordable. Silvousplait inc. n'est pas une plateforme de vente de billets et n'intervient pas dans les transactions effectuées sur des plateformes tierces ou auprès de nos partenaires culturels.</span></p>
+    </div>
+  
+    <div data-dc-tpl="13" style="margin-bottom: 26px;">
+      <h2 data-dc-tpl="14" style="font-size: 17px; font-weight: 700; letter-spacing: -0.005em; margin-bottom: 7px;"><span data-dc-tpl="15" style="color: rgb(51, 71, 202);"><span class="">3</span>.</span> <span class="">Code de conduite</span></h2>
+      <p data-dc-tpl="16" style="font: 400 14.5px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin: 0px;"><span class="">En utilisant le site web, vous vous engagez à ne pas l'utiliser d'une manière qui viole les présentes conditions ou les droits de propriété intellectuelle de Silvousplait ou d'un tiers, à ne pas propager de pourriel ou de contenu malveillant, à ne pas tenter de perturber le bon fonctionnement du site, et à ne pas harceler ou utiliser un langage abusif envers Silvousplait ou ses représentants.</span></p>
+    </div>
+  
+    <div data-dc-tpl="13" style="margin-bottom: 26px;">
+      <h2 data-dc-tpl="14" style="font-size: 17px; font-weight: 700; letter-spacing: -0.005em; margin-bottom: 7px;"><span data-dc-tpl="15" style="color: rgb(51, 71, 202);"><span class="">4</span>.</span> <span class="">Exactitude de l'information</span></h2>
+      <p data-dc-tpl="16" style="font: 400 14.5px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin: 0px;"><span class="">Silvousplait s'efforce de fournir des informations exactes et à jour. Toutefois, les informations relatives aux spectacles (dates, prix, disponibilité) peuvent être modifiées sans préavis par les producteurs, diffuseurs ou plateformes de billetterie. Silvousplait ne peut être tenue responsable de ces changements.</span></p>
+    </div>
+  
+    <div data-dc-tpl="13" style="margin-bottom: 26px;">
+      <h2 data-dc-tpl="14" style="font-size: 17px; font-weight: 700; letter-spacing: -0.005em; margin-bottom: 7px;"><span data-dc-tpl="15" style="color: rgb(51, 71, 202);"><span class="">5</span>.</span> <span class="">Utilisation du contenu</span></h2>
+      <p data-dc-tpl="16" style="font: 400 14.5px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin: 0px;"><span class="">L'ensemble du contenu diffusé par Silvousplait, incluant les textes, visuels et sélections éditoriales, est protégé par les lois applicables en matière de propriété intellectuelle. Toute reproduction ou utilisation non autorisée est interdite sans autorisation écrite préalable.</span></p>
+    </div>
+  
+    <div data-dc-tpl="13" style="margin-bottom: 26px;">
+      <h2 data-dc-tpl="14" style="font-size: 17px; font-weight: 700; letter-spacing: -0.005em; margin-bottom: 7px;"><span data-dc-tpl="15" style="color: rgb(51, 71, 202);"><span class="">6</span>.</span> <span class="">Abonnement, frais et renouvellement</span></h2>
+      <p data-dc-tpl="16" style="font: 400 14.5px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin: 0px;"><span class="">L'inscription à l'infolettre gratuite est offerte sans frais. Le Forfait Premium est offert au prix de 60$ par année, plus taxes applicables, payable par carte de crédit via Stripe. L'abonnement se renouvelle automatiquement à la fin de chaque période, sauf annulation. Vous pouvez annuler votre abonnement en tout temps en vous connectant à votre compte ou en communiquant avec spectacles@silvousplaitsvp.com; l'annulation prend effet à la fin de la période payée en cours.</span></p>
+    </div>
+  
+    <div data-dc-tpl="13" style="margin-bottom: 26px;">
+      <h2 data-dc-tpl="14" style="font-size: 17px; font-weight: 700; letter-spacing: -0.005em; margin-bottom: 7px;"><span data-dc-tpl="15" style="color: rgb(51, 71, 202);"><span class="">7</span>.</span> <span class="">Politique de remboursement</span></h2>
+      <p data-dc-tpl="16" style="font: 400 14.5px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin: 0px;"><span class="">Silvousplait offre une politique de remboursement de 30 jours. Si le Forfait Premium ne répond pas à vos attentes, vous pouvez demander un remboursement en écrivant à spectacles@silvousplaitsvp.com dans les 30 jours suivant le début ou le renouvellement de votre abonnement. Aucun remboursement partiel n'est offert après cette période.</span></p>
+    </div>
+  
+    <div data-dc-tpl="13" style="margin-bottom: 26px;">
+      <h2 data-dc-tpl="14" style="font-size: 17px; font-weight: 700; letter-spacing: -0.005em; margin-bottom: 7px;"><span data-dc-tpl="15" style="color: rgb(51, 71, 202);"><span class="">8</span>.</span> <span class="">Limitation de responsabilité</span></h2>
+      <p data-dc-tpl="16" style="font: 400 14.5px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin: 0px;"><span class="">Silvousplait ne peut être tenue responsable des décisions prises par les utilisateurs à la suite des recommandations proposées, ni de l'expérience vécue lors des spectacles recommandés. Le service est offert à titre informatif et éditorial, « tel quel », sans garantie d'aucune sorte. Dans la mesure permise par la loi, la responsabilité totale de Silvousplait envers un utilisateur ne peut excéder le montant payé par celui-ci au cours des 12 derniers mois.</span></p>
+    </div>
+  
+    <div data-dc-tpl="13" style="margin-bottom: 26px;">
+      <h2 data-dc-tpl="14" style="font-size: 17px; font-weight: 700; letter-spacing: -0.005em; margin-bottom: 7px;"><span data-dc-tpl="15" style="color: rgb(51, 71, 202);"><span class="">9</span>.</span> <span class="">Indemnisation</span></h2>
+      <p data-dc-tpl="16" style="font: 400 14.5px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin: 0px;"><span class="">Vous acceptez d'indemniser et de tenir Silvousplait inc. indemne de toute réclamation découlant de votre utilisation du site web ou de votre violation des présentes conditions.</span></p>
+    </div>
+  
+    <div data-dc-tpl="13" style="margin-bottom: 26px;">
+      <h2 data-dc-tpl="14" style="font-size: 17px; font-weight: 700; letter-spacing: -0.005em; margin-bottom: 7px;"><span data-dc-tpl="15" style="color: rgb(51, 71, 202);"><span class="">10</span>.</span> <span class="">Liens externes</span></h2>
+      <p data-dc-tpl="16" style="font: 400 14.5px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin: 0px;"><span class="">Le site web et les communications de Silvousplait peuvent contenir des liens vers des sites tiers, incluant ceux de nos partenaires culturels et plateformes de billetterie. Silvousplait n'exerce aucun contrôle sur ces sites et décline toute responsabilité quant à leur contenu.</span></p>
+    </div>
+  
+    <div data-dc-tpl="13" style="margin-bottom: 26px;">
+      <h2 data-dc-tpl="14" style="font-size: 17px; font-weight: 700; letter-spacing: -0.005em; margin-bottom: 7px;"><span data-dc-tpl="15" style="color: rgb(51, 71, 202);"><span class="">11</span>.</span> <span class="">Interruption des services</span></h2>
+      <p data-dc-tpl="16" style="font: 400 14.5px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin: 0px;"><span class="">Le site web peut être temporairement indisponible en raison de maintenance ou d'un cas de force majeure. Silvousplait ne peut être tenue responsable des pertes découlant d'une telle interruption.</span></p>
+    </div>
+  
+    <div data-dc-tpl="13" style="margin-bottom: 26px;">
+      <h2 data-dc-tpl="14" style="font-size: 17px; font-weight: 700; letter-spacing: -0.005em; margin-bottom: 7px;"><span data-dc-tpl="15" style="color: rgb(51, 71, 202);"><span class="">12</span>.</span> <span class="">Modification des conditions</span></h2>
+      <p data-dc-tpl="16" style="font: 400 14.5px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin: 0px;"><span class="">Silvousplait se réserve le droit de modifier les présentes conditions d'utilisation à tout moment. Les modifications entrent en vigueur dès leur publication sur le site web.</span></p>
+    </div>
+  
+    <div data-dc-tpl="13" style="margin-bottom: 26px;">
+      <h2 data-dc-tpl="14" style="font-size: 17px; font-weight: 700; letter-spacing: -0.005em; margin-bottom: 7px;"><span data-dc-tpl="15" style="color: rgb(51, 71, 202);"><span class="">13</span>.</span> <span class="">Droit applicable</span></h2>
+      <p data-dc-tpl="16" style="font: 400 14.5px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin: 0px;"><span class="">Les présentes conditions sont régies par les lois applicables dans la province de Québec et au Canada.</span></p>
+    </div>
+  
+    <div data-dc-tpl="13" style="margin-bottom: 26px;">
+      <h2 data-dc-tpl="14" style="font-size: 17px; font-weight: 700; letter-spacing: -0.005em; margin-bottom: 7px;"><span data-dc-tpl="15" style="color: rgb(51, 71, 202);"><span class="">14</span>.</span> <span class="">Contact</span></h2>
+      <p data-dc-tpl="16" style="font: 400 14.5px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin: 0px;"><span class="">Pour toute question relative aux présentes conditions d'utilisation, vous pouvez communiquer avec Silvousplait inc. à l'adresse suivante: spectacles@silvousplaitsvp.com</span></p>
+    </div>
+  </div><div data-dc-tpl="17" style="background: rgb(22, 24, 43); padding: 28px 32px; display: flex; align-items: center; justify-content: center; gap: 28px; font: 500 13px &quot;Instrument Sans&quot;, sans-serif;">
+  <a data-dc-tpl="18" href="/faq" style="color: rgb(167, 169, 188); text-decoration: none;">Questions et aide</a>
+  <a data-dc-tpl="19" href="/contact" style="color: rgb(167, 169, 188); text-decoration: none;">Contact</a>
+  <a data-dc-tpl="20" href="/partenariat" style="color: rgb(167, 169, 188); text-decoration: none;">Partenariat</a>
+  <a data-dc-tpl="21" href="/termes" style="color: rgb(167, 169, 188); text-decoration: none;">Termes</a>
+  <a data-dc-tpl="22" href="/politique" style="color: rgb(167, 169, 188); text-decoration: none;">Politique</a>
+  <span data-dc-tpl="23" style="color: rgb(74, 77, 102);">© 2026 Silvousplait</span></div></div></div></div>
+
+
+
+</body></html>

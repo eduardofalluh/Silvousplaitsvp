@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html><head><style>
+    .sc-placeholder{background:color-mix(in srgb,currentColor 8%,transparent);
+      border:1px solid color-mix(in srgb,currentColor 50%,transparent);
+      border-radius:2px;box-sizing:border-box;overflow:hidden}
+    @keyframes sc-shine{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+    html.sc-dc-streaming .sc-placeholder,
+    html.sc-dc-streaming .sc-interp.sc-missing{position:relative;
+      background:color-mix(in srgb,currentColor 5%,transparent);
+      border-color:transparent}
+    html.sc-dc-streaming .sc-placeholder::before,
+    html.sc-dc-streaming .sc-interp.sc-missing::before{content:'';
+      position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(90deg,rgba(217,119,87,0) 25%,rgba(247,225,211,.95) 37%,rgba(217,119,87,0) 63%);
+      background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
+    html.sc-dc-streaming .sc-placeholder:nth-child(n+9 of .sc-placeholder)::before,
+    html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n+9 of .sc-interp.sc-missing)::before{animation:none;
+      background:color-mix(in srgb,currentColor 8%,transparent)}
+    .sc-placeholder-error{padding:4px 8px;font:11px/1.4 ui-monospace,monospace;
+      color:color-mix(in srgb,currentColor 70%,transparent);word-break:break-word}
+    .sc-interp.sc-missing{display:inline-block;width:2em;height:1em;overflow:hidden;
+      vertical-align:text-bottom;background:rgba(255,255,255,.3);border:1px solid rgba(0,0,0,.5);
+      border-radius:2px;box-sizing:border-box;color:transparent;
+      user-select:none}
+    .sc-interp.sc-unresolved{font-family:ui-monospace,monospace;font-size:.85em;
+      color:color-mix(in srgb,currentColor 50%,transparent);
+      background:color-mix(in srgb,currentColor 10%,transparent);border-radius:3px;
+      padding:0 3px}
+    .sc-host.sc-has-error{position:relative}
+    .sc-logic-error{position:absolute;top:8px;left:8px;z-index:2147483647;max-width:60ch;
+      padding:6px 10px;background:#b00020;color:#fff;font:12px/1.4 ui-monospace,monospace;
+      border-radius:4px;white-space:pre-wrap;pointer-events:none}
+    /* Mirrors PRINT_BASELINE_CSS in apps/web deck-stage-export.ts — keep both
+       in sync until dc-runtime regains a build step. */
+    @media print {
+      @page { margin: 0.5cm; }
+      figure, table { break-inside: avoid; }
+      #dc-root, #dc-root > .sc-host { height: auto; }
+      *, *::before, *::after {
+        print-color-adjust: exact; -webkit-print-color-adjust: exact;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        animation-delay: -99s !important; animation-duration: .001s !important;
+        animation-iteration-count: 1 !important; animation-fill-mode: both !important;
+        animation-play-state: running !important; transition-duration: 0s !important;
+      }
+    }
+  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>x-dc{display:none!important}</style>
+<style></style><style>html,body{height:100%;margin:0}#dc-root,#dc-root>.sc-host{height:100%}</style><link rel="preconnect" href="https://fonts.googleapis.com" data-dc-tpl="1"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&amp;family=Instrument+Sans:wght@400;500;600;700&amp;display=swap" data-dc-tpl="2"><style data-dc-tpl="3">
+  body{margin:0;background:#FFFEF5;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#16182B}
+  h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;margin:0}
+  a{color:#3347CA}a:hover{color:#25349B}
+  input,select,button{font-family:'Instrument Sans',system-ui,sans-serif}
+  input:focus,select:focus{outline:2px solid #3347CA;outline-offset:1px}
+  @keyframes marqueeSVP{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+</style></head>
+<body>
+<div id="dc-root"><div class="" data-sc-name="accueil"><div data-dc-tpl="4" style="min-width: 1100px;"><div data-dc-tpl="6" style="background: rgb(51, 71, 202); color: rgb(255, 254, 245); text-align: center; padding: 10px 16px; font: 600 13.5px &quot;Instrument Sans&quot;, sans-serif;">
+  La prochaine sélection de spectacles part <span data-dc-tpl="7" style="text-decoration: underline; text-underline-offset: 3px;">lundi 9h</span> — il reste <span data-dc-tpl="8" style="font-variant-numeric: tabular-nums; font-weight: 700;"><span class="">4j 19h 12min</span></span> pour être dessus.
+</div><div data-dc-tpl="9" style="position: sticky; top: 0px; z-index: 20; background: rgba(255, 254, 245, 0.92); backdrop-filter: blur(10px); border-bottom: 1px solid rgb(236, 234, 224);">
+  <div data-dc-tpl="10" style="max-width: 1160px; margin: 0px auto; display: flex; align-items: center; justify-content: space-between; padding: 14px 32px;">
+    <div data-dc-tpl="11" style="height: 40px; width: 170px; overflow: hidden; display: flex; align-items: center; justify-content: flex-start;">
+      <img data-dc-tpl="12" src="assets/logo-mot.png" alt="Silvousplait" style="width: 170px; flex: 0 0 auto; margin-top: -8px;">
+    </div>
+    <div data-dc-tpl="13" style="display: flex; align-items: center; gap: 28px; font: 600 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102);">
+      <a data-dc-tpl="14" href="/premium" style="color: rgb(74, 77, 102); text-decoration: none;">Premium</a>
+      <a data-dc-tpl="15" href="/contact" style="color: rgb(74, 77, 102); text-decoration: none;">Contact</a>
+      <a data-dc-tpl="16" href="/connexion" class="scp0" style="background: rgb(51, 71, 202); color: rgb(255, 254, 245); padding: 11px 22px; border-radius: 100px; font-weight: 700; text-decoration: none;">Connexion</a>
+    </div>
+  </div></div><div data-dc-tpl="17" style="max-width: 1160px; margin: 0px auto; padding: 76px 32px 64px; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center;">
+  <div data-dc-tpl="18">
+    <div data-dc-tpl="19" style="display: inline-flex; align-items: center; gap: 8px; background: rgb(238, 240, 253); color: rgb(51, 71, 202); font: 700 13px &quot;Instrument Sans&quot;, sans-serif; padding: 7px 16px; border-radius: 100px; margin-bottom: 26px;">
+      <span data-dc-tpl="20" style="width: 7px; height: 7px; border-radius: 50%; background: rgb(51, 71, 202); display: inline-block;"></span>
+      Infolettre gratuite · chaque lundi · <span class="">5 627</span> abonnés
+    </div>
+    <h1 data-dc-tpl="21" style="font-size: 56px; line-height: 1.05; letter-spacing: -0.02em; font-weight: 800; margin-bottom: 20px;">Trouve ton prochain spectacle <span data-dc-tpl="22" style="color: rgb(51, 71, 202);">à petit prix</span></h1>
+    <p data-dc-tpl="23" style="font-size: 18px; line-height: 1.55; color: rgb(74, 77, 102); max-width: 480px; margin: 0px 0px 30px;">Chaque lundi, on t'envoie les meilleurs spectacles pas chers de ta ville. Toi, tu choisis. Nous, on fouille.</p>
+
+    <div data-dc-tpl="24" id="inscription" style="background: rgb(255, 255, 255); border: 1.5px solid rgb(22, 24, 43); border-radius: 16px; padding: 22px; max-width: 480px; box-shadow: rgb(51, 71, 202) 6px 6px 0px;">
+      <input data-dc-tpl="25" type="email" placeholder="ton.courriel@exemple.com" style="display: block; width: 100%; box-sizing: border-box; padding: 13px 14px; border-radius: 10px; border: 1.5px solid rgb(225, 224, 212); background: rgb(255, 254, 245); font: 500 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);">
+      <a data-dc-tpl="26" href="/tunnel" instrument="" class="scp0" style="display: block; text-align: center; margin-top: 10px; background: rgb(51, 71, 202); color: rgb(255, 254, 245); padding: 15px; border-radius: 10px; font: 700 15.5px �;">Envoie-moi des spectacles pas chers !</a>
+      <div data-dc-tpl="27" style="display: flex; justify-content: center; gap: 16px; margin-top: 12px; font: 500 12.5px &quot;Instrument Sans&quot;, sans-serif; color: rgb(139, 141, 160);">
+        <span data-dc-tpl="28">✓ Gratuit pour toujours</span><span data-dc-tpl="29">✓ 2 secondes</span><span data-dc-tpl="30">✓ Désabonnement en 1 clic</span>
+      </div>
+    </div>
+  </div>
+  <div data-dc-tpl="31" style="display: flex; flex-direction: column; align-items: center; gap: 18px;">
+    <img data-dc-tpl="32" src="assets/logo-yeux.png" alt="Silvousplait — logo aux grands yeux" style="width: 88%; max-width: 440px;">
+    
+  </div></div><div data-dc-tpl="33" style="border-top: 1px solid rgb(236, 234, 224); border-bottom: 1px solid rgb(236, 234, 224); background: rgb(251, 250, 241); padding: 22px 0px 20px; overflow: hidden; white-space: nowrap;">
+  <div data-dc-tpl="34" style="text-align: center; font: 700 13px &quot;Instrument Sans&quot;, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(51, 71, 202); margin-bottom: 16px;">Ils nous font confiance</div>
+  <div data-dc-tpl="35" style="display: inline-flex; gap: 56px; animation: 30s linear 0s infinite normal none running marqueeSVP; font: 700 15px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(154, 156, 176); align-items: center;">
+    <span data-dc-tpl="36">Radio-Canada</span><span data-dc-tpl="37">Cinéma Public</span><span data-dc-tpl="38">Centre du Théâtre d'Aujourd'hui</span><span data-dc-tpl="39">Espace GO</span><span data-dc-tpl="40">La Vitrine</span><span data-dc-tpl="41">LePointdeVente.com</span>
+    <span data-dc-tpl="42">Radio-Canada</span><span data-dc-tpl="43">Cinéma Public</span><span data-dc-tpl="44">Centre du Théâtre d'Aujourd'hui</span><span data-dc-tpl="45">Espace GO</span><span data-dc-tpl="46">La Vitrine</span><span data-dc-tpl="47">LePointdeVente.com</span>
+  </div></div><div data-dc-tpl="48" id="comment" style="max-width: 1160px; margin: 0px auto; padding: 84px 32px 72px;">
+  <h2 data-dc-tpl="49" style="text-align: center; font-size: 36px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 10px;">Comment ça marche ?</h2>
+  <p data-dc-tpl="50" style="text-align: center; font-size: 16px; color: rgb(74, 77, 102); margin: 0px 0px 48px;">Trois étapes, zéro effort.</p>
+  <div data-dc-tpl="51" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
+    <div data-dc-tpl="52" class="scp1" style="position: relative; background: rgb(255, 255, 255); border: 1.5px solid rgb(236, 234, 224); border-radius: 20px; padding: 34px 28px 30px; text-align: center; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;">
+      <div data-dc-tpl="53" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: rgb(51, 71, 202); color: rgb(255, 254, 245); font: 800 13px &quot;Bricolage Grotesque&quot;, sans-serif; padding: 6px 16px; border-radius: 999px; letter-spacing: 0.06em;">1</div>
+      <div data-dc-tpl="54" style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;"><img data-dc-tpl="55" src="assets/step-inscription.png" alt="Inscription" style="max-height: 110px; max-width: 70%; mix-blend-mode: multiply;"></div>
+      <div data-dc-tpl="56" style="font: 700 19px &quot;Bricolage Grotesque&quot;, sans-serif; margin-bottom: 8px; color: rgb(22, 24, 43);">Inscris-toi !</div>
+      <div data-dc-tpl="57" style="font: 400 14.5px / 1.55 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102);">Abonne-toi gratuitement ! Ça prend 2 secondes, aucune carte demandée.</div>
+    </div>
+    <div data-dc-tpl="58" class="scp1" style="position: relative; background: rgb(255, 255, 255); border: 1.5px solid rgb(236, 234, 224); border-radius: 20px; padding: 34px 28px 30px; text-align: center; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;">
+      <div data-dc-tpl="59" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: rgb(51, 71, 202); color: rgb(255, 254, 245); font: 800 13px &quot;Bricolage Grotesque&quot;, sans-serif; padding: 6px 16px; border-radius: 999px; letter-spacing: 0.06em;">2</div>
+      <div data-dc-tpl="60" style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;"><img data-dc-tpl="61" src="assets/step-megaphone.png" alt="Sélection du lundi" style="max-height: 110px; max-width: 70%; mix-blend-mode: multiply;"></div>
+      <div data-dc-tpl="62" style="font: 700 19px &quot;Bricolage Grotesque&quot;, sans-serif; margin-bottom: 8px; color: rgb(22, 24, 43);">Trouve ton spectacle</div>
+      <div data-dc-tpl="63" style="font: 400 14.5px / 1.55 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102);">Chaque lundi, reçois notre sélection et choisis le show qui te tente le plus.</div>
+    </div>
+    <div data-dc-tpl="64" class="scp1" style="position: relative; background: rgb(255, 255, 255); border: 1.5px solid rgb(236, 234, 224); border-radius: 20px; padding: 34px 28px 30px; text-align: center; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;">
+      <div data-dc-tpl="65" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: rgb(51, 71, 202); color: rgb(255, 254, 245); font: 800 13px &quot;Bricolage Grotesque&quot;, sans-serif; padding: 6px 16px; border-radius: 999px; letter-spacing: 0.06em;">3</div>
+      <div data-dc-tpl="66" style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;"><img data-dc-tpl="67" src="assets/step-scene.png" alt="Spectacle" style="max-height: 110px; max-width: 70%; mix-blend-mode: multiply;"></div>
+      <div data-dc-tpl="68" style="font: 700 19px &quot;Bricolage Grotesque&quot;, sans-serif; margin-bottom: 8px; color: rgb(22, 24, 43);">Profite du moment !</div>
+      <div data-dc-tpl="69" style="font: 400 14.5px / 1.55 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102);">Savoure chaque minute du spectacle.</div>
+    </div>
+  </div></div><div data-dc-tpl="70" id="premium" style="background: rgb(22, 24, 43); padding: 88px 32px;">
+  <div data-dc-tpl="71" style="max-width: 1160px; margin: 0px auto;">
+    <div data-dc-tpl="72" style="text-align: center; margin-bottom: 52px;">
+      <div data-dc-tpl="73" style="font: 700 12px &quot;Instrument Sans&quot;, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(142, 160, 245); margin-bottom: 14px;">Silvousplait Premium</div>
+      <h2 data-dc-tpl="74" style="font-size: 38px; color: rgb(255, 254, 245); font-weight: 800; letter-spacing: -0.01em;">Le prix d'un café. Des billets gratuits.</h2>
+      <p data-dc-tpl="75" style="font-size: 16px; color: rgb(167, 169, 188); margin: 12px 0px 0px;">Un abonnement qui se rembourse dès ta première sortie.</p>
+    </div>
+
+    <div data-dc-tpl="76" style="display: grid; grid-template-columns: 1fr 1fr 1.15fr; gap: 20px; align-items: stretch; max-width: 1020px; margin: 0px auto;">
+      <div data-dc-tpl="77" style="background: rgba(255, 254, 245, 0.05); border: 1px solid rgba(255, 254, 245, 0.12); border-radius: 18px; padding: 32px 28px; color: rgb(167, 169, 188);">
+        <div data-dc-tpl="78" style="font: 700 15px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(255, 254, 245); margin-bottom: 6px;">Sans Silvousplait</div>
+        <div data-dc-tpl="79" style="font: 800 34px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(255, 254, 245); margin-bottom: 22px;">Plein prix</div>
+        <div data-dc-tpl="80" style="display: flex; flex-direction: column; gap: 13px; font: 400 14.5px / 1.4 &quot;Instrument Sans&quot;, sans-serif;">
+          <div data-dc-tpl="81">✕ Tu paies le gros prix</div>
+          <div data-dc-tpl="82">✕ Tu cherches des billets pendant des heures</div>
+          <div data-dc-tpl="83">✕ Tu apprends les bons shows… après</div>
+        </div>
+      </div>
+      <div data-dc-tpl="84" style="background: rgb(255, 254, 245); border-radius: 18px; padding: 32px 28px; color: rgb(74, 77, 102); box-shadow: rgba(0, 0, 0, 0.3) 0px 16px 40px;">
+        <div data-dc-tpl="85" style="font: 700 15px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(22, 24, 43); margin-bottom: 6px;">Gratuit</div>
+        <div data-dc-tpl="86" style="font: 800 34px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(22, 24, 43); margin-bottom: 22px;">0$</div>
+        <div data-dc-tpl="87" style="display: flex; flex-direction: column; gap: 13px; font: 400 14.5px / 1.4 &quot;Instrument Sans&quot;, sans-serif;">
+          <div data-dc-tpl="88"><span data-dc-tpl="89" style="color: rgb(51, 71, 202); font-weight: 700;">✓</span> Sélection hebdo de spectacles à petit prix</div>
+          <div data-dc-tpl="90"><span data-dc-tpl="91" style="color: rgb(51, 71, 202); font-weight: 700;">✓</span> Découvertes culturelles dans ta ville</div>
+          <div data-dc-tpl="92"><font data-dc-tpl="93" color="#3347ca"><b data-dc-tpl="94">-</b></font>&nbsp;Pas de billets gratuits</div>
+        </div>
+        <a data-dc-tpl="95" href="#inscription" class="scp2" style="display: block; text-align: center; margin-top: 26px; border: 1.5px solid rgb(22, 24, 43); color: rgb(22, 24, 43); padding: 13px; border-radius: 10px; font: 700 14px &quot;Instrument Sans&quot;, sans-serif; text-decoration: none;">S'inscrire gratuitement</a>
+      </div>
+      <div data-dc-tpl="96" style="background: rgb(51, 71, 202); border-radius: 18px; padding: 34px 30px; color: rgb(255, 254, 245); position: relative; box-shadow: rgba(51, 71, 202, 0.45) 0px 24px 60px;">
+        <div data-dc-tpl="97" style="position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: rgb(255, 254, 245); color: rgb(51, 71, 202); font: 800 11.5px &quot;Instrument Sans&quot;, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; padding: 6px 14px; border-radius: 100px; white-space: nowrap;">Se rembourse en 1 sortie</div>
+        <div data-dc-tpl="98" style="font: 700 15px &quot;Bricolage Grotesque&quot;, sans-serif; margin-bottom: 6px;">Premium</div>
+        <div data-dc-tpl="99" style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px;">
+          <div data-dc-tpl="100" style="font: 800 44px &quot;Bricolage Grotesque&quot;, sans-serif;">5$</div>
+          <div data-dc-tpl="101" style="font: 500 15px &quot;Instrument Sans&quot;, sans-serif; opacity: 0.8;">/ mois + taxe</div>
+        </div>
+        <div data-dc-tpl="102" style="font: 500 13px &quot;Instrument Sans&quot;, sans-serif; opacity: 0.85; margin-bottom: 22px;">Facturé 60$ une fois par année</div>
+        <div data-dc-tpl="103" style="display: flex; flex-direction: column; gap: 13px; font: 500 14.5px / 1.4 &quot;Instrument Sans&quot;, sans-serif; margin-bottom: 26px;">
+          <div data-dc-tpl="104">✓ Billets <strong data-dc-tpl="105">gratuits</strong> réservés aux membres</div>
+          <div data-dc-tpl="106">✓ Rabais exclusifs sur les billets</div>
+          <div data-dc-tpl="107">✓ Offres spéciales avant tout le monde</div>
+          <div data-dc-tpl="108">✓ Spectacles Silvousplait</div>
+        </div>
+        <a data-dc-tpl="109" href="#" class="scp3" style="display: block; text-align: center; background: rgb(255, 254, 245); color: rgb(51, 71, 202); padding: 15px; border-radius: 10px; font: 800 15px &quot;Instrument Sans&quot;, sans-serif; text-decoration: none;">Passer en Premium</a>
+        <div data-dc-tpl="110" style="text-align: center; margin-top: 12px; font: 500 12.5px &quot;Instrument Sans&quot;, sans-serif; opacity: 0.8;">Annule en tout temps, sans frais. Remboursé dans les 30 premiers jours si tu n'es pas satisfait.</div>
+      </div>
+    </div>
+
+    <div data-dc-tpl="111" style="max-width: 1020px; margin: 26px auto 0px; text-align: center; font: 500 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(167, 169, 188);">
+      Un billet de spectacle moyen coûte 35–60$. <span data-dc-tpl="112" style="color: rgb(255, 254, 245);">Un seul rabais Premium couvre ton mois.</span>
+    </div>
+  </div></div><div data-dc-tpl="113" style="padding: 84px 0px; overflow: hidden;">
+  <h2 data-dc-tpl="114" style="text-align: center; font-size: 34px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 48px; padding: 0px 32px;">Notre motivation</h2>
+  <div data-dc-tpl="115" style="overflow: hidden; mask-image: linear-gradient(90deg, transparent, rgb(0, 0, 0) 6%, rgb(0, 0, 0) 94%, transparent);">
+    <div data-dc-tpl="116" class="scp4" style="display: flex; gap: 22px; width: max-content; animation: 45s linear 0s infinite normal none running marqueeSVP;">
+      
+        <div data-dc-tpl="118" style="background: rgb(255, 255, 255); border: 1.5px solid rgb(216, 222, 250); border-radius: 22px; padding: 30px 28px; width: 360px; flex-shrink: 0; align-self: flex-start; display: flex; flex-direction: column; gap: 18px; box-shadow: rgba(51, 71, 202, 0.18) 5px 6px 0px;">
+          <div data-dc-tpl="119" style="font: 400 15px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Simple, efficace et économique. Exactement ce qu'il me fallait pour profiter de la culture montréalaise sans me ruiner !</span></div>
+          <div data-dc-tpl="120" style="font: 700 13.5px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">David</span></div>
+        </div>
+      
+        <div data-dc-tpl="118" style="background: rgb(255, 255, 255); border: 1.5px solid rgb(216, 222, 250); border-radius: 22px; padding: 30px 28px; width: 360px; flex-shrink: 0; align-self: flex-start; display: flex; flex-direction: column; gap: 18px; box-shadow: rgba(51, 71, 202, 0.18) 5px 6px 0px;">
+          <div data-dc-tpl="119" style="font: 400 15px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Les suggestions sont toujours pertinentes et adaptées à mes goûts. C'est devenu un rituel du lundi !</span></div>
+          <div data-dc-tpl="120" style="font: 700 13.5px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Émilie</span></div>
+        </div>
+      
+        <div data-dc-tpl="118" style="background: rgb(255, 255, 255); border: 1.5px solid rgb(216, 222, 250); border-radius: 22px; padding: 30px 28px; width: 360px; flex-shrink: 0; align-self: flex-start; display: flex; flex-direction: column; gap: 18px; box-shadow: rgba(51, 71, 202, 0.18) 5px 6px 0px;">
+          <div data-dc-tpl="119" style="font: 400 15px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Enfin une infolettre qui fonctionne vraiment ! Je découvre des endroits incroyables et j'économise sur mes billets.</span></div>
+          <div data-dc-tpl="120" style="font: 700 13.5px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Sophie</span></div>
+        </div>
+      
+        <div data-dc-tpl="118" style="background: rgb(255, 255, 255); border: 1.5px solid rgb(216, 222, 250); border-radius: 22px; padding: 30px 28px; width: 360px; flex-shrink: 0; align-self: flex-start; display: flex; flex-direction: column; gap: 18px; box-shadow: rgba(51, 71, 202, 0.18) 5px 6px 0px;">
+          <div data-dc-tpl="119" style="font: 400 15px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Je ne rate plus aucun bon spectacle depuis que je suis abonné. Une vraie mine d'or pour les Montréalais !</span></div>
+          <div data-dc-tpl="120" style="font: 700 13.5px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Marc</span></div>
+        </div>
+      
+        <div data-dc-tpl="118" style="background: rgb(255, 255, 255); border: 1.5px solid rgb(216, 222, 250); border-radius: 22px; padding: 30px 28px; width: 360px; flex-shrink: 0; align-self: flex-start; display: flex; flex-direction: column; gap: 18px; box-shadow: rgba(51, 71, 202, 0.18) 5px 6px 0px;">
+          <div data-dc-tpl="119" style="font: 400 15px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Parfait pour sortir sans se casser la tête. Les bons plans arrivent directement dans ma boîte mail.</span></div>
+          <div data-dc-tpl="120" style="font: 700 13.5px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Léa</span></div>
+        </div>
+      
+        <div data-dc-tpl="118" style="background: rgb(255, 255, 255); border: 1.5px solid rgb(216, 222, 250); border-radius: 22px; padding: 30px 28px; width: 360px; flex-shrink: 0; align-self: flex-start; display: flex; flex-direction: column; gap: 18px; box-shadow: rgba(51, 71, 202, 0.18) 5px 6px 0px;">
+          <div data-dc-tpl="119" style="font: 400 15px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">J'ai découvert des événements que je n'aurais jamais trouvés autrement. Merci Silvousplait !</span></div>
+          <div data-dc-tpl="120" style="font: 700 13.5px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Thomas</span></div>
+        </div>
+      
+        <div data-dc-tpl="118" style="background: rgb(255, 255, 255); border: 1.5px solid rgb(216, 222, 250); border-radius: 22px; padding: 30px 28px; width: 360px; flex-shrink: 0; align-self: flex-start; display: flex; flex-direction: column; gap: 18px; box-shadow: rgba(51, 71, 202, 0.18) 5px 6px 0px;">
+          <div data-dc-tpl="119" style="font: 400 15px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Simple, efficace et économique. Exactement ce qu'il me fallait pour profiter de la culture montréalaise sans me ruiner !</span></div>
+          <div data-dc-tpl="120" style="font: 700 13.5px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">David</span></div>
+        </div>
+      
+        <div data-dc-tpl="118" style="background: rgb(255, 255, 255); border: 1.5px solid rgb(216, 222, 250); border-radius: 22px; padding: 30px 28px; width: 360px; flex-shrink: 0; align-self: flex-start; display: flex; flex-direction: column; gap: 18px; box-shadow: rgba(51, 71, 202, 0.18) 5px 6px 0px;">
+          <div data-dc-tpl="119" style="font: 400 15px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Les suggestions sont toujours pertinentes et adaptées à mes goûts. C'est devenu un rituel du lundi !</span></div>
+          <div data-dc-tpl="120" style="font: 700 13.5px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Émilie</span></div>
+        </div>
+      
+        <div data-dc-tpl="118" style="background: rgb(255, 255, 255); border: 1.5px solid rgb(216, 222, 250); border-radius: 22px; padding: 30px 28px; width: 360px; flex-shrink: 0; align-self: flex-start; display: flex; flex-direction: column; gap: 18px; box-shadow: rgba(51, 71, 202, 0.18) 5px 6px 0px;">
+          <div data-dc-tpl="119" style="font: 400 15px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Enfin une infolettre qui fonctionne vraiment ! Je découvre des endroits incroyables et j'économise sur mes billets.</span></div>
+          <div data-dc-tpl="120" style="font: 700 13.5px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Sophie</span></div>
+        </div>
+      
+        <div data-dc-tpl="118" style="background: rgb(255, 255, 255); border: 1.5px solid rgb(216, 222, 250); border-radius: 22px; padding: 30px 28px; width: 360px; flex-shrink: 0; align-self: flex-start; display: flex; flex-direction: column; gap: 18px; box-shadow: rgba(51, 71, 202, 0.18) 5px 6px 0px;">
+          <div data-dc-tpl="119" style="font: 400 15px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Je ne rate plus aucun bon spectacle depuis que je suis abonné. Une vraie mine d'or pour les Montréalais !</span></div>
+          <div data-dc-tpl="120" style="font: 700 13.5px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Marc</span></div>
+        </div>
+      
+        <div data-dc-tpl="118" style="background: rgb(255, 255, 255); border: 1.5px solid rgb(216, 222, 250); border-radius: 22px; padding: 30px 28px; width: 360px; flex-shrink: 0; align-self: flex-start; display: flex; flex-direction: column; gap: 18px; box-shadow: rgba(51, 71, 202, 0.18) 5px 6px 0px;">
+          <div data-dc-tpl="119" style="font: 400 15px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Parfait pour sortir sans se casser la tête. Les bons plans arrivent directement dans ma boîte mail.</span></div>
+          <div data-dc-tpl="120" style="font: 700 13.5px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Léa</span></div>
+        </div>
+      
+        <div data-dc-tpl="118" style="background: rgb(255, 255, 255); border: 1.5px solid rgb(216, 222, 250); border-radius: 22px; padding: 30px 28px; width: 360px; flex-shrink: 0; align-self: flex-start; display: flex; flex-direction: column; gap: 18px; box-shadow: rgba(51, 71, 202, 0.18) 5px 6px 0px;">
+          <div data-dc-tpl="119" style="font: 400 15px / 1.65 &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">J'ai découvert des événements que je n'aurais jamais trouvés autrement. Merci Silvousplait !</span></div>
+          <div data-dc-tpl="120" style="font: 700 13.5px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Thomas</span></div>
+        </div>
+      
+    </div>
+  </div></div><div data-dc-tpl="121" id="faq" style="max-width: 720px; margin: 0px auto; padding: 12px 32px 84px;">
+  <h2 data-dc-tpl="122" style="text-align: center; font-size: 30px; font-weight: 800; margin-bottom: 36px;">Questions fréquentes</h2>
+  
+    <div data-dc-tpl="124" style="border-bottom: 1px solid rgb(236, 234, 224); padding: 19px 4px; cursor: pointer;">
+      <div data-dc-tpl="125" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font: 700 15.5px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">C'est vraiment gratuit ?</span><span data-dc-tpl="126" style="color: rgb(51, 71, 202); font-size: 18px; flex: 0 0 auto;"><span class="">−</span></span></div>
+      <div data-dc-tpl="128" style="font: 400 14.5px / 1.6 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin-top: 10px; max-width: 620px;"><span class="">Oui. L'infolettre est 100% gratuite, pour toujours. Premium est optionnel, pour ceux qui veulent des billets gratuits et des rabais exclusifs.</span></div>
+    </div>
+  
+    <div data-dc-tpl="124" style="border-bottom: 1px solid rgb(236, 234, 224); padding: 19px 4px; cursor: pointer;">
+      <div data-dc-tpl="125" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font: 700 15.5px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Je reçois combien de courriels ?</span><span data-dc-tpl="126" style="color: rgb(51, 71, 202); font-size: 18px; flex: 0 0 auto;"><span class="">+</span></span></div>
+      
+    </div>
+  
+    <div data-dc-tpl="124" style="border-bottom: 1px solid rgb(236, 234, 224); padding: 19px 4px; cursor: pointer;">
+      <div data-dc-tpl="125" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font: 700 15.5px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Premium se rembourse vraiment en une sortie ?</span><span data-dc-tpl="126" style="color: rgb(51, 71, 202); font-size: 18px; flex: 0 0 auto;"><span class="">+</span></span></div>
+      
+    </div>
+  
+    <div data-dc-tpl="124" style="border-bottom: 1px solid rgb(236, 234, 224); padding: 19px 4px; cursor: pointer;">
+      <div data-dc-tpl="125" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font: 700 15.5px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">Je peux annuler Premium quand je veux ?</span><span data-dc-tpl="126" style="color: rgb(51, 71, 202); font-size: 18px; flex: 0 0 auto;"><span class="">+</span></span></div>
+      
+    </div>
+  
+    <div data-dc-tpl="124" style="border-bottom: 1px solid rgb(236, 234, 224); padding: 19px 4px; cursor: pointer;">
+      <div data-dc-tpl="125" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font: 700 15.5px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);"><span class="">C'est pour quelles villes ?</span><span data-dc-tpl="126" style="color: rgb(51, 71, 202); font-size: 18px; flex: 0 0 auto;"><span class="">+</span></span></div>
+      
+    </div>
+  </div><div data-dc-tpl="129" style="background: rgb(51, 71, 202); padding: 80px 32px; text-align: center;">
+  <img data-dc-tpl="130" src="assets/logo-yeux.png" alt="" style="width: 170px; filter: brightness(0) invert(1); opacity: 0.95; margin-bottom: 8px;">
+  <h2 data-dc-tpl="131" style="font-size: 38px; color: rgb(255, 254, 245); font-weight: 800; letter-spacing: -0.01em; margin-bottom: 12px;">Allez, profites-en !</h2>
+  <p data-dc-tpl="132" style="font-size: 16px; color: rgba(255, 254, 245, 0.8); margin: 0px 0px 32px;">La prochaine sélection part lundi. Sois dessus.</p>
+  <div data-dc-tpl="133" style="display: inline-flex; gap: 10px; background: rgb(255, 255, 255); border-radius: 14px; padding: 10px; box-shadow: rgba(0, 0, 0, 0.25) 0px 20px 50px;">
+    <input data-dc-tpl="134" type="email" placeholder="ton.courriel@exemple.com" style="width: 280px; box-sizing: border-box; padding: 13px 14px; border-radius: 9px; border: 1.5px solid rgb(225, 224, 212); background: rgb(255, 254, 245); font: 500 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43);">
+    <a data-dc-tpl="135" href="/tunnel" instrument="" class="scp5" style="background: rgb(22, 24, 43); color: rgb(255, 254, 245); padding: 13px 24px; border-radius: 9px; font: 700 14.5px �;">S'inscrire — gratuit</a>
+  </div>
+  <div data-dc-tpl="136" style="margin-top: 14px; font: 500 13px &quot;Instrument Sans&quot;, sans-serif; color: rgba(255, 254, 245, 0.7);"><span class="">5 627</span> abonnés reçoivent déjà leurs bons plans chaque lundi.</div></div><div data-dc-tpl="137" style="background: rgb(22, 24, 43); padding: 28px 32px; display: flex; align-items: center; justify-content: center; gap: 28px; font: 500 13px &quot;Instrument Sans&quot;, sans-serif;">
+  <a data-dc-tpl="138" href="/faq" style="color: rgb(167, 169, 188); text-decoration: none;">Questions et aide</a>
+  <a data-dc-tpl="139" href="/contact" style="color: rgb(167, 169, 188); text-decoration: none;">Contact</a>
+  <a data-dc-tpl="140" href="/partenariat" style="color: rgb(167, 169, 188); text-decoration: none;">Partenariat</a>
+  <a data-dc-tpl="141" href="/termes" style="color: rgb(167, 169, 188); text-decoration: none;">Termes</a>
+  <a data-dc-tpl="142" href="/politique" style="color: rgb(167, 169, 188); text-decoration: none;">Politique</a>
+  <span data-dc-tpl="143" style="color: rgb(74, 77, 102);">© 2026 Silvousplait</span></div></div></div></div>
+
+
+
+</body></html>

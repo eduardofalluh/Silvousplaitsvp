@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html><head><style>
+    .sc-placeholder{background:color-mix(in srgb,currentColor 8%,transparent);
+      border:1px solid color-mix(in srgb,currentColor 50%,transparent);
+      border-radius:2px;box-sizing:border-box;overflow:hidden}
+    @keyframes sc-shine{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+    html.sc-dc-streaming .sc-placeholder,
+    html.sc-dc-streaming .sc-interp.sc-missing{position:relative;
+      background:color-mix(in srgb,currentColor 5%,transparent);
+      border-color:transparent}
+    html.sc-dc-streaming .sc-placeholder::before,
+    html.sc-dc-streaming .sc-interp.sc-missing::before{content:'';
+      position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(90deg,rgba(217,119,87,0) 25%,rgba(247,225,211,.95) 37%,rgba(217,119,87,0) 63%);
+      background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
+    html.sc-dc-streaming .sc-placeholder:nth-child(n+9 of .sc-placeholder)::before,
+    html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n+9 of .sc-interp.sc-missing)::before{animation:none;
+      background:color-mix(in srgb,currentColor 8%,transparent)}
+    .sc-placeholder-error{padding:4px 8px;font:11px/1.4 ui-monospace,monospace;
+      color:color-mix(in srgb,currentColor 70%,transparent);word-break:break-word}
+    .sc-interp.sc-missing{display:inline-block;width:2em;height:1em;overflow:hidden;
+      vertical-align:text-bottom;background:rgba(255,255,255,.3);border:1px solid rgba(0,0,0,.5);
+      border-radius:2px;box-sizing:border-box;color:transparent;
+      user-select:none}
+    .sc-interp.sc-unresolved{font-family:ui-monospace,monospace;font-size:.85em;
+      color:color-mix(in srgb,currentColor 50%,transparent);
+      background:color-mix(in srgb,currentColor 10%,transparent);border-radius:3px;
+      padding:0 3px}
+    .sc-host.sc-has-error{position:relative}
+    .sc-logic-error{position:absolute;top:8px;left:8px;z-index:2147483647;max-width:60ch;
+      padding:6px 10px;background:#b00020;color:#fff;font:12px/1.4 ui-monospace,monospace;
+      border-radius:4px;white-space:pre-wrap;pointer-events:none}
+    /* Mirrors PRINT_BASELINE_CSS in apps/web deck-stage-export.ts — keep both
+       in sync until dc-runtime regains a build step. */
+    @media print {
+      @page { margin: 0.5cm; }
+      figure, table { break-inside: avoid; }
+      #dc-root, #dc-root > .sc-host { height: auto; }
+      *, *::before, *::after {
+        print-color-adjust: exact; -webkit-print-color-adjust: exact;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        animation-delay: -99s !important; animation-duration: .001s !important;
+        animation-iteration-count: 1 !important; animation-fill-mode: both !important;
+        animation-play-state: running !important; transition-duration: 0s !important;
+      }
+    }
+  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>x-dc{display:none!important}</style>
+<style></style><style>html,body{height:100%;margin:0}#dc-root,#dc-root>.sc-host{height:100%}</style><link rel="preconnect" href="https://fonts.googleapis.com" data-dc-tpl="1"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&amp;family=Instrument+Sans:wght@400;500;600;700&amp;display=swap" data-dc-tpl="2"><style data-dc-tpl="3">
+  body{margin:0;background:linear-gradient(180deg,#FFFEF6 0%,#F2F3E7 100%);background-attachment:fixed;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#16182B}
+  h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;margin:0}
+  a{color:#3347CA}a:hover{color:#25349B}
+  input,select,textarea,button{font-family:'Instrument Sans',system-ui,sans-serif}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:#3347CA !important;box-shadow:0 0 0 3px rgba(51,71,202,.12)}
+</style></head>
+<body>
+<div id="dc-root"><div class="" data-sc-name="admin"><div data-dc-tpl="4" style="min-height: 100vh; padding: 32px 14px 90px;">
+  <div data-dc-tpl="5" style="max-width: 792px; margin: 0px auto;">
+
+    <div data-dc-tpl="6" style="margin-bottom: 18px;"><a data-dc-tpl="7" href="/premium" instrument="" style="font: 600 14px �;">Retour aux offres premium</a></div>
+
+    
+    <div data-dc-tpl="9" style="background: rgba(255, 255, 255, 0.94); border: 1px solid rgba(18, 24, 42, 0.08); border-radius: 24px; box-shadow: rgba(18, 24, 42, 0.08) 0px 22px 50px; padding: 24px;">
+      <h2 data-dc-tpl="10" style="font: 700 24px &quot;Bricolage Grotesque&quot;, sans-serif; color: rgb(22, 24, 43); margin: 0px 0px 10px;">Admin Offres Premium</h2>
+      <p data-dc-tpl="11" style="font: 400 14.5px / 1.55 &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin: 0px 0px 18px;">Entre le mot de passe admin pour gérer les spectacles, les images et les codes promo.</p>
+      <input data-dc-tpl="12" type="password" placeholder="Mot de passe admin" value="" style="box-sizing: border-box; width: 100%; border: 1.5px solid rgba(18, 24, 42, 0.14); border-radius: 14px; padding: 12px 14px; font: 500 14.5px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 255, 255); margin-bottom: 14px;">
+      <button data-dc-tpl="13" class="scp0" style="display: block; width: 100%; background: rgb(51, 71, 202); color: rgb(255, 254, 245); border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 14px; padding: 14px; font: 700 15px &quot;Instrument Sans&quot;, sans-serif; cursor: pointer;">Ouvrir l'admin</button>
+      
+    </div>
+    
+
+    
+
+  </div></div></div></div>
+
+
+
+</body></html>
