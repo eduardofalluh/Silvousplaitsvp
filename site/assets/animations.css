@@ -1,0 +1,57 @@
+/* Silvousplait — motion layer. All effects are disabled for users who prefer
+   reduced motion. Loaded on every page alongside responsive.css. */
+
+@media (prefers-reduced-motion: no-preference) {
+
+  html { scroll-behavior: smooth; }
+
+  /* ---- Page load fade-in ---- */
+  body { animation: svp-page-in .5s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes svp-page-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* ---- Page-to-page transition (JS adds .svp-leaving before navigating) ---- */
+  html.svp-leaving body { opacity: 0; transform: translateY(-6px); transition: opacity .26s ease, transform .26s ease; }
+
+  /* ---- Scroll reveal (JS tags elements with .svp-reveal) ---- */
+  .svp-reveal { opacity: 0; transform: translateY(20px); transition: opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1); will-change: opacity, transform; }
+  .svp-reveal.svp-in { opacity: 1; transform: none; }
+
+  /* ---- Buttons & CTA anchors: lift + brighten on hover ---- */
+  button,
+  a[style*="border-radius: 100px"], a[style*="border-radius:100px"],
+  a[style*="border-radius: 12px"], a[style*="border-radius: 10px"],
+  a[style*="border-radius: 14px"], a[style*="border-radius: 9px"],
+  [data-svp="checkout"], [data-svp="hero-submit"] {
+    transition: transform .16s ease, box-shadow .16s ease, filter .16s ease, background-color .16s ease;
+  }
+  button:hover,
+  a[style*="border-radius: 100px"]:hover, a[style*="border-radius:100px"]:hover,
+  a[style*="border-radius: 12px"]:hover, a[style*="border-radius: 10px"]:hover,
+  a[style*="border-radius: 14px"]:hover, a[style*="border-radius: 9px"]:hover,
+  [data-svp="checkout"]:hover, [data-svp="hero-submit"]:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.06);
+  }
+  button:active,
+  a[style*="border-radius: 100px"]:active, a[style*="border-radius: 12px"]:active,
+  [data-svp="checkout"]:active { transform: translateY(0) scale(.99); }
+
+  /* ---- Cards: gentle lift ---- */
+  [data-svp="offer"], [data-card],
+  [style*="box-shadow: rgb(51, 71, 202)"], [style*="box-shadow: rgba(142, 160, 245"] {
+    transition: transform .22s cubic-bezier(.2,.7,.2,1), box-shadow .22s ease;
+    will-change: transform;
+  }
+  [data-svp="offer"]:hover, [data-card]:hover { transform: translateY(-5px); }
+
+  /* ---- Inputs: focus polish ---- */
+  input, select, textarea { transition: border-color .15s ease, box-shadow .15s ease; }
+  input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 3px rgba(51,71,202,.14); }
+
+  /* ---- Nav links ---- */
+  a { transition: color .15s ease, opacity .15s ease; }
+
+  /* ---- FAQ answer open ---- */
+  .faq-answer { animation: svp-fade-in .28s ease both; }
+  @keyframes svp-fade-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+}

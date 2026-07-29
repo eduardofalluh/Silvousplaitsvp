@@ -523,6 +523,45 @@
     }).catch(function () {});
   }
 
+  var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- scroll-reveal for headings & cards ----
+  function wireReveal() {
+    if (reducedMotion || !('IntersectionObserver' in window)) return;
+    var targets = [].slice.call(document.querySelectorAll('h1, h2, h3, [data-svp="offer"], [data-card]'));
+    // skip anything inside a sticky header/urgency bar (should be instantly visible)
+    targets = targets.filter(function (el) {
+      return !el.closest('[style*="position: sticky"]') && !el.closest('[data-svp="funnel-card"]');
+    });
+    if (!targets.length) return;
+    targets.forEach(function (el) { el.classList.add('svp-reveal'); });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) { en.target.classList.add('svp-in'); io.unobserve(en.target); }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    targets.forEach(function (el) { io.observe(el); });
+    // safety: reveal everything after 1.2s in case observer misses (e.g., 0-height parents)
+    setTimeout(function () { targets.forEach(function (el) { el.classList.add('svp-in'); }); }, 1200);
+  }
+
+  // ---- smooth page-to-page transitions for internal links ----
+  function wirePageTransitions() {
+    if (reducedMotion) return;
+    document.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target.closest && e.target.closest('a[href]');
+      if (!a) return;
+      var href = a.getAttribute('href') || '';
+      if (a.target === '_blank' || a.hasAttribute('download')) return;
+      if (!href || href.charAt(0) === '#' || /^(https?:|mailto:|tel:)/i.test(href)) return;
+      if (!/\.html(\?|#|$)/.test(href)) return; // only internal .html pages
+      e.preventDefault();
+      document.documentElement.classList.add('svp-leaving');
+      setTimeout(function () { window.location.href = href; }, 250);
+    }, false);
+  }
+
   // ---- prettify "Retour au site" / "Se déconnecter" links as pill buttons ----
   function wireBackLinks() {
     var pill = "display:inline-flex;align-items:center;gap:6px;background:#EEF0FD;color:#3347CA;font:700 13px 'Instrument Sans',sans-serif;padding:9px 16px;border-radius:100px;text-decoration:none;white-space:nowrap";
@@ -562,6 +601,7 @@
     wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers();
     wireArchive(); triggerSnapshot();
+    wireReveal(); wirePageTransitions();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
