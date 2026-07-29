@@ -5,12 +5,21 @@
  */
 const { getStore } = require('@netlify/blobs');
 
+function archiveStore() {
+  const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+  const token = process.env.NETLIFY_BLOBS_TOKEN || process.env.NETLIFY_API_TOKEN;
+  return siteID && token
+    ? getStore({ name: 'premium-offers-archive', siteID, token })
+    : getStore('premium-offers-archive');
+}
+
+
 const headers = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
   try {
-    const store = getStore('premium-offers-archive');
+    const store = archiveStore();
     const { blobs } = await store.list();
     const now = Date.now();
     const all = await Promise.all(blobs.map((b) => store.get(b.key, { type: 'json' }).catch(() => null)));

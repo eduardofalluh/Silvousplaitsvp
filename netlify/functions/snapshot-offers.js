@@ -11,6 +11,16 @@ const { getSheetsClient } = require('../../utils/premium-offers-store');
 const SHEET_ID = process.env.PREMIUM_OFFERS_SHEET_ID || process.env.GOOGLE_SHEET_ID;
 const TAB = process.env.PREMIUM_OFFERS_TAB || 'premium_offers';
 
+// Blobs auto-configures on a normal Netlify (build/git) deploy. Under manual
+// CLI deploys it needs explicit siteID + token via env.
+function archiveStore() {
+  const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+  const token = process.env.NETLIFY_BLOBS_TOKEN || process.env.NETLIFY_API_TOKEN;
+  return siteID && token
+    ? getStore({ name: 'premium-offers-archive', siteID, token })
+    : getStore('premium-offers-archive');
+}
+
 const headers = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
 
 exports.handler = async (event) => {
@@ -24,7 +34,7 @@ exports.handler = async (event) => {
     if (rows.length < 2) return { statusCode: 200, headers, body: JSON.stringify({ snapshotted: 0 }) };
     const cols = rows[0].map((h) => String(h || '').trim().toLowerCase());
     const idx = (name) => cols.indexOf(name);
-    const store = getStore('premium-offers-archive');
+    const store = archiveStore();
     let n = 0;
     for (let r = 1; r < rows.length; r++) {
       const row = rows[r];
