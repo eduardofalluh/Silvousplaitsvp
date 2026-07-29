@@ -262,6 +262,26 @@
       .catch(function () { /* leave placeholders on network error */ });
   }
 
+  // ---- compte: newsletter unsubscribe (désinscription) ----
+  function wireUnsubscribe() {
+    var link = document.querySelector('[data-svp="unsubscribe"]');
+    if (!link) return;
+    var msg = document.querySelector('[data-svp="unsubscribe-msg"]');
+    function say(t, err) { if (msg) { msg.textContent = t || ''; msg.style.color = err ? '#b00020' : '#3347CA'; } }
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (!window.confirm('Te désinscrire de l\'infolettre ? Tu ne recevras plus nos courriels.')) return;
+      var session = getSession();
+      if (!session) { window.location.href = 'connexion.html'; return; }
+      say('Traitement…');
+      fetch(FN + 'unsubscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: session }) })
+        .then(function (r) { return r.json(); }).then(function (d) {
+          if (d && d.ok) say('Tu es désinscrit·e. Tu peux te réinscrire quand tu veux.');
+          else say("La désinscription a échoué. Réessaie.", true);
+        }).catch(function () { say('Erreur. Réessaie plus tard.', true); });
+    });
+  }
+
   // ---- compte: client-side offer filters ----
   function wireCompteFilters() {
     if (!document.querySelector('[data-svp="offers-grid"]')) return;
@@ -487,7 +507,7 @@
   function init() {
     wireBackLinks();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
-    wireConnexion(); wireAccount(); wireCompteFilters(); wireAdmin(); wirePartenariat();
+    wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
