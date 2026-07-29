@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&amp;family=Instrument+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+  body{margin:0;background:linear-gradient(180deg,#FFFEF6 0%,#F2F3E7 100%);background-attachment:fixed;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#16182B}
+  h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;margin:0}
+  a{color:#3347CA}a:hover{color:#25349B}
+  input,select,textarea,button{font-family:'Instrument Sans',system-ui,sans-serif}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:#3347CA !important;box-shadow:0 0 0 3px rgba(51,71,202,.12)}
+</style>
+</helmet>
+
+<div style="min-height:100vh;padding:32px 14px 90px">
+  <div style="max-width:792px;margin:0 auto">
+
+    <div style="margin-bottom:18px"><a href="premium.html" style="font:600 14px 'Instrument Sans',sans-serif;color:#3347CA;text-decoration:underline">Retour aux offres premium</a></div>
+
+    <sc-if value="{{ notAuthed }}" hint-placeholder-val="{{ true }}">
+    <div style="background:rgba(255,255,255,.94);border:1px solid rgba(18,24,42,.08);border-radius:24px;box-shadow:0 22px 50px rgba(18,24,42,.08);padding:24px">
+      <h2 style="font:700 24px 'Bricolage Grotesque',sans-serif;color:#16182B;margin:0 0 10px">Admin Offres Premium</h2>
+      <p style="font:400 14.5px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin:0 0 18px">Entre le mot de passe admin pour gérer les spectacles, les images et les codes promo.</p>
+      <input type="password" value="{{ pw }}" onInput="{{ onPw }}" placeholder="Mot de passe admin" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff;margin-bottom:14px">
+      <button onClick="{{ login }}" style="display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:14px;padding:14px;font:700 15px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#25349B">Ouvrir l'admin</button>
+      <sc-if value="{{ pwError }}"><div style="font:600 13px 'Instrument Sans',sans-serif;color:#8A1D1D;margin-top:12px">Entre un mot de passe pour continuer.</div></sc-if>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ authed }}" hint-placeholder-val="{{ false }}">
+    <div>
+
+      <!-- SECTION 1 — RÉGIONS -->
+      <div style="background:rgba(255,255,255,.94);border:1px solid rgba(18,24,42,.08);border-radius:24px;box-shadow:0 22px 50px rgba(18,24,42,.08);padding:24px;margin-bottom:20px">
+        <h2 style="font:700 24px 'Bricolage Grotesque',sans-serif;color:#16182B;margin:0 0 16px">Gérer les régions du filtre</h2>
+        <input value="{{ regionInput }}" onInput="{{ onRegionInput }}" placeholder="Ajouter une région au filtre" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff;margin-bottom:12px">
+        <button onClick="{{ addRegion }}" style="display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:14px;padding:13px;font:700 14.5px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#25349B">Ajouter la région</button>
+        <div style="margin-top:6px">
+          <sc-for list="{{ regionRows }}" as="row" hint-placeholder-count="7">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 2px;border-bottom:1px solid rgba(18,24,42,.08)">
+              <div style="font:700 14.5px 'Instrument Sans',sans-serif;color:#16182B">{{ row.name }}</div>
+              <button onClick="{{ row.onRemove }}" style="background:#FCE7E7;color:#8A1D1D;border:none;border-radius:14px;padding:9px 16px;font:700 13px 'Instrument Sans',sans-serif;cursor:pointer;flex:none" style-hover="background:#F9D3D3">Supprimer</button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- SECTION 2 — TYPES -->
+      <div style="background:rgba(255,255,255,.94);border:1px solid rgba(18,24,42,.08);border-radius:24px;box-shadow:0 22px 50px rgba(18,24,42,.08);padding:24px;margin-bottom:20px">
+        <h2 style="font:700 24px 'Bricolage Grotesque',sans-serif;color:#16182B;margin:0 0 16px">Gérer les types d'offres</h2>
+        <input value="{{ typeInput }}" onInput="{{ onTypeInput }}" placeholder="Ajouter un type d'offre au filtre" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff;margin-bottom:12px">
+        <button onClick="{{ addType }}" style="display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:14px;padding:13px;font:700 14.5px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#25349B">Ajouter le type</button>
+        <div style="margin-top:6px">
+          <sc-for list="{{ typeRows }}" as="row" hint-placeholder-count="2">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 2px;border-bottom:1px solid rgba(18,24,42,.08)">
+              <div style="font:700 14.5px 'Instrument Sans',sans-serif;color:#16182B">{{ row.name }}</div>
+              <button onClick="{{ row.onRemove }}" style="background:#FCE7E7;color:#8A1D1D;border:none;border-radius:14px;padding:9px 16px;font:700 13px 'Instrument Sans',sans-serif;cursor:pointer;flex:none" style-hover="background:#F9D3D3">Supprimer</button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- SECTION 3 — VILLES -->
+      <div style="background:rgba(255,255,255,.94);border:1px solid rgba(18,24,42,.08);border-radius:24px;box-shadow:0 22px 50px rgba(18,24,42,.08);padding:24px;margin-bottom:20px">
+        <h2 style="font:700 24px 'Bricolage Grotesque',sans-serif;color:#16182B;margin:0 0 16px">Inscriptions gratuites par ville</h2>
+        <input value="{{ cf.name }}" onInput="{{ onCityName }}" placeholder="Ville affichée (ex. Québec)" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff;margin-bottom:12px">
+        <input value="{{ cf.url }}" onInput="{{ onCityUrl }}" placeholder="URL embed ActiveCampaign complète (ex. https://...)" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff;margin-bottom:14px">
+        <label style="display:flex;align-items:center;gap:9px;font:500 14px 'Instrument Sans',sans-serif;color:#16182B;margin-bottom:16px;cursor:pointer">
+          <input type="checkbox" checked="{{ cf.isDefault }}" onChange="{{ onCityDefault }}" style="width:17px;height:17px;accent-color:#3347CA;cursor:pointer">
+          Définir comme ville par défaut
+        </label>
+        <div style="display:flex;gap:10px">
+          <button onClick="{{ saveCity }}" style="flex:1;background:#3347CA;color:#FFFEF5;border:none;border-radius:14px;padding:13px;font:700 14.5px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#25349B">Enregistrer la ville</button>
+          <button onClick="{{ clearCity }}" style="flex:none;background:#EEF0FD;color:#3347CA;border:none;border-radius:14px;padding:13px 18px;font:700 14px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#E0E4FB">Vider le formulaire</button>
+        </div>
+        <div style="margin-top:14px">
+          <sc-for list="{{ cityRows }}" as="row" hint-placeholder-count="2">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:14px 2px;border-bottom:1px solid rgba(18,24,42,.08)">
+              <div style="min-width:0">
+                <div style="font:700 14.5px 'Instrument Sans',sans-serif;color:#16182B">{{ row.label }}</div>
+                <div style="font:400 12.5px 'Instrument Sans',sans-serif;color:#8B8DA0;margin-top:3px;word-break:break-all">{{ row.url }}</div>
+              </div>
+              <div style="display:flex;gap:8px;flex:none">
+                <button onClick="{{ row.onEdit }}" style="background:#EEF0FD;color:#3347CA;border:none;border-radius:14px;padding:9px 14px;font:700 13px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#E0E4FB">Modifier</button>
+                <button onClick="{{ row.onRemove }}" style="background:#FCE7E7;color:#8A1D1D;border:none;border-radius:14px;padding:9px 14px;font:700 13px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#F9D3D3">Supprimer</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- SECTION 4 — FORMULAIRE OFFRE -->
+      <div style="background:rgba(255,255,255,.94);border:1px solid rgba(18,24,42,.08);border-radius:24px;box-shadow:0 22px 50px rgba(18,24,42,.08);padding:24px;margin-bottom:20px">
+        <h2 style="font:700 24px 'Bricolage Grotesque',sans-serif;color:#16182B;margin:0 0 16px">Ajouter ou modifier une offre</h2>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <input value="{{ f.title }}" onInput="{{ onFTitle }}" placeholder="Titre du spectacle" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff">
+          <select value="{{ f.region }}" onChange="{{ onFRegion }}" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff;cursor:pointer">
+            <option value="">Choisir une région</option>
+            <sc-for list="{{ regions }}" as="r" hint-placeholder-count="7"><option value="{{ r }}">{{ r }}</option></sc-for>
+          </select>
+          <select value="{{ f.type }}" onChange="{{ onFType }}" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff;cursor:pointer">
+            <option value="">Choisir un type d'offre</option>
+            <sc-for list="{{ types }}" as="t" hint-placeholder-count="2"><option value="{{ t }}">{{ t }}</option></sc-for>
+          </select>
+          <input value="{{ f.tag }}" onInput="{{ onFTag }}" placeholder="Étiquette / badge affiché (ex. -42%, Billet offert)" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff">
+          <input value="{{ f.venue }}" onInput="{{ onFVenue }}" placeholder="Salle / lieu" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff">
+          <div>
+            <div style="font:600 12.5px 'Instrument Sans',sans-serif;color:#4A4D66;margin-bottom:6px">Date et heure du spectacle</div>
+            <input type="datetime-local" value="{{ f.datetime }}" onInput="{{ onFDatetime }}" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff">
+          </div>
+          <div onDragOver="{{ onDragOver }}" onDragLeave="{{ onDragLeave }}" onDrop="{{ onDrop }}" onClick="{{ pickFile }}" style="{{ dropStyle }}">
+            <input type="file" ref="{{ fileRef }}" onChange="{{ onFilePick }}" style="display:none">
+            <div style="font:700 15px 'Bricolage Grotesque',sans-serif;color:#3347CA;margin-bottom:4px">{{ dropTitle }}</div>
+            <div style="font:500 12.5px/1.5 'Instrument Sans',sans-serif;color:#4A4D66">Glisse-dépose un fichier (vidéo, image ou autre) ou clique pour parcourir.</div>
+          </div>
+          <input value="{{ f.image }}" onInput="{{ onFImage }}" placeholder="URL de l'image du spectacle (ou glisse un fichier ci-dessus)" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff">
+          <input value="{{ f.video }}" onInput="{{ onFVideo }}" placeholder="URL de la vidéo (mp4, YouTube, Vimeo) — prioritaire sur l'image" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff">
+          <div style="display:flex;gap:12px">
+            <input value="{{ f.price }}" onInput="{{ onFPrice }}" placeholder="Prix membre (ex. 22$)" style="box-sizing:border-box;flex:1;min-width:0;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff">
+            <input value="{{ f.original }}" onInput="{{ onFOriginal }}" placeholder="Prix régulier (ex. 38$)" style="box-sizing:border-box;flex:1;min-width:0;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff">
+          </div>
+          <input value="{{ f.urgency }}" onInput="{{ onFUrgency }}" placeholder="Urgence (optionnel, ex. Plus que 3 places)" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff">
+          <textarea value="{{ f.description }}" onInput="{{ onFDescription }}" placeholder="Description de l'offre premium" rows="4" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px/1.5 'Instrument Sans',sans-serif;color:#16182B;background:#fff;resize:vertical"></textarea>
+          <input value="{{ f.promo }}" onInput="{{ onFPromo }}" placeholder="Code promo" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff">
+          <input value="{{ f.link }}" onInput="{{ onFLink }}" placeholder="Lien vers la billetterie / page du spectacle" style="box-sizing:border-box;width:100%;border:1.5px solid rgba(18,24,42,.14);border-radius:14px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#fff">
+          <div>
+            <div style="font:600 12.5px 'Instrument Sans',sans-serif;color:#4A4D66;margin-bottom:6px">Statut dans le carrousel Premium</div>
+            <div style="display:flex;gap:8px">
+              <button onClick="{{ setStatusActive }}" style="{{ stActiveStyle }}">Offre en cours</button>
+              <button onClick="{{ setStatusPast }}" style="{{ stPastStyle }}">Offre passée</button>
+              <button onClick="{{ setStatusHidden }}" style="{{ stHiddenStyle }}">Masquée</button>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px">
+          <button onClick="{{ saveOffer }}" style="flex:1;background:#3347CA;color:#FFFEF5;border:none;border-radius:14px;padding:14px;font:700 14.5px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#25349B">{{ saveOfferLabel }}</button>
+          <button onClick="{{ clearOffer }}" style="flex:none;background:#EEF0FD;color:#3347CA;border:none;border-radius:14px;padding:14px 18px;font:700 14px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#E0E4FB">Vider le formulaire</button>
+        </div>
+      </div>
+
+      <!-- SECTION 5 — OFFRES EXISTANTES -->
+      <h2 style="font:700 24px 'Bricolage Grotesque',sans-serif;color:#16182B;margin:34px 4px 18px">Offres existantes</h2>
+      <sc-for list="{{ offerRows }}" as="o" hint-placeholder-count="4">
+        <div style="background:rgba(255,255,255,.94);border:1px solid rgba(18,24,42,.08);border-radius:24px;box-shadow:0 22px 50px rgba(18,24,42,.08);padding:16px;margin-bottom:20px">
+          <div style="position:relative;height:300px;border-radius:14px;overflow:hidden;background:#EEF1F7">
+            <div style="position:absolute;inset:0">{{ o.mediaEl }}</div>
+            <sc-if value="{{ o.noMedia }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,10,26,0) 40%,rgba(8,10,26,.5) 100%),repeating-linear-gradient(135deg,#4155DE 0,#4155DE 16px,#3347CA 16px,#3347CA 32px);display:flex;align-items:center;justify-content:center"><div style="font:800 150px 'Bricolage Grotesque',sans-serif;color:rgba(255,254,245,.2);line-height:1">{{ o.initial }}</div></div></sc-if>
+          </div>
+          <div style="font:800 19px 'Bricolage Grotesque',sans-serif;color:#16182B;margin:16px 2px 6px">{{ o.title }}</div>
+          <div style="font:400 13.5px/1.5 'Instrument Sans',sans-serif;color:#8B8DA0;margin:0 2px">{{ o.meta }}</div>
+          <div style="font:700 12.5px 'Instrument Sans',sans-serif;color:#1D9E75;margin:9px 2px 0">{{ o.status }}</div>
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <button onClick="{{ o.onEdit }}" style="background:#EEF0FD;color:#3347CA;border:none;border-radius:14px;padding:11px 20px;font:700 13.5px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#E0E4FB">Modifier</button>
+            <button onClick="{{ o.onRemove }}" style="background:#FCE7E7;color:#8A1D1D;border:none;border-radius:14px;padding:11px 20px;font:700 13.5px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#F9D3D3">Supprimer</button>
+          </div>
+        </div>
+      </sc-for>
+
+    </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    authed: false, pw: '', pwError: false,
+    regions: ['Autre', 'Longueuil', 'Montréal', 'Québec', 'Sainte-Thérèse', 'Sherbrooke', 'Trois-Rivières'],
+    regionInput: '',
+    types: ['Billets gratuits', 'Rabais'],
+    typeInput: '',
+    cities: [
+      { name: 'Québec', url: 'https://silvousplait.activehosted.com/f/quebec', isDefault: true },
+      { name: 'Montréal', url: 'https://silvousplait.activehosted.com/f/montreal', isDefault: false },
+    ],
+    cityForm: { name: '', url: '', isDefault: false },
+    cityEdit: -1,
+    offers: [
+      { id: 'seed1', title: "Cabaret Lion d'Or — Soirée burlesque", region: 'Montréal', type: 'Rabais', tag: '-42%', venue: "Cabaret Lion d'Or", datetime: '2026-08-02T20:00', image: '', video: '', price: '22$', original: '38$', urgency: 'Plus que 3 places', description: '', promo: '', link: '', status: 'Active' },
+      { id: 'seed2', title: "Soirée d'improvisation LNI", region: 'Montréal', type: 'Rabais', tag: '-48%', venue: 'Théâtre Rialto', datetime: '2026-08-05T19:30', image: '', video: '', price: '15$', original: '29$', urgency: '', description: '', promo: '', link: '', status: 'Active' },
+      { id: 'seed3', title: 'Huis clos — Pièce contemporaine', region: 'Montréal', type: 'Billets gratuits', tag: 'Billet offert', venue: 'Théâtre Prospero', datetime: '2026-08-08T20:00', image: '', video: '', price: 'Gratuit', original: '32$', urgency: 'Plus que 5 places', description: '', promo: '', link: '', status: 'Active' },
+      { id: 'seed4', title: 'Jazz au sous-sol — Trio local', region: 'Montréal', type: 'Rabais', tag: '-52%', venue: 'Diese Onze', datetime: '2026-08-09T21:00', image: '', video: '', price: '12$', original: '25$', urgency: '', description: '', promo: '', link: '', status: 'Active' },
+      { id: 'seed5', title: 'Les Grands Ballets — Soirée découverte', region: 'Montréal', type: 'Rabais', tag: '-58%', venue: 'Wilfrid-Pelletier', datetime: '2026-08-12T19:30', image: '', video: '', price: '19$', original: '45$', urgency: 'Plus que 2 places', description: '', promo: '', link: '', status: 'Passée' },
+      { id: 'seed6', title: 'Cabaret chansonnier — Duo acoustique', region: 'Montréal', type: 'Rabais', tag: '-55%', venue: 'Le Bordel', datetime: '2026-08-14T20:30', image: '', video: '', price: '10$', original: '22$', urgency: '', description: '', promo: '', link: '', status: 'Passée' },
+    ],
+    offerForm: this.blankOffer(),
+    offerEdit: -1,
+  };
+
+  blankOffer() {
+    return { id: '', title: '', region: '', type: '', tag: '', venue: '', datetime: '', image: '', video: '', price: '', original: '', urgency: '', description: '', promo: '', link: '', status: 'Active' };
+  }
+  componentDidMount() {
+    try {
+      const raw = localStorage.getItem('svp_premium_offers');
+      if (raw) { const arr = JSON.parse(raw); if (Array.isArray(arr)) this.setState({ offers: arr }); }
+      else { localStorage.setItem('svp_premium_offers', JSON.stringify(this.state.offers)); }
+    } catch (e) {}
+  }
+  componentDidUpdate(prevProps, prevState) {
+    if (prevState.offers !== this.state.offers) {
+      try { localStorage.setItem('svp_premium_offers', JSON.stringify(this.state.offers)); } catch (e) {}
+    }
+  }
+  fmtDate(iso) {
+    if (!iso) return '';
+    const dt = new Date(iso);
+    if (isNaN(dt.getTime())) return iso;
+    return new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(dt);
+  }
+  toEmbed(url) {
+    if (!url) return '';
+    let m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/);
+    if (m) return 'https://www.youtube.com/embed/' + m[1] + '?autoplay=1&mute=1&loop=1&playlist=' + m[1] + '&controls=0&modestbranding=1&playsinline=1&rel=0';
+    m = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    if (m) return 'https://player.vimeo.com/video/' + m[1] + '?autoplay=1&muted=1&loop=1&background=1';
+    return '';
+  }
+  media(o) {
+    const vid = (o.video || '').trim();
+    const img = (o.image || '').trim();
+    const st = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' };
+    if (vid) {
+      const emb = this.toEmbed(vid);
+      if (emb) return { noMedia: false, mediaEl: React.createElement('iframe', { src: emb, allow: 'autoplay; encrypted-media', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 } }) };
+      return { noMedia: false, mediaEl: React.createElement('video', { src: vid, autoPlay: true, muted: true, loop: true, playsInline: true, style: st }) };
+    }
+    if (img) return { noMedia: false, mediaEl: React.createElement('img', { src: img, alt: '', style: st }) };
+    return { noMedia: true, mediaEl: null };
+  }
+  setF(field, val) { this.setState(s => ({ offerForm: { ...s.offerForm, [field]: val } })); }
+  segStyle(active) {
+    return 'flex:1;box-sizing:border-box;border-radius:14px;padding:12px 10px;font:700 13.5px \'Instrument Sans\',sans-serif;cursor:pointer;transition:all .15s;border:1.5px solid ' + (active ? '#3347CA' : 'rgba(18,24,42,.14)') + ';background:' + (active ? '#3347CA' : '#fff') + ';color:' + (active ? '#FFFEF5' : '#4A4D66');
+  }
+  readMediaFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = reader.result;
+      if (file.type && file.type.indexOf('image') === 0) this.setF('image', url);
+      else this.setF('video', url);
+    };
+    reader.readAsDataURL(file);
+  }
+  setCf(field, val) { this.setState(s => ({ cityForm: { ...s.cityForm, [field]: val } })); }
+
+  renderVals() {
+    const s = this.state;
+    const meta = (o) => [o.region, o.type, o.venue, this.fmtDate(o.datetime)].filter(Boolean).join(' · ');
+
+    return {
+      notAuthed: !s.authed,
+      authed: s.authed,
+      pw: s.pw,
+      pwError: s.pwError,
+      onPw: e => this.setState({ pw: e.target.value, pwError: false }),
+      login: () => this.setState(st => st.pw.trim() ? { authed: true, pwError: false } : { pwError: true }),
+
+      regions: s.regions,
+      regionInput: s.regionInput,
+      onRegionInput: e => this.setState({ regionInput: e.target.value }),
+      addRegion: () => this.setState(st => {
+        const v = st.regionInput.trim();
+        return v && !st.regions.includes(v) ? { regions: [...st.regions, v], regionInput: '' } : { regionInput: '' };
+      }),
+      regionRows: s.regions.map((r, i) => ({ name: r, onRemove: () => this.setState(st => ({ regions: st.regions.filter((_, j) => j !== i) })) })),
+
+      types: s.types,
+      typeInput: s.typeInput,
+      onTypeInput: e => this.setState({ typeInput: e.target.value }),
+      addType: () => this.setState(st => {
+        const v = st.typeInput.trim();
+        return v && !st.types.includes(v) ? { types: [...st.types, v], typeInput: '' } : { typeInput: '' };
+      }),
+      typeRows: s.types.map((t, i) => ({ name: t, onRemove: () => this.setState(st => ({ types: st.types.filter((_, j) => j !== i) })) })),
+
+      cf: s.cityForm,
+      onCityName: e => this.setCf('name', e.target.value),
+      onCityUrl: e => this.setCf('url', e.target.value),
+      onCityDefault: e => this.setCf('isDefault', e.target.checked),
+      saveCity: () => this.setState(st => {
+        const cf = st.cityForm;
+        if (!cf.name.trim()) return {};
+        let cities = st.cities.map(c => ({ ...c }));
+        if (cf.isDefault) cities = cities.map(c => ({ ...c, isDefault: false }));
+        const entry = { name: cf.name.trim(), url: cf.url.trim(), isDefault: cf.isDefault };
+        if (st.cityEdit >= 0) cities[st.cityEdit] = entry; else cities.push(entry);
+        return { cities, cityForm: { name: '', url: '', isDefault: false }, cityEdit: -1 };
+      }),
+      clearCity: () => this.setState({ cityForm: { name: '', url: '', isDefault: false }, cityEdit: -1 }),
+      cityRows: s.cities.map((c, i) => ({
+        label: c.isDefault ? c.name + ' · par défaut' : c.name,
+        url: c.url,
+        onEdit: () => this.setState({ cityForm: { ...c }, cityEdit: i }),
+        onRemove: () => this.setState(st => ({ cities: st.cities.filter((_, j) => j !== i), cityEdit: st.cityEdit === i ? -1 : st.cityEdit })),
+      })),
+
+      f: s.offerForm,
+      onFTitle: e => this.setF('title', e.target.value),
+      onFRegion: e => this.setF('region', e.target.value),
+      onFType: e => this.setF('type', e.target.value),
+      onFTag: e => this.setF('tag', e.target.value),
+      onFVenue: e => this.setF('venue', e.target.value),
+      onFDatetime: e => this.setF('datetime', e.target.value),
+      onFImage: e => this.setF('image', e.target.value),
+      dropTitle: s.dragOver ? 'Relâche pour importer le fichier' : 'Importer un fichier média',
+      dropStyle: 'box-sizing:border-box;width:100%;border:2px dashed ' + (s.dragOver ? '#3347CA' : 'rgba(51,71,202,.35)') + ';border-radius:14px;padding:18px 16px;background:' + (s.dragOver ? '#EEF0FD' : '#F7F8FE') + ';cursor:pointer;text-align:center;transition:all .15s',
+      fileRef: el => { this.fileEl = el; },
+      pickFile: () => { if (this.fileEl) this.fileEl.click(); },
+      onFilePick: e => { const f = e.target.files && e.target.files[0]; if (f) this.readMediaFile(f); e.target.value = ''; },
+      onDragOver: e => { e.preventDefault(); if (!this.state.dragOver) this.setState({ dragOver: true }); },
+      onDragLeave: e => { e.preventDefault(); this.setState({ dragOver: false }); },
+      onDrop: e => { e.preventDefault(); this.setState({ dragOver: false }); const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) this.readMediaFile(f); },
+      onFVideo: e => this.setF('video', e.target.value),
+      onFPrice: e => this.setF('price', e.target.value),
+      onFOriginal: e => this.setF('original', e.target.value),
+      onFUrgency: e => this.setF('urgency', e.target.value),
+      onFDescription: e => this.setF('description', e.target.value),
+      onFPromo: e => this.setF('promo', e.target.value),
+      onFLink: e => this.setF('link', e.target.value),
+      onFStatus: e => this.setF('status', e.target.value),
+      setStatusActive: () => this.setF('status', 'Active'),
+      setStatusPast: () => this.setF('status', 'Passée'),
+      setStatusHidden: () => this.setF('status', 'Inactive'),
+      stActiveStyle: this.segStyle(!s.offerForm.status || s.offerForm.status === 'Active'),
+      stPastStyle: this.segStyle(s.offerForm.status === 'Passée'),
+      stHiddenStyle: this.segStyle(s.offerForm.status === 'Inactive' || s.offerForm.status === 'Brouillon'),
+      saveOfferLabel: s.offerEdit >= 0 ? "Mettre à jour l'offre" : "Enregistrer l'offre",
+      saveOffer: () => this.setState(st => {
+        const f = st.offerForm;
+        if (!f.title.trim()) return {};
+        const offers = st.offers.slice();
+        if (st.offerEdit >= 0) offers[st.offerEdit] = { ...f };
+        else offers.push({ ...f, id: 'o' + Date.now() + Math.random().toString(36).slice(2, 6) });
+        return { offers, offerForm: this.blankOffer(), offerEdit: -1 };
+      }),
+      clearOffer: () => this.setState({ offerForm: this.blankOffer(), offerEdit: -1 }),
+      offerRows: s.offers.map((o, i) => ({
+        title: o.title,
+        initial: (o.title || '?').trim().charAt(0).toUpperCase(),
+        meta: meta(o),
+        status: o.status,
+        ...this.media(o),
+        onEdit: () => this.setState({ offerForm: { ...this.blankOffer(), ...o }, offerEdit: i }),
+        onRemove: () => this.setState(st => ({ offers: st.offers.filter((_, j) => j !== i), offerEdit: st.offerEdit === i ? -1 : st.offerEdit })),
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>

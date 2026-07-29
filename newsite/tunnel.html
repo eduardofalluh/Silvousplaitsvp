@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&amp;family=Instrument+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+  body{margin:0;background:#FFFEF5;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#16182B}
+  h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;margin:0}
+  a{color:#3347CA}a:hover{color:#25349B}
+  input,select,button{font-family:'Instrument Sans',system-ui,sans-serif}
+  input:focus{outline:none;border-color:#3347CA !important}
+</style>
+</helmet>
+
+<div style="min-height:100vh;padding:28px 16px 80px">
+
+<sc-if value="{{ showSwitcher }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width:540px;margin:0 auto 26px;display:flex;gap:6px;background:#fff;border:1.5px solid #ECEAE0;border-radius:100px;padding:5px">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+      <button onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</button>
+    </sc-for>
+  </div>
+</sc-if>
+
+<!-- ÉTAPE 1 · QUIZ -->
+<sc-if value="{{ showP1 }}" hint-placeholder-val="{{ true }}">
+<div style="max-width:540px;margin:0 auto;background:#fff;border:1.5px solid #16182B;border-radius:18px;padding:30px 28px;box-shadow:6px 6px 0 #3347CA">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div style="height:34px;width:145px;overflow:hidden;display:flex;align-items:center"><img src="assets/logo-mot.png" alt="Silvousplait" style="width:145px;flex:none;margin-top:-7px"></div>
+    <span style="font:700 11.5px 'Instrument Sans',sans-serif;letter-spacing:.05em;padding:5px 13px;border-radius:100px;background:#EEF0FD;color:#3347CA">ÉTAPE 1 / 3</span>
+  </div>
+  <div style="height:6px;background:#EEF0FD;border-radius:100px;margin-bottom:24px;overflow:hidden"><div style="width:33%;height:100%;background:#3347CA;border-radius:100px"></div></div>
+
+  <h1 style="font-size:26px;line-height:1.15;letter-spacing:-.01em;font-weight:800;margin-bottom:8px">Bienvenue&nbsp;! On veut <span style="color:#3347CA">apprendre à te connaître</span></h1>
+  <p style="font-size:14.5px;line-height:1.55;color:#4A4D66;margin:0 0 26px">Quelques questions rapides pour t'envoyer seulement les sorties qui te ressemblent.</p>
+
+  <div style="margin-bottom:22px">
+    <div style="font:700 12.5px 'Instrument Sans',sans-serif;margin-bottom:9px">Ta ville <span style="font-weight:400;color:#8B8DA0">— pour ta bonne infolettre</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      <sc-for list="{{ cityChips }}" as="c" hint-placeholder-count="4"><div onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</div></sc-for>
+    </div>
+  </div>
+
+  <div style="margin-bottom:22px">
+    <div style="font:700 12.5px 'Instrument Sans',sans-serif;margin-bottom:9px">Qu'est-ce que tu aimes sortir voir&nbsp;? <span style="font-weight:400;color:#8B8DA0">— plusieurs choix</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <sc-for list="{{ interestChips }}" as="c" hint-placeholder-count="7"><div onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</div></sc-for>
+    </div>
+  </div>
+
+  <div style="margin-bottom:22px">
+    <div style="font:700 12.5px 'Instrument Sans',sans-serif;margin-bottom:9px">Tu sors combien de fois par mois&nbsp;? <span style="font-weight:400;color:#8B8DA0">— environ</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      <sc-for list="{{ freqChips }}" as="c" hint-placeholder-count="4"><div onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</div></sc-for>
+    </div>
+  </div>
+
+  <div style="margin-bottom:26px">
+    <div style="font:700 12.5px 'Instrument Sans',sans-serif;margin-bottom:9px">Ton prénom</div>
+    <input onInput="{{ onName }}" placeholder="Alex" style="width:100%;box-sizing:border-box;border:1.5px solid #E1E0D4;border-radius:10px;padding:12px 14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#FFFEF5">
+  </div>
+
+  <button onClick="{{ go2 }}" style="display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:16px;font:700 15.5px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#25349B">Continuer →</button>
+</div>
+</sc-if>
+
+<!-- ÉTAPE 2 · PREMIUM -->
+<sc-if value="{{ showP2 }}" hint-placeholder-val="{{ false }}">
+<div style="max-width:540px;margin:0 auto;background:#fff;border:1.5px solid #16182B;border-radius:18px;padding:30px 28px;box-shadow:6px 6px 0 #3347CA">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div style="height:34px;width:145px;overflow:hidden;display:flex;align-items:center"><img src="assets/logo-mot.png" alt="Silvousplait" style="width:145px;flex:none;margin-top:-7px"></div>
+    <span style="font:700 11.5px 'Instrument Sans',sans-serif;letter-spacing:.05em;padding:5px 13px;border-radius:100px;background:#EEF0FD;color:#3347CA">ÉTAPE 2 / 3</span>
+  </div>
+  <div style="height:6px;background:#EEF0FD;border-radius:100px;margin-bottom:24px;overflow:hidden"><div style="width:66%;height:100%;background:#3347CA;border-radius:100px"></div></div>
+
+  <div style="text-align:center;margin-bottom:12px"><span style="display:inline-block;background:#16182B;color:#FFFEF5;font:800 11.5px 'Instrument Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:6px 15px;border-radius:100px">Membre Premium</span></div>
+  <h1 style="text-align:center;font-size:25px;line-height:1.2;letter-spacing:-.01em;font-weight:800;margin-bottom:8px">{{ firstName }}, les membres Premium ont économisé <span style="color:#3347CA">361&nbsp;$</span> en juin</h1>
+  <p style="text-align:center;font-size:14.5px;line-height:1.55;color:#4A4D66;margin:0 0 24px">Toi, as-tu payé plein prix&nbsp;? Voici ce que des membres qui aiment <b style="color:#16182B">{{ interestsPhrase }}</b> ont reçu à {{ cityName }}.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:26px">
+    <div style="border:1.5px solid #ECEAE0;border-radius:14px;padding:12px;background:#FFFEF5">
+      <div style="height:80px;border-radius:9px;background:#EEF0FD;margin-bottom:10px;display:flex;align-items:center;justify-content:center"><img src="assets/icon-mic-circle.png" alt="" style="max-height:60px;max-width:70%;mix-blend-mode:multiply"></div>
+      <div style="font:700 13px 'Bricolage Grotesque',sans-serif;line-height:1.25;margin-bottom:2px">Lou-Adriane Cassidy</div>
+      <div style="font:500 11px 'Instrument Sans',sans-serif;color:#8B8DA0;margin-bottom:6px">Musique · Francos</div>
+      <div style="font:700 12px 'Instrument Sans',sans-serif;color:#3347CA">Billet gratuit <span style="font-weight:400;color:#B3B1A4;text-decoration:line-through">55&nbsp;$</span></div>
+    </div>
+    <div style="border:1.5px solid #ECEAE0;border-radius:14px;padding:12px;background:#FFFEF5">
+      <div style="height:80px;border-radius:9px;background:#EEF0FD;margin-bottom:10px;display:flex;align-items:center;justify-content:center"><img src="assets/icon-mic-dance.png" alt="" style="max-height:60px;max-width:70%;mix-blend-mode:multiply"></div>
+      <div style="font:700 13px 'Bricolage Grotesque',sans-serif;line-height:1.25;margin-bottom:2px">Waahli</div>
+      <div style="font:500 11px 'Instrument Sans',sans-serif;color:#8B8DA0;margin-bottom:6px">Musique · Montréal</div>
+      <div style="font:700 12px 'Instrument Sans',sans-serif;color:#3347CA">Billet gratuit <span style="font-weight:400;color:#B3B1A4;text-decoration:line-through">21&nbsp;$</span></div>
+    </div>
+    <div style="border:1.5px solid #ECEAE0;border-radius:14px;padding:12px;background:#FFFEF5">
+      <div style="height:80px;border-radius:9px;background:#EEF0FD;margin-bottom:10px;display:flex;align-items:center;justify-content:center"><img src="assets/icon-curtain.png" alt="" style="max-height:60px;max-width:70%;mix-blend-mode:multiply"></div>
+      <div style="font:700 13px 'Bricolage Grotesque',sans-serif;line-height:1.25;margin-bottom:2px">Jeudi Comédie Club</div>
+      <div style="font:500 11px 'Instrument Sans',sans-serif;color:#8B8DA0;margin-bottom:6px">Humour · Longueuil</div>
+      <div style="font:700 12px 'Instrument Sans',sans-serif;color:#3347CA">Entrée gratuite <span style="font-weight:400;color:#B3B1A4;text-decoration:line-through">27&nbsp;$</span></div>
+    </div>
+  </div>
+
+  <div style="border-top:1.5px solid #ECEAE0;padding-top:22px">
+    <div style="text-align:center;font:700 15px 'Bricolage Grotesque',sans-serif;margin-bottom:12px">Ce que tu débloques en Premium</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px">
+      <div style="border:1.5px solid #ECEAE0;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:7px">
+        <div style="font:800 11px 'Instrument Sans',sans-serif;letter-spacing:.08em;color:#8B8DA0">GRATUIT</div>
+        <div style="font:500 12.5px 'Instrument Sans',sans-serif;display:flex;gap:6px"><span style="color:#3347CA;font-weight:700">✓</span> La sélection hebdo</div>
+        <div style="font:500 12.5px 'Instrument Sans',sans-serif;color:#B3B1A4;display:flex;gap:6px"><span style="font-weight:700">—</span> Pas de billets gratuits</div>
+        <div style="font:500 12.5px 'Instrument Sans',sans-serif;color:#B3B1A4;display:flex;gap:6px"><span style="font-weight:700">—</span> Pas de rabais membres</div>
+      </div>
+      <div style="border:2px solid #3347CA;border-radius:14px;padding:16px;background:#EEF0FD;display:flex;flex-direction:column;gap:7px">
+        <div style="font:800 11px 'Instrument Sans',sans-serif;letter-spacing:.08em;color:#3347CA">PREMIUM</div>
+        <div style="font:500 12.5px 'Instrument Sans',sans-serif;display:flex;gap:6px"><span style="color:#3347CA;font-weight:700">✓</span> La sélection hebdo</div>
+        <div style="font:500 12.5px 'Instrument Sans',sans-serif;display:flex;gap:6px"><span style="color:#3347CA;font-weight:700">✓</span> Billets gratuits chaque semaine</div>
+        <div style="font:500 12.5px 'Instrument Sans',sans-serif;display:flex;gap:6px"><span style="color:#3347CA;font-weight:700">✓</span> Rabais exclusifs + primeurs</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-bottom:20px">
+    <div style="font:700 16.5px 'Bricolage Grotesque',sans-serif;margin-bottom:2px">Total&nbsp;: 361&nbsp;$ d'économies. Abonnement&nbsp;: 5&nbsp;$/mois.</div>
+    <div style="font:500 13px 'Instrument Sans',sans-serif;color:#8B8DA0">Le calcul est simple.</div>
+  </div>
+
+  <button onClick="{{ go3 }}" style="display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:16px;font:700 15.5px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#25349B">Je veux mes billets gratuits — 5&nbsp;$/mois</button>
+  <div style="text-align:center;font:500 11.5px 'Instrument Sans',sans-serif;color:#8B8DA0;margin-top:9px">Annule en tout temps · Garantie 30 jours</div>
+  <button onClick="{{ go3 }}" style="display:block;width:100%;background:none;border:none;margin-top:14px;font:500 13px 'Instrument Sans',sans-serif;color:#8B8DA0;text-decoration:underline;cursor:pointer">Non merci, je reste au forfait gratuit</button>
+</div>
+</sc-if>
+
+<!-- ÉTAPE 3 · INVITATION -->
+<sc-if value="{{ showP3 }}" hint-placeholder-val="{{ false }}">
+<div style="max-width:540px;margin:0 auto;background:#fff;border:1.5px solid #16182B;border-radius:18px;padding:30px 28px;box-shadow:6px 6px 0 #3347CA">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div style="height:34px;width:145px;overflow:hidden;display:flex;align-items:center"><img src="assets/logo-mot.png" alt="Silvousplait" style="width:145px;flex:none;margin-top:-7px"></div>
+    <span style="font:700 11.5px 'Instrument Sans',sans-serif;letter-spacing:.05em;padding:5px 13px;border-radius:100px;background:#EEF0FD;color:#3347CA">ÉTAPE 3 / 3</span>
+  </div>
+  <div style="height:6px;background:#EEF0FD;border-radius:100px;margin-bottom:24px;overflow:hidden"><div style="width:100%;height:100%;background:#3347CA;border-radius:100px"></div></div>
+
+  <div style="width:76px;height:76px;border-radius:100px;background:#EEF0FD;display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><img src="assets/icon-megaphone.png" alt="" style="max-height:50px;max-width:50px;mix-blend-mode:multiply"></div>
+  <h1 style="text-align:center;font-size:25px;line-height:1.2;letter-spacing:-.01em;font-weight:800;margin-bottom:8px">Les meilleures sorties,<br>c'est encore mieux <span style="color:#3347CA">à deux</span></h1>
+  <p style="text-align:center;font-size:14.5px;line-height:1.55;color:#4A4D66;margin:0 0 24px">Invite quelqu'un avec qui tu aimes sortir à découvrir Silvousplait.</p>
+
+  <div style="font:700 12.5px 'Instrument Sans',sans-serif;margin-bottom:9px">Ce que ton ami va recevoir</div>
+  <div style="border:1.5px solid #ECEAE0;border-radius:12px;padding:15px 17px;background:#FFFEF5;font:400 13.5px/1.55 'Instrument Sans',sans-serif;color:#4A4D66">
+    <b style="color:#16182B">{{ firstName }} t'invite à rejoindre Silvousplait</b><br>
+    Les meilleures sorties culturelles à {{ cityName }}, chaque semaine. Rejoins gratuitement 👇
+  </div>
+
+  <div style="display:flex;gap:8px;align-items:center;margin:16px 0 26px">
+    <div style="flex:1;border:1.5px solid #E1E0D4;border-radius:100px;padding:12px 16px;font:500 13px 'Instrument Sans',sans-serif;color:#4A4D66;overflow:hidden;white-space:nowrap;background:#FFFEF5">{{ inviteLink }}</div>
+    <button onClick="{{ onCopy }}" style="background:#16182B;color:#FFFEF5;border:none;padding:12px 20px;border-radius:100px;font:700 13px 'Instrument Sans',sans-serif;white-space:nowrap;cursor:pointer" style-hover="background:#3347CA">{{ copyLabel }}</button>
+  </div>
+
+  <button onClick="{{ go4 }}" style="display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:16px;font:700 15.5px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#25349B">Terminer mon inscription →</button>
+  <button onClick="{{ go4 }}" style="display:block;width:100%;background:none;border:none;margin-top:14px;font:500 13px 'Instrument Sans',sans-serif;color:#8B8DA0;text-decoration:underline;cursor:pointer">Passer cette étape</button>
+</div>
+</sc-if>
+
+<!-- BIENVENUE -->
+<sc-if value="{{ showP4 }}" hint-placeholder-val="{{ false }}">
+<div style="max-width:540px;margin:0 auto;background:#fff;border:1.5px solid #16182B;border-radius:18px;padding:30px 28px;box-shadow:6px 6px 0 #3347CA">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
+    <div style="height:34px;width:145px;overflow:hidden;display:flex;align-items:center"><img src="assets/logo-mot.png" alt="Silvousplait" style="width:145px;flex:none;margin-top:-7px"></div>
+    <span style="font:700 11.5px 'Instrument Sans',sans-serif;letter-spacing:.05em;padding:5px 13px;border-radius:100px;background:#E3F4EC;color:#1D9E75">✓ INSCRIT</span>
+  </div>
+
+  <div style="text-align:center;margin-bottom:24px">
+    <img src="assets/logo-yeux.png" alt="" style="width:110px;margin-bottom:10px">
+    <h1 style="font-size:26px;font-weight:800;letter-spacing:-.01em;margin-bottom:8px">Bienvenue, {{ firstName }}&nbsp;!</h1>
+    <p style="font-size:14.5px;line-height:1.55;color:#4A4D66;margin:0">Tu es inscrit à l'infolettre <b style="color:#16182B">{{ cityName }}</b>. Ta première sélection arrive vendredi.</p>
+  </div>
+
+  <div style="border:1.5px solid #3347CA;background:#EEF0FD;border-radius:14px;padding:16px 18px;margin-bottom:22px">
+    <div style="font:700 13.5px 'Instrument Sans',sans-serif;color:#3347CA;margin-bottom:5px">Une dernière étape importante</div>
+    <div style="font:400 13.5px/1.55 'Instrument Sans',sans-serif;color:#25349B">On vient de t'envoyer un courriel. Ouvre-le et réponds «&nbsp;Je confirme&nbsp;» pour bien recevoir nos offres (et ne pas tomber dans les indésirables).</div>
+  </div>
+
+  <div style="border:1.5px solid #16182B;border-radius:16px;padding:20px;margin-bottom:8px;background:#FFFEF5;box-shadow:4px 4px 0 rgba(142,160,245,.4)">
+    <div style="display:flex;align-items:flex-start;gap:14px">
+      <img src="assets/icon-premium.png" alt="" style="width:52px;flex:none;mix-blend-mode:multiply">
+      <div>
+        <div style="font:700 15.5px 'Bricolage Grotesque',sans-serif;margin-bottom:3px">Les membres Premium ont économisé 361&nbsp;$ en juin</div>
+        <div style="font:400 13px/1.5 'Instrument Sans',sans-serif;color:#4A4D66;margin-bottom:14px">Billets gratuits et rabais exclusifs, à partir de 5&nbsp;$/mois. Un seul billet gratuit rembourse ton année.</div>
+        <a href="premium.html" style="display:inline-block;background:#3347CA;color:#FFFEF5;padding:12px 24px;border-radius:100px;font:700 14px 'Instrument Sans',sans-serif;text-decoration:none" style-hover="background:#25349B;color:#FFFEF5">Passer au Premium →</a>
+      </div>
+    </div>
+  </div>
+
+  <div style="font:700 15px 'Bricolage Grotesque',sans-serif;margin:22px 0 12px">Questions fréquentes</div>
+  <sc-for list="{{ faqItems }}" as="item" hint-placeholder-count="3">
+    <div onClick="{{ item.onToggle }}" style="border:1.5px solid #ECEAE0;border-radius:12px;padding:13px 16px;margin-bottom:8px;cursor:pointer" style-hover="border-color:#3347CA">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font:600 13.5px 'Instrument Sans',sans-serif">{{ item.q }}<span style="color:#3347CA;font-size:16px;flex:none">{{ item.chev }}</span></div>
+      <sc-if value="{{ item.isOpen }}"><div style="font:400 13px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin-top:8px">{{ item.a }}</div></sc-if>
+    </div>
+  </sc-for>
+</div>
+</sc-if>
+
+<p style="max-width:540px;margin:18px auto 0;text-align:center;font:500 11.5px 'Instrument Sans',sans-serif;color:#B3B1A4">Aperçu navigable · Clique les onglets ou les boutons pour parcourir le tunnel · <span onClick="{{ openExit }}" style="text-decoration:underline;cursor:pointer;color:#8B8DA0">voir la modale de sortie</span></p>
+
+<sc-if value="{{ showExit }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeExit }}" style="position:fixed;inset:0;background:rgba(37,52,155,.55);display:flex;align-items:center;justify-content:center;padding:24px;z-index:50">
+    <div onClick="{{ stopClick }}" style="background:#FFFEF5;border:1.5px solid #16182B;border-radius:18px;padding:32px 28px;max-width:360px;width:100%;text-align:center;box-shadow:6px 6px 0 #3347CA">
+      <div style="width:64px;height:64px;border-radius:100px;background:#EEF0FD;display:inline-flex;align-items:center;justify-content:center;margin-bottom:15px"><img src="assets/icon-tickets.png" alt="" style="max-height:42px;max-width:42px;mix-blend-mode:multiply"></div>
+      <h3 style="font:800 21px 'Bricolage Grotesque',sans-serif;letter-spacing:-.01em;margin:0 0 9px">Tu y es presque, {{ firstName }}</h3>
+      <p style="font:400 14px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin:0 0 20px">Termine tes questions pour t'assurer de recevoir les meilleures offres et sorties culturelles à {{ cityName }}.</p>
+      <button onClick="{{ closeExit }}" style="display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:14px;font:700 14.5px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#25349B">Continuer mes questions →</button>
+      <button onClick="{{ closeExit }}" style="display:block;width:100%;background:none;border:none;margin-top:12px;font:500 12.5px 'Instrument Sans',sans-serif;color:#8B8DA0;text-decoration:underline;cursor:pointer">Quitter quand même</button>
+    </div>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:680,&quot;height&quot;:980},&quot;showSwitcher&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Démo&quot;},&quot;defaultName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contenu&quot;}}">
+class Component extends DCLogic {
+  state = { page: 1, city: 'Montréal', interests: ['Théâtre', 'Musique'], freq: '2–3', name: '', copied: false, faqOpen: -1, showExit: false, exitShown: false };
+  componentDidMount() {
+    this._exitHandler = (e) => {
+      if (e.clientY <= 0 && !this.state.exitShown && this.state.page < 4) this.setState({ showExit: true, exitShown: true });
+    };
+    document.addEventListener('mouseleave', this._exitHandler);
+  }
+  componentWillUnmount() { document.removeEventListener('mouseleave', this._exitHandler); }
+  renderVals() {
+    const s = this.state, set = (o) => this.setState(o);
+    const chip = (sel, round) =>
+      `border-radius:${round ? '100px' : '10px'};padding:${round ? '10px 16px' : '11px 6px'};text-align:center;font:${sel ? '700' : '500'} 13px 'Instrument Sans',sans-serif;cursor:pointer;user-select:none;transition:.13s;` +
+      (sel ? 'border:1.5px solid #3347CA;background:#EEF0FD;color:#3347CA' : 'border:1.5px solid #E1E0D4;background:#fff;color:#16182B');
+    const mk = (list, key, round, multi) => list.map(label => ({
+      label,
+      style: chip(multi ? s[key].includes(label) : s[key] === label, round),
+      onClick: () => {
+        if (multi) {
+          const has = s[key].includes(label);
+          set({ [key]: has ? s[key].filter(x => x !== label) : [...s[key], label] });
+        } else set({ [key]: label });
+      }
+    }));
+    const go = n => () => { set({ page: n }); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+    const tabs = ['1 · Quiz', '2 · Premium', '3 · Invitation', 'Bienvenue'].map((label, i) => ({
+      label, onClick: go(i + 1),
+      style: 'flex:1;border:none;border-radius:100px;padding:10px 4px;cursor:pointer;font:700 12.5px \'Instrument Sans\',sans-serif;letter-spacing:.01em;transition:.15s;' +
+        (s.page === i + 1 ? 'background:#3347CA;color:#FFFEF5' : 'background:transparent;color:#8B8DA0')
+    }));
+    const name = (s.name || this.props.defaultName || 'Alex').trim() || 'Alex';
+    const slug = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-');
+    const arts = { 'Théâtre': 'le théâtre', 'Musique': 'la musique', 'Humour': "l'humour", 'Cinéma': 'le cinéma', 'Arts visuels': 'les arts visuels', 'Festivals': 'les festivals', 'Sport': 'le sport' };
+    const picked = s.interests.slice(0, 2).map(x => arts[x] || x);
+    const faqData = [
+      { q: 'Comment ne pas manquer les courriels ?', a: 'Ajoute bonjour@silvousplaitsvp.com à tes contacts et réponds à notre premier courriel — c\'est le meilleur moyen de rester dans ta boîte principale.' },
+      { q: 'À quelle fréquence je reçois des offres ?', a: 'Une sélection par semaine, le vendredi matin. Les membres Premium reçoivent en plus les billets gratuits et rabais exclusifs.' },
+      { q: 'C\'est quoi la différence entre gratuit et Premium ?', a: 'Gratuit : la sélection hebdo des meilleurs spectacles pas chers. Premium (5 $/mois) : en plus, des billets gratuits chaque semaine et des rabais réservés aux membres.' }
+    ];
+    return {
+      showSwitcher: this.props.showSwitcher ?? true,
+      showP1: s.page === 1, showP2: s.page === 2, showP3: s.page === 3, showP4: s.page === 4,
+      tabs,
+      cityChips: mk(['Montréal', 'Québec', 'Sherbrooke', 'Trois-Rivières'], 'city', false, false),
+      interestChips: mk(['Théâtre', 'Musique', 'Humour', 'Cinéma', 'Arts visuels', 'Festivals', 'Sport'], 'interests', true, true),
+      freqChips: mk(['0–1', '2–3', '4–6', '7+'], 'freq', false, false),
+      onName: e => set({ name: e.target.value }),
+      firstName: name, cityName: s.city,
+      interestsPhrase: picked.length ? picked.join(' et ') : 'sortir',
+      inviteLink: 'silvousplaitsvp.com/i/' + slug,
+      go2: go(2), go3: go(3), go4: go(4),
+      onCopy: () => {
+        try { navigator.clipboard.writeText('https://silvousplaitsvp.com/i/' + slug); } catch (e) {}
+        set({ copied: true });
+        setTimeout(() => this.setState({ copied: false }), 2000);
+      },
+      copyLabel: s.copied ? 'Copié ✓' : 'Copier le lien',
+      showExit: s.showExit,
+      openExit: () => set({ showExit: true }),
+      closeExit: () => set({ showExit: false }),
+      stopClick: (e) => e.stopPropagation(),
+      faqItems: faqData.map((f, i) => ({
+        q: f.q, a: f.a, isOpen: s.faqOpen === i, chev: s.faqOpen === i ? '⌃' : '⌄',
+        onToggle: () => set({ faqOpen: s.faqOpen === i ? -1 : i })
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

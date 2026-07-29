@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&amp;family=Instrument+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+  body{margin:0;background:#FFFEF5;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#16182B}
+  h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;margin:0}
+  a{color:#3347CA}a:hover{color:#25349B}
+  input,textarea,button{font-family:'Instrument Sans',system-ui,sans-serif}
+  input:focus,textarea:focus{outline:none;border-color:#3347CA !important}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column">
+
+<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1.5px solid #ECEAE0;background:#FFFEF5">
+  <a href="accueil.html" style="display:flex;align-items:center;height:34px;width:145px;overflow:hidden"><img src="assets/logo-mot.png" alt="Silvousplait" style="width:145px;flex:none;margin-top:-7px"></a>
+  <div style="display:flex;align-items:center;gap:28px;font:600 14px 'Instrument Sans',sans-serif">
+    <a href="premium.html" style="color:#4A4D66;text-decoration:none" style-hover="color:#3347CA">Premium</a>
+    <a href="contact.html" style="color:#3347CA;text-decoration:none">Contact</a>
+    <a href="partenariat.html" style="color:#4A4D66;text-decoration:none" style-hover="color:#3347CA">Partenariat</a>
+    <a href="connexion.html" style="color:#4A4D66;text-decoration:none" style-hover="color:#3347CA">Connexion</a>
+    <a href="accueil.html" style="background:#3347CA;color:#FFFEF5;padding:11px 22px;border-radius:100px;font-weight:700;text-decoration:none" style-hover="background:#25349B;color:#FFFEF5">S'inscrire</a>
+    <a href="accueil.html" style="font:600 13.5px 'Instrument Sans',sans-serif;color:#3347CA;text-decoration:none" style-hover="color:#25349B">← Retour au site</a>
+  </div>
+</div>
+
+<div style="flex:1;max-width:640px;width:100%;margin:0 auto;padding:56px 24px 80px;box-sizing:border-box">
+  <div style="text-align:center;margin-bottom:36px">
+    <img src="assets/logo-yeux.png" alt="" style="width:96px;margin-bottom:12px">
+    <h1 style="font-size:34px;font-weight:800;letter-spacing:-.01em;margin-bottom:8px">Contactez-nous</h1>
+    <p style="font:400 15px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin:0">Une question, une suggestion&nbsp;? Nous serions ravis d'avoir de vos nouvelles.</p>
+  </div>
+
+  <sc-if value="{{ notSent }}" hint-placeholder-val="{{ true }}">
+  <div style="background:#fff;border:1.5px solid #16182B;border-radius:18px;padding:28px;box-shadow:6px 6px 0 #3347CA">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <input placeholder="Nom complet" style="box-sizing:border-box;width:100%;border:1.5px solid #E1E0D4;border-radius:10px;padding:13px 14px;font:500 14px 'Instrument Sans',sans-serif;color:#16182B;background:#FFFEF5">
+      <input type="email" placeholder="Courriel" style="box-sizing:border-box;width:100%;border:1.5px solid #E1E0D4;border-radius:10px;padding:13px 14px;font:500 14px 'Instrument Sans',sans-serif;color:#16182B;background:#FFFEF5">
+    </div>
+    <input placeholder="Sujet" style="box-sizing:border-box;width:100%;border:1.5px solid #E1E0D4;border-radius:10px;padding:13px 14px;font:500 14px 'Instrument Sans',sans-serif;color:#16182B;background:#FFFEF5;margin-bottom:12px">
+    <textarea placeholder="Message" rows="6" style="box-sizing:border-box;width:100%;border:1.5px solid #E1E0D4;border-radius:10px;padding:13px 14px;font:500 14px/1.55 'Instrument Sans',sans-serif;color:#16182B;background:#FFFEF5;resize:vertical;margin-bottom:16px"></textarea>
+    <button onClick="{{ onSend }}" style="display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:16px;font:700 15.5px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#25349B">Envoyer le message</button>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ sent }}" hint-placeholder-val="{{ false }}">
+  <div style="background:#fff;border:1.5px solid #16182B;border-radius:18px;padding:40px 28px;box-shadow:6px 6px 0 #3347CA;text-align:center">
+    <div style="width:64px;height:64px;border-radius:100px;background:#E3F4EC;display:inline-flex;align-items:center;justify-content:center;font-size:28px;color:#1D9E75;margin-bottom:14px">✓</div>
+    <h3 style="font:800 21px 'Bricolage Grotesque',sans-serif;margin-bottom:8px">Message envoyé&nbsp;!</h3>
+    <p style="font:400 14px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin:0">Merci de nous avoir écrit. On te répond rapidement à ton courriel.</p>
+  </div>
+  </sc-if>
+
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:26px;font:500 13.5px 'Instrument Sans',sans-serif;color:#8B8DA0">
+    Ou écris-nous directement à <a href="mailto:spectacles@silvousplaitsvp.com" style="font-weight:600">spectacles@silvousplaitsvp.com</a>
+  </div>
+</div>
+
+<div style="background:#16182B;padding:28px 32px;display:flex;align-items:center;justify-content:center;gap:28px;font:500 13px 'Instrument Sans',sans-serif">
+  <a href="faq.html" style="color:#A7A9BC;text-decoration:none">Questions et aide</a>
+  <a href="contact.html" style="color:#A7A9BC;text-decoration:none">Contact</a>
+  <a href="partenariat.html" style="color:#A7A9BC;text-decoration:none">Partenariat</a>
+  <a href="termes.html" style="color:#A7A9BC;text-decoration:none">Termes</a>
+  <a href="politique.html" style="color:#A7A9BC;text-decoration:none">Politique</a>
+  <span style="color:#4A4D66">© 2026 Silvousplait</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { sent: false };
+  renderVals() {
+    return {
+      sent: this.state.sent,
+      notSent: !this.state.sent,
+      onSend: () => this.setState({ sent: true })
+    };
+  }
+}
+</script>
+</body>
+</html>

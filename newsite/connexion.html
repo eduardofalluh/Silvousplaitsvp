@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&amp;family=Instrument+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+  body{margin:0;background:#FFFEF5;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#16182B}
+  h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;margin:0}
+  a{color:#3347CA}a:hover{color:#25349B}
+  input,button{font-family:'Instrument Sans',system-ui,sans-serif}
+  input:focus{outline:none;border-color:#3347CA !important}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column">
+
+<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1.5px solid #ECEAE0;background:#FFFEF5">
+  <a href="accueil.html" style="display:flex;align-items:center;height:34px;width:145px;overflow:hidden"><img src="assets/logo-mot.png" alt="Silvousplait" style="width:145px;flex:none;margin-top:-7px"></a>
+  <div style="display:flex;align-items:center;gap:28px;font:600 14px 'Instrument Sans',sans-serif">
+    <a href="premium.html" style="color:#4A4D66;text-decoration:none" style-hover="color:#3347CA">Premium</a>
+    <a href="contact.html" style="color:#4A4D66;text-decoration:none" style-hover="color:#3347CA">Contact</a>
+    <a href="partenariat.html" style="color:#4A4D66;text-decoration:none" style-hover="color:#3347CA">Partenariat</a>
+    <a href="connexion.html" style="color:#3347CA;text-decoration:none">Connexion</a>
+    <a href="accueil.html" style="font:600 13.5px 'Instrument Sans',sans-serif;color:#3347CA;text-decoration:none" style-hover="color:#25349B">← Retour au site</a>
+  </div>
+</div>
+
+<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:56px 24px 80px">
+  <div style="max-width:440px;width:100%">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="width:56px;height:56px;border-radius:100px;background:#F5E642;margin:0 auto 18px"></div>
+      <h1 style="font-size:28px;font-weight:800;letter-spacing:-.01em;margin-bottom:8px">Connexion à mon compte</h1>
+      <p style="font:400 14.5px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin:0">Entre ton courriel, qu'il soit gratuit ou Premium.<br>On t'envoie un code pour accéder à ton compte.</p>
+    </div>
+
+    <sc-if value="{{ stepEmail }}" hint-placeholder-val="{{ true }}">
+    <div style="background:#fff;border:1.5px solid #16182B;border-radius:18px;padding:28px;box-shadow:6px 6px 0 #3347CA">
+      <input onInput="{{ onEmail }}" type="email" placeholder="ton@courriel.com" style="box-sizing:border-box;width:100%;border:1.5px solid #E1E0D4;border-radius:10px;padding:14px;font:500 14.5px 'Instrument Sans',sans-serif;color:#16182B;background:#FFFEF5;margin-bottom:12px">
+      <button onClick="{{ sendCode }}" style="display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:15px;font:700 15px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#25349B">Recevoir mon code</button>
+      <div style="text-align:center;margin-top:14px;font:500 13px 'Instrument Sans',sans-serif;color:#8B8DA0">Pas encore inscrit&nbsp;? <a href="accueil.html" style="font-weight:600">Rejoindre l'infolettre gratuite</a></div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ stepCode }}" hint-placeholder-val="{{ false }}">
+    <div style="background:#fff;border:1.5px solid #16182B;border-radius:18px;padding:28px;box-shadow:6px 6px 0 #3347CA;text-align:center">
+      <div style="width:52px;height:52px;border-radius:100px;background:#E3F4EC;display:inline-flex;align-items:center;justify-content:center;font-size:24px;color:#1D9E75;margin-bottom:12px">✓</div>
+      <div style="font:700 16px 'Bricolage Grotesque',sans-serif;margin-bottom:4px">Code envoyé&nbsp;!</div>
+      <p style="font:400 13.5px/1.5 'Instrument Sans',sans-serif;color:#4A4D66;margin:0 0 18px">On vient d'envoyer un code à 6 chiffres à<br><b style="color:#16182B">{{ emailText }}</b></p>
+      <input onInput="{{ onCode }}" placeholder="______" maxLength="6" style="box-sizing:border-box;width:100%;border:1.5px solid #E1E0D4;border-radius:10px;padding:14px;font:700 22px 'Instrument Sans',sans-serif;color:#16182B;background:#FFFEF5;margin-bottom:12px;text-align:center;letter-spacing:.4em">
+      <a href="compte.html" style="display:block;text-align:center;background:#3347CA;color:#FFFEF5;border-radius:100px;padding:15px;font:700 15px 'Instrument Sans',sans-serif;text-decoration:none" style-hover="background:#25349B;color:#FFFEF5">Accéder à mon compte</a>
+      <div style="margin-top:14px;font:500 13px 'Instrument Sans',sans-serif;color:#8B8DA0">Rien reçu&nbsp;? <span onClick="{{ resend }}" style="color:#3347CA;font-weight:600;cursor:pointer;text-decoration:underline">{{ resendLabel }}</span></div>
+    </div>
+    </sc-if>
+  </div>
+</div>
+
+<div style="background:#16182B;padding:28px 32px;display:flex;align-items:center;justify-content:center;gap:28px;font:500 13px 'Instrument Sans',sans-serif">
+  <a href="faq.html" style="color:#A7A9BC;text-decoration:none">Questions et aide</a>
+  <a href="contact.html" style="color:#A7A9BC;text-decoration:none">Contact</a>
+  <a href="partenariat.html" style="color:#A7A9BC;text-decoration:none">Partenariat</a>
+  <a href="termes.html" style="color:#A7A9BC;text-decoration:none">Termes</a>
+  <a href="politique.html" style="color:#A7A9BC;text-decoration:none">Politique</a>
+  <span style="color:#4A4D66">© 2026 Silvousplait</span>
+</div>
+
+<a href="admin.html" title="Accès admin" style="position:fixed;bottom:16px;right:16px;z-index:50;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:rgba(22,24,43,.06);color:#8B8DA0;font:700 14px 'Bricolage Grotesque',sans-serif;text-decoration:none;opacity:.55" style-hover="opacity:1;background:#3347CA;color:#FFFEF5">A</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { step: 'email', email: '', resent: false };
+  renderVals() {
+    const s = this.state;
+    return {
+      stepEmail: s.step === 'email', stepCode: s.step === 'code',
+      onEmail: e => this.setState({ email: e.target.value }),
+      emailText: s.email || 'ton@courriel.com',
+      sendCode: () => this.setState({ step: 'code' }),
+      onCode: () => {},
+      resend: () => { this.setState({ resent: true }); setTimeout(() => this.setState({ resent: false }), 2500); },
+      resendLabel: s.resent ? 'Code renvoyé ✓' : 'Renvoyer le code'
+    };
+  }
+}
+</script>
+</body>
+</html>

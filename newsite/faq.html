@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&amp;family=Instrument+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+  body{margin:0;background:#FFFEF5;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#16182B}
+  h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;margin:0}
+  a{color:#3347CA}a:hover{color:#25349B}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column">
+
+<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1.5px solid #ECEAE0;background:#FFFEF5">
+  <a href="accueil.html" style="display:flex;align-items:center;height:34px;width:145px;overflow:hidden"><img src="assets/logo-mot.png" alt="Silvousplait" style="width:145px;flex:none;margin-top:-7px"></a>
+  <a href="accueil.html" style="font:600 13.5px 'Instrument Sans',sans-serif;color:#3347CA;text-decoration:none" style-hover="color:#25349B">← Retour au site</a>
+</div>
+
+<div style="flex:1;max-width:720px;width:100%;margin:0 auto;padding:52px 24px 80px;box-sizing:border-box">
+  <div style="text-align:center;margin-bottom:40px">
+    <img src="assets/logo-yeux.png" alt="" style="width:96px;margin-bottom:12px">
+    <h1 style="font-size:34px;font-weight:800;letter-spacing:-.01em;margin-bottom:8px">Questions et aide</h1>
+    <p style="font:400 15px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin:0">Tout ce qu'il faut savoir sur Silvousplait. Pas trouvé ta réponse&nbsp;? Écris-nous à <a href="mailto:spectacles@silvousplaitsvp.com">spectacles@silvousplaitsvp.com</a>.</p>
+  </div>
+
+  <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="3">
+    <div style="margin-bottom:36px">
+      <h2 style="font-size:20px;font-weight:700;letter-spacing:-.01em;margin-bottom:14px;display:flex;align-items:center;gap:10px"><span style="width:8px;height:8px;border-radius:50%;background:#3347CA;display:inline-block"></span>{{ sec.title }}</h2>
+      <sc-for list="{{ sec.items }}" as="item" hint-placeholder-count="4">
+        <div onClick="{{ item.onToggle }}" style="border:1.5px solid #ECEAE0;border-radius:12px;padding:15px 18px;margin-bottom:8px;cursor:pointer;background:#fff;transition:.13s" style-hover="border-color:#3347CA">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font:600 14.5px 'Instrument Sans',sans-serif">{{ item.q }}<span style="color:#3347CA;font-size:17px;flex:none">{{ item.chev }}</span></div>
+          <sc-if value="{{ item.isOpen }}"><div style="font:400 14px/1.6 'Instrument Sans',sans-serif;color:#4A4D66;margin-top:9px">{{ item.a }}</div></sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </sc-for>
+
+  <div style="border:1.5px solid #16182B;border-radius:16px;padding:22px 24px;background:#fff;box-shadow:6px 6px 0 #3347CA;display:flex;align-items:center;gap:16px;margin-top:8px">
+    <img src="assets/icon-megaphone.png" alt="" style="width:48px;flex:none;mix-blend-mode:multiply">
+    <div style="flex:1">
+      <div style="font:700 15.5px 'Bricolage Grotesque',sans-serif;margin-bottom:2px">Une autre question&nbsp;?</div>
+      <div style="font:400 13.5px 'Instrument Sans',sans-serif;color:#4A4D66">On répond vite. Promis.</div>
+    </div>
+    <a href="mailto:spectacles@silvousplaitsvp.com" style="background:#3347CA;color:#FFFEF5;padding:12px 22px;border-radius:100px;font:700 13.5px 'Instrument Sans',sans-serif;text-decoration:none;white-space:nowrap" style-hover="background:#25349B;color:#FFFEF5">Nous écrire</a>
+  </div>
+</div>
+
+<div style="background:#16182B;padding:28px 32px;display:flex;align-items:center;justify-content:center;gap:28px;font:500 13px 'Instrument Sans',sans-serif">
+  <a href="faq.html" style="color:#A7A9BC;text-decoration:none">Questions et aide</a>
+  <a href="contact.html" style="color:#A7A9BC;text-decoration:none">Contact</a>
+  <a href="partenariat.html" style="color:#A7A9BC;text-decoration:none">Partenariat</a>
+  <a href="termes.html" style="color:#A7A9BC;text-decoration:none">Termes</a>
+  <a href="politique.html" style="color:#A7A9BC;text-decoration:none">Politique</a>
+  <span style="color:#4A4D66">© 2026 Silvousplait</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { open: null };
+  renderVals() {
+    const data = [
+      { title: 'Général', items: [
+        ['Comment fonctionne Silvousplait?', "C'est simple! On sélectionne chaque semaine des spectacles et sorties culturelles à prix abordable dans votre ville. Quand on trouve des offres intéressantes, on vous les envoie directement par courriel."],
+        ["Comment puis-je m'inscrire? Est-ce que c'est gratuit?", "Vous pouvez vous inscrire en entrant votre adresse courriel sur la page d'accueil du site web. Vous pourrez ensuite choisir entre l'infolettre gratuite ou le Forfait Premium."],
+        ['À quelle fréquence vais-je recevoir des infolettres?', 'Vous recevrez notre infolettre chaque semaine, avec une sélection des meilleures sorties culturelles à venir dans votre ville.'],
+        ['Dans quelles villes es-tu actif?', "On est présents à Montréal, Québec, Trois-Rivières et Sherbrooke, avec une infolettre dédiée à chaque ville. On travaille à s'étendre à d'autres régions du Québec."],
+        ['Comment sélectionnez-vous les spectacles?', 'On curate chaque semaine les meilleures sorties culturelles selon leur qualité, leur accessibilité et leur prix. On garde seulement ce qui en vaut vraiment la peine, pour ne pas surcharger votre boîte courriel.'],
+        ['Vendez-vous des billets?', "Non. Silvousplait n'est pas une billetterie. On vous dirige vers les plateformes de nos partenaires culturels pour finaliser vos achats."],
+        ['Est-ce que je peux consulter une liste des offres sur votre site?', "Non, on envoie toutes nos trouvailles par courriel seulement, au fur et à mesure qu'on les déniche. Restez à l'affût!"]
+      ]},
+      { title: 'Support technique', items: [
+        ['Je suis inscrit mais je ne reçois pas vos courriels, pourquoi?', 'Il arrive parfois que nos courriels arrivent dans votre dossier de courriers indésirables. Pour éviter cela, ajoutez notre adresse à vos contacts directement sur le site de votre fournisseur de courriel.'],
+        ['Comment puis-je me désinscrire?', 'Vous pouvez vous désinscrire à tout moment en cliquant le lien « Se désinscrire » au bas de chaque courriel, ou en nous écrivant directement à spectacles@silvousplaitsvp.com.'],
+        ['Comment puis-je changer la ville dont je reçois les infolettres?', 'Écrivez-nous en nous indiquant la nouvelle ville désirée et on fera la modification.'],
+        ['Comment puis-je vous contacter?', 'Vous pouvez nous écrire à spectacles@silvousplaitsvp.com.']
+      ]},
+      { title: 'Forfait Premium', items: [
+        ['Pourquoi devenir membre Premium?', 'Les membres Premium ont accès à des billets gratuits et des rabais exclusifs grâce à notre réseau de partenaires culturels, en plus de recevoir les meilleures offres avant tout le monde. Le Forfait Premium coûte 60$ par année, plus taxes.'],
+        ["Comment puis-je m'inscrire au Forfait Premium?", 'Vous pouvez vous inscrire directement sur cette page.'],
+        ['Comment puis-je annuler mon abonnement Premium?', 'Vous pouvez annuler votre abonnement à tout moment en nous écrivant à spectacles@silvousplaitsvp.com ou en vous connectant à votre compte.'],
+        ['Est-ce que mes informations de paiement sont sécurisées?', 'Oui. Tous les paiements sont traités via Stripe, un des processeurs de paiement les plus utilisés au monde.'],
+        ['Quelle est la politique de remboursement?', "Nous offrons une politique de remboursement de 30 jours. Si le Forfait Premium ne répond pas à vos attentes, vous pouvez demander un remboursement en écrivant à spectacles@silvousplaitsvp.com dans les 30 jours suivant le début ou le renouvellement de votre abonnement."],
+        ["Est-ce que l'abonnement Premium se renouvelle automatiquement?", "Oui, l'abonnement se renouvelle automatiquement à la fin de votre forfait. Vous pouvez annuler à tout moment."]
+      ]}
+    ];
+    const open = this.state.open;
+    return {
+      sections: data.map((sec, si) => ({
+        title: sec.title,
+        items: sec.items.map(([q, a], qi) => {
+          const key = si + '-' + qi, isOpen = open === key;
+          return { q, a, isOpen, chev: isOpen ? '⌃' : '⌄', onToggle: () => this.setState({ open: isOpen ? null : key }) };
+        })
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

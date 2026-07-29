@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&amp;family=Instrument+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+  body{margin:0;background:#FFFEF5;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#16182B}
+  h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;margin:0}
+  a{color:#3347CA}a:hover{color:#25349B}
+  input,select,button{font-family:'Instrument Sans',system-ui,sans-serif}
+  input:focus,select:focus{outline:2px solid #3347CA;outline-offset:1px}
+  @keyframes marqueeSVP{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+</style>
+</helmet>
+
+<div style="min-width:1100px">
+
+<!-- BARRE URGENCE RÉELLE -->
+<sc-if value="{{ showUrgencyBar }}" hint-placeholder-val="{{ true }}">
+<div style="background:#3347CA;color:#FFFEF5;text-align:center;padding:10px 16px;font:600 13.5px 'Instrument Sans',sans-serif">
+  La prochaine sélection de spectacles part <span style="text-decoration:underline;text-underline-offset:3px">lundi 9h</span> — il reste <span style="font-variant-numeric:tabular-nums;font-weight:700">{{ countdown }}</span> pour être dessus.
+</div>
+</sc-if>
+
+<!-- NAV -->
+<div style="position:sticky;top:0;z-index:20;background:rgba(255,254,245,.92);backdrop-filter:blur(10px);border-bottom:1px solid #ECEAE0">
+  <div style="max-width:1160px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 32px">
+    <div style="height:40px;width:170px;overflow:hidden;display:flex;align-items:center;justify-content:flex-start">
+      <img src="assets/logo-mot.png" alt="Silvousplait" style="width:170px;flex:none;margin-top:-8px">
+    </div>
+    <div style="display:flex;align-items:center;gap:28px;font:600 14px 'Instrument Sans',sans-serif;color:#4A4D66">
+      <a href="premium.html" style="color:#4A4D66;text-decoration:none">Premium</a>
+      <a href="contact.html" style="color:#4A4D66;text-decoration:none">Contact</a>
+      <a href="connexion.html" style="background:#3347CA;color:#FFFEF5;padding:11px 22px;border-radius:100px;font-weight:700;text-decoration:none" style-hover="background:#25349B;color:#FFFEF5">Connexion</a>
+    </div>
+  </div>
+</div>
+
+<!-- HERO : capture directe -->
+<div style="max-width:1160px;margin:0 auto;padding:76px 32px 64px;display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center">
+  <div>
+    <div style="display:inline-flex;align-items:center;gap:8px;background:#EEF0FD;color:#3347CA;font:700 13px 'Instrument Sans',sans-serif;padding:7px 16px;border-radius:100px;margin-bottom:26px">
+      <span style="width:7px;height:7px;border-radius:50%;background:#3347CA;display:inline-block"></span>
+      Infolettre gratuite · chaque lundi · {{ memberCount }} abonnés
+    </div>
+    <h1 style="font-size:56px;line-height:1.05;letter-spacing:-.02em;font-weight:800;margin-bottom:20px">Trouve ton prochain spectacle <span style="color:#3347CA">à petit prix</span></h1>
+    <p style="font-size:18px;line-height:1.55;color:#4A4D66;max-width:480px;margin:0 0 30px">Chaque lundi, on t'envoie les meilleurs spectacles pas chers de ta ville. Toi, tu choisis. Nous, on fouille.</p>
+
+    <div id="inscription" style="background:#fff;border:1.5px solid #16182B;border-radius:16px;padding:22px;max-width:480px;box-shadow:6px 6px 0 #3347CA">
+      <input type="email" placeholder="ton.courriel@exemple.com" style="display:block;width:100%;box-sizing:border-box;padding:13px 14px;border-radius:10px;border:1.5px solid #E1E0D4;background:#FFFEF5;font:500 14px 'Instrument Sans',sans-serif;color:#16182B">
+      <a href="tunnel.html" style="display:block;text-align:center;margin-top:10px;background:#3347CA;color:#FFFEF5;padding:15px;border-radius:10px;font:700 15.5px 'Instrument Sans',sans-serif;text-decoration:none" style-hover="background:#25349B;color:#FFFEF5">Envoie-moi des spectacles pas chers !</a>
+      <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;font:500 12.5px 'Instrument Sans',sans-serif;color:#8B8DA0">
+        <span>✓ Gratuit pour toujours</span><span>✓ 2 secondes</span><span>✓ Désabonnement en 1 clic</span>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:18px">
+    <img src="assets/logo-yeux.png" alt="Silvousplait — logo aux grands yeux" style="width:88%;max-width:440px">
+    
+  </div>
+</div>
+
+<!-- BANDEAU CONFIANCE -->
+<div style="border-top:1px solid #ECEAE0;border-bottom:1px solid #ECEAE0;background:#FBFAF1;padding:22px 0 20px;overflow:hidden;white-space:nowrap">
+  <div style="text-align:center;font:700 13px 'Instrument Sans',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#3347CA;margin-bottom:16px">Ils nous font confiance</div>
+  <div style="display:inline-flex;gap:56px;animation:marqueeSVP 30s linear infinite;font:700 15px 'Bricolage Grotesque',sans-serif;color:#9A9CB0;align-items:center">
+    <span>Radio-Canada</span><span>Cinéma Public</span><span>Centre du Théâtre d'Aujourd'hui</span><span>Espace GO</span><span>La Vitrine</span><span>LePointdeVente.com</span>
+    <span>Radio-Canada</span><span>Cinéma Public</span><span>Centre du Théâtre d'Aujourd'hui</span><span>Espace GO</span><span>La Vitrine</span><span>LePointdeVente.com</span>
+  </div>
+</div>
+
+<!-- COMMENT ÇA MARCHE -->
+<div id="comment" style="max-width:1160px;margin:0 auto;padding:84px 32px 72px">
+  <h2 style="text-align:center;font-size:36px;font-weight:800;letter-spacing:-.01em;margin-bottom:10px">Comment ça marche ?</h2>
+  <p style="text-align:center;font-size:16px;color:#4A4D66;margin:0 0 48px">Trois étapes, zéro effort.</p>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px">
+    <div style="position:relative;background:#FFFFFF;border:1.5px solid #ECEAE0;border-radius:20px;padding:34px 28px 30px;text-align:center;transition:transform .2s,border-color .2s,box-shadow .2s" style-hover="transform:translateY(-5px);border-color:#3347CA;box-shadow:0 14px 32px rgba(51,71,202,.12)">
+      <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:#3347CA;color:#FFFEF5;font:800 13px 'Bricolage Grotesque',sans-serif;padding:6px 16px;border-radius:999px;letter-spacing:.06em">1</div>
+      <div style="height:120px;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><img src="assets/step-inscription.png" alt="Inscription" style="max-height:110px;max-width:70%;mix-blend-mode:multiply"></div>
+      <div style="font:700 19px 'Bricolage Grotesque',sans-serif;margin-bottom:8px;color:#16182B">Inscris-toi !</div>
+      <div style="font:400 14.5px/1.55 'Instrument Sans',sans-serif;color:#4A4D66">Abonne-toi gratuitement ! Ça prend 2 secondes, aucune carte demandée.</div>
+    </div>
+    <div style="position:relative;background:#FFFFFF;border:1.5px solid #ECEAE0;border-radius:20px;padding:34px 28px 30px;text-align:center;transition:transform .2s,border-color .2s,box-shadow .2s" style-hover="transform:translateY(-5px);border-color:#3347CA;box-shadow:0 14px 32px rgba(51,71,202,.12)">
+      <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:#3347CA;color:#FFFEF5;font:800 13px 'Bricolage Grotesque',sans-serif;padding:6px 16px;border-radius:999px;letter-spacing:.06em">2</div>
+      <div style="height:120px;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><img src="assets/step-megaphone.png" alt="Sélection du lundi" style="max-height:110px;max-width:70%;mix-blend-mode:multiply"></div>
+      <div style="font:700 19px 'Bricolage Grotesque',sans-serif;margin-bottom:8px;color:#16182B">Trouve ton spectacle</div>
+      <div style="font:400 14.5px/1.55 'Instrument Sans',sans-serif;color:#4A4D66">Chaque lundi, reçois notre sélection et choisis le show qui te tente le plus.</div>
+    </div>
+    <div style="position:relative;background:#FFFFFF;border:1.5px solid #ECEAE0;border-radius:20px;padding:34px 28px 30px;text-align:center;transition:transform .2s,border-color .2s,box-shadow .2s" style-hover="transform:translateY(-5px);border-color:#3347CA;box-shadow:0 14px 32px rgba(51,71,202,.12)">
+      <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:#3347CA;color:#FFFEF5;font:800 13px 'Bricolage Grotesque',sans-serif;padding:6px 16px;border-radius:999px;letter-spacing:.06em">3</div>
+      <div style="height:120px;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><img src="assets/step-scene.png" alt="Spectacle" style="max-height:110px;max-width:70%;mix-blend-mode:multiply"></div>
+      <div style="font:700 19px 'Bricolage Grotesque',sans-serif;margin-bottom:8px;color:#16182B">Profite du moment !</div>
+      <div style="font:400 14.5px/1.55 'Instrument Sans',sans-serif;color:#4A4D66">Savoure chaque minute du spectacle.</div>
+    </div>
+  </div>
+</div>
+
+<!-- PREMIUM -->
+<div id="premium" style="background:#16182B;padding:88px 32px">
+  <div style="max-width:1160px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:52px">
+      <div style="font:700 12px 'Instrument Sans',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#8EA0F5;margin-bottom:14px">Silvousplait Premium</div>
+      <h2 style="font-size:38px;color:#FFFEF5;font-weight:800;letter-spacing:-.01em">Le prix d'un café. Des billets gratuits.</h2>
+      <p style="font-size:16px;color:#A7A9BC;margin:12px 0 0">Un abonnement qui se rembourse dès ta première sortie.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:20px;align-items:stretch;max-width:1020px;margin:0 auto">
+      <div style="background:rgba(255,254,245,.05);border:1px solid rgba(255,254,245,.12);border-radius:18px;padding:32px 28px;color:#A7A9BC">
+        <div style="font:700 15px 'Bricolage Grotesque',sans-serif;color:#FFFEF5;margin-bottom:6px">Sans Silvousplait</div>
+        <div style="font:800 34px 'Bricolage Grotesque',sans-serif;color:#FFFEF5;margin-bottom:22px">Plein prix</div>
+        <div style="display:flex;flex-direction:column;gap:13px;font:400 14.5px/1.4 'Instrument Sans',sans-serif">
+          <div>✕ Tu paies le gros prix</div>
+          <div>✕ Tu cherches des billets pendant des heures</div>
+          <div>✕ Tu apprends les bons shows… après</div>
+        </div>
+      </div>
+      <div style="background:#FFFEF5;border-radius:18px;padding:32px 28px;color:#4A4D66;box-shadow:0 16px 40px rgba(0,0,0,.3)">
+        <div style="font:700 15px 'Bricolage Grotesque',sans-serif;color:#16182B;margin-bottom:6px">Gratuit</div>
+        <div style="font:800 34px 'Bricolage Grotesque',sans-serif;color:#16182B;margin-bottom:22px">0$</div>
+        <div style="display:flex;flex-direction:column;gap:13px;font:400 14.5px/1.4 'Instrument Sans',sans-serif">
+          <div><span style="color:#3347CA;font-weight:700">✓</span> Sélection hebdo de spectacles à petit prix</div>
+          <div><span style="color:#3347CA;font-weight:700">✓</span> Découvertes culturelles dans ta ville</div>
+          <div><font color="#3347ca"><b>-</b></font>&nbsp;Pas de billets gratuits</div>
+        </div>
+        <a href="#inscription" style="display:block;text-align:center;margin-top:26px;border:1.5px solid #16182B;color:#16182B;padding:13px;border-radius:10px;font:700 14px 'Instrument Sans',sans-serif;text-decoration:none" style-hover="background:#16182B;color:#FFFEF5">S'inscrire gratuitement</a>
+      </div>
+      <div style="background:#3347CA;border-radius:18px;padding:34px 30px;color:#FFFEF5;position:relative;box-shadow:0 24px 60px rgba(51,71,202,.45)">
+        <div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#FFFEF5;color:#3347CA;font:800 11.5px 'Instrument Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:6px 14px;border-radius:100px;white-space:nowrap">Se rembourse en 1 sortie</div>
+        <div style="font:700 15px 'Bricolage Grotesque',sans-serif;margin-bottom:6px">Premium</div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+          <div style="font:800 44px 'Bricolage Grotesque',sans-serif">5$</div>
+          <div style="font:500 15px 'Instrument Sans',sans-serif;opacity:.8">/ mois + taxe</div>
+        </div>
+        <div style="font:500 13px 'Instrument Sans',sans-serif;opacity:.85;margin-bottom:22px">Facturé 60$ une fois par année</div>
+        <div style="display:flex;flex-direction:column;gap:13px;font:500 14.5px/1.4 'Instrument Sans',sans-serif;margin-bottom:26px">
+          <div>✓ Billets <strong>gratuits</strong> réservés aux membres</div>
+          <div>✓ Rabais exclusifs sur les billets</div>
+          <div>✓ Offres spéciales avant tout le monde</div>
+          <div>✓ Spectacles Silvousplait</div>
+        </div>
+        <a href="#" style="display:block;text-align:center;background:#FFFEF5;color:#3347CA;padding:15px;border-radius:10px;font:800 15px 'Instrument Sans',sans-serif;text-decoration:none" style-hover="background:#fff;color:#25349B">Passer en Premium</a>
+        <div style="text-align:center;margin-top:12px;font:500 12.5px 'Instrument Sans',sans-serif;opacity:.8">Annule en tout temps, sans frais. Remboursé dans les 30 premiers jours si tu n'es pas satisfait.</div>
+      </div>
+    </div>
+
+    <div style="max-width:1020px;margin:26px auto 0;text-align:center;font:500 14px 'Instrument Sans',sans-serif;color:#A7A9BC">
+      Un billet de spectacle moyen coûte 35–60$. <span style="color:#FFFEF5">Un seul rabais Premium couvre ton mois.</span>
+    </div>
+  </div>
+</div>
+
+<!-- TÉMOIGNAGES -->
+<div style="padding:84px 0;overflow:hidden">
+  <h2 style="text-align:center;font-size:34px;font-weight:800;letter-spacing:-.01em;margin-bottom:48px;padding:0 32px">Notre motivation</h2>
+  <div style="overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)">
+    <div style="display:flex;gap:22px;width:max-content;animation:marqueeSVP 45s linear infinite" style-hover="animation-play-state:paused">
+      <sc-for list="{{ testimonialsLoop }}" as="t" hint-placeholder-count="6">
+        <div style="background:#fff;border:1.5px solid #D8DEFA;border-radius:22px;padding:30px 28px;width:360px;flex-shrink:0;align-self:flex-start;display:flex;flex-direction:column;gap:18px;box-shadow:5px 6px 0 rgba(51,71,202,.18)">
+          <div style="font:400 15px/1.65 'Instrument Sans',sans-serif;color:#16182B">{{ t.quote }}</div>
+          <div style="font:700 13.5px 'Bricolage Grotesque',sans-serif;color:#16182B">{{ t.name }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+<!-- FAQ -->
+<div id="faq" style="max-width:720px;margin:0 auto;padding:12px 32px 84px">
+  <h2 style="text-align:center;font-size:30px;font-weight:800;margin-bottom:36px">Questions fréquentes</h2>
+  <sc-for list="{{ faqItems }}" as="item" hint-placeholder-count="5">
+    <div style="border-bottom:1px solid #ECEAE0;padding:19px 4px;cursor:pointer" onClick="{{ item.onToggle }}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;font:700 15.5px 'Instrument Sans',sans-serif;color:#16182B">{{ item.q }}<span style="color:#3347CA;font-size:18px;flex:none">{{ item.symbol }}</span></div>
+      <sc-if value="{{ item.isOpen }}"><div style="font:400 14.5px/1.6 'Instrument Sans',sans-serif;color:#4A4D66;margin-top:10px;max-width:620px">{{ item.a }}</div></sc-if>
+    </div>
+  </sc-for>
+</div>
+
+<!-- CTA FINAL -->
+<div style="background:#3347CA;padding:80px 32px;text-align:center">
+  <img src="assets/logo-yeux.png" alt="" style="width:170px;filter:brightness(0) invert(1);opacity:.95;margin-bottom:8px">
+  <h2 style="font-size:38px;color:#FFFEF5;font-weight:800;letter-spacing:-.01em;margin-bottom:12px">Allez, profites-en !</h2>
+  <p style="font-size:16px;color:rgba(255,254,245,.8);margin:0 0 32px">La prochaine sélection part lundi. Sois dessus.</p>
+  <div style="display:inline-flex;gap:10px;background:#fff;border-radius:14px;padding:10px;box-shadow:0 20px 50px rgba(0,0,0,.25)">
+    <input type="email" placeholder="ton.courriel@exemple.com" style="width:280px;box-sizing:border-box;padding:13px 14px;border-radius:9px;border:1.5px solid #E1E0D4;background:#FFFEF5;font:500 14px 'Instrument Sans',sans-serif;color:#16182B">
+    <a href="tunnel.html" style="background:#16182B;color:#FFFEF5;padding:13px 24px;border-radius:9px;font:700 14.5px 'Instrument Sans',sans-serif;text-decoration:none;display:flex;align-items:center" style-hover="background:#000;color:#FFFEF5">S'inscrire — gratuit</a>
+  </div>
+  <div style="margin-top:14px;font:500 13px 'Instrument Sans',sans-serif;color:rgba(255,254,245,.7)">{{ memberCount }} abonnés reçoivent déjà leurs bons plans chaque lundi.</div>
+</div>
+
+<!-- FOOTER -->
+<div style="background:#16182B;padding:28px 32px;display:flex;align-items:center;justify-content:center;gap:28px;font:500 13px 'Instrument Sans',sans-serif">
+  <a href="faq.html" style="color:#A7A9BC;text-decoration:none">Questions et aide</a>
+  <a href="contact.html" style="color:#A7A9BC;text-decoration:none">Contact</a>
+  <a href="partenariat.html" style="color:#A7A9BC;text-decoration:none">Partenariat</a>
+  <a href="termes.html" style="color:#A7A9BC;text-decoration:none">Termes</a>
+  <a href="politique.html" style="color:#A7A9BC;text-decoration:none">Politique</a>
+  <span style="color:#4A4D66">© 2026 Silvousplait</span>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showUrgencyBar&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Conversion&quot;},&quot;memberCount&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;5 627&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Conversion&quot;}}">
+class Component extends DCLogic {
+  state = { annual: true, openFaq: 0, secondsLeft: 0 };
+  componentDidMount() {
+    this.tick();
+    this.timer = setInterval(() => this.tick(), 1000);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  tick() {
+    // prochain lundi 9h locale
+    const now = new Date();
+    const target = new Date(now);
+    const day = now.getDay(); // 1 = lundi
+    let add = (1 - day + 7) % 7;
+    if (add === 0 && (now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 0))) add = 7;
+    target.setDate(now.getDate() + add);
+    target.setHours(9, 0, 0, 0);
+    this.setState({ secondsLeft: Math.max(0, Math.floor((target - now) / 1000)) });
+  }
+  renderVals() {
+    const s = this.state;
+    const d = Math.floor(s.secondsLeft / 86400), h = Math.floor(s.secondsLeft % 86400 / 3600), m = Math.floor(s.secondsLeft % 3600 / 60);
+    const pill = (on) => `border:none;cursor:pointer;padding:8px 18px;border-radius:100px;font:700 13px 'Instrument Sans',sans-serif;` +
+      (on ? 'background:#FFFEF5;color:#3347CA' : 'background:transparent;color:rgba(255,254,245,.75)');
+    const faqData = [
+      { q: "C'est vraiment gratuit ?", a: "Oui. L'infolettre est 100% gratuite, pour toujours. Premium est optionnel, pour ceux qui veulent des billets gratuits et des rabais exclusifs." },
+      { q: "Je reçois combien de courriels ?", a: "Un seul par semaine, le lundi matin. Pas de spam, promis — et tu te désabonnes en un clic." },
+      { q: "Premium se rembourse vraiment en une sortie ?", a: "Un billet moyen coûte 35–60$. Avec un seul rabais ou billet gratuit, tu couvres largement ton 5$/mois." },
+      { q: "Je peux annuler Premium quand je veux ?", a: "Oui, en tout temps, sans frais et sans questions. Tu gardes l'accès jusqu'à la fin de ta période payée." },
+      { q: "C'est pour quelles villes ?", a: "Montréal, Québec, Trois-Rivières et Sherbrooke. Tu choisis ta ville à l'inscription et on t'envoie juste ce qui est proche de toi." },
+    ];
+    return {
+      showUrgencyBar: this.props.showUrgencyBar ?? true,
+      memberCount: this.props.memberCount ?? '2 143',
+      countdown: (d > 0 ? d + 'j ' : '') + h + 'h ' + String(m).padStart(2, '0') + 'min',
+      priceText: s.annual ? '5$' : '8$',
+      billingText: s.annual ? 'Facturé 60$ une fois par année' : 'Facturé chaque mois — sans engagement',
+      setAnnual: () => this.setState({ annual: true }),
+      setMonthly: () => this.setState({ annual: false }),
+      annualBtnStyle: pill(s.annual),
+      monthlyBtnStyle: pill(!s.annual),
+      onCity: () => {},
+      steps: [
+        { n: '1', title: 'Inscris-toi !', text: "Abonne-toi gratuitement — ça prend 2 secondes, aucune carte demandée." },
+        { n: '2', title: 'Trouve ton spectacle', text: "Chaque lundi, reçois notre sélection et choisis le show qui te tente le plus." },
+        { n: '3', title: 'Profite du moment !', text: "Économise sur tes billets et savoure chaque minute du spectacle." },
+      ],
+      testimonials: [
+        { quote: "Simple, efficace et économique. Exactement ce qu'il me fallait pour profiter de la culture montréalaise sans me ruiner !", name: 'David' },
+        { quote: "Les suggestions sont toujours pertinentes et adaptées à mes goûts. C'est devenu un rituel du lundi !", name: 'Émilie' },
+        { quote: "Enfin une infolettre qui fonctionne vraiment ! Je découvre des endroits incroyables et j'économise sur mes billets.", name: 'Sophie' },
+        { quote: "Je ne rate plus aucun bon spectacle depuis que je suis abonné. Une vraie mine d'or pour les Montréalais !", name: 'Marc' },
+        { quote: "Parfait pour sortir sans se casser la tête. Les bons plans arrivent directement dans ma boîte mail.", name: 'Léa' },
+        { quote: "J'ai découvert des événements que je n'aurais jamais trouvés autrement. Merci Silvousplait !", name: 'Thomas' },
+      ],
+      testimonialsLoop: [
+        { quote: "Simple, efficace et économique. Exactement ce qu'il me fallait pour profiter de la culture montréalaise sans me ruiner !", name: 'David' },
+        { quote: "Les suggestions sont toujours pertinentes et adaptées à mes goûts. C'est devenu un rituel du lundi !", name: 'Émilie' },
+        { quote: "Enfin une infolettre qui fonctionne vraiment ! Je découvre des endroits incroyables et j'économise sur mes billets.", name: 'Sophie' },
+        { quote: "Je ne rate plus aucun bon spectacle depuis que je suis abonné. Une vraie mine d'or pour les Montréalais !", name: 'Marc' },
+        { quote: "Parfait pour sortir sans se casser la tête. Les bons plans arrivent directement dans ma boîte mail.", name: 'Léa' },
+        { quote: "J'ai découvert des événements que je n'aurais jamais trouvés autrement. Merci Silvousplait !", name: 'Thomas' },
+        { quote: "Simple, efficace et économique. Exactement ce qu'il me fallait pour profiter de la culture montréalaise sans me ruiner !", name: 'David' },
+        { quote: "Les suggestions sont toujours pertinentes et adaptées à mes goûts. C'est devenu un rituel du lundi !", name: 'Émilie' },
+        { quote: "Enfin une infolettre qui fonctionne vraiment ! Je découvre des endroits incroyables et j'économise sur mes billets.", name: 'Sophie' },
+        { quote: "Je ne rate plus aucun bon spectacle depuis que je suis abonné. Une vraie mine d'or pour les Montréalais !", name: 'Marc' },
+        { quote: "Parfait pour sortir sans se casser la tête. Les bons plans arrivent directement dans ma boîte mail.", name: 'Léa' },
+        { quote: "J'ai découvert des événements que je n'aurais jamais trouvés autrement. Merci Silvousplait !", name: 'Thomas' },
+      ],
+      faqItems: faqData.map((f, i) => ({
+        q: f.q, a: f.a,
+        isOpen: s.openFaq === i,
+        symbol: s.openFaq === i ? '−' : '+',
+        onToggle: () => this.setState({ openFaq: s.openFaq === i ? -1 : i }),
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>

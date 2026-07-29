@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&amp;family=Instrument+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+  body{margin:0;background:#FFFEF5;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#16182B}
+  h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;margin:0}
+  a{color:#3347CA}a:hover{color:#25349B}
+  input,select,button{font-family:'Instrument Sans',system-ui,sans-serif}
+  @keyframes marqueeSVP{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+</style>
+</helmet>
+
+<div style="min-width:1100px">
+
+<!-- TICKER PREUVE SOCIALE -->
+<div style="background:#3347CA;padding:9px 0;overflow:hidden;white-space:nowrap">
+  <div style="display:inline-flex;gap:52px;animation:marqueeSVP 26s linear infinite;font:600 13px 'Instrument Sans',sans-serif;color:#FFFEF5">
+    <span>Marie-Ève vient d'économiser 22$ sur son spectacle</span>
+    <span>Sam a réservé 2 billets gratuits</span>
+    <span>Kevin économise 26$/mois depuis 6 mois</span>
+    <span>Eduardo viens de s'inscrire !</span>
+    <span>Camille vient à économisée 53$ sur son concert</span>
+    <span>Sam a réservé 2 billets gratuits au cinéma</span>
+    <span>Angelica à économisée 62$ ce mois-ci</span>
+    <span>Léo a rentabilisé son abonnement en 1 sortie</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<div style="position:sticky;top:0;z-index:20;background:rgba(255,254,245,.92);backdrop-filter:blur(10px);border-bottom:1px solid #ECEAE0">
+  <div style="max-width:1160px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 32px">
+    <a href="accueil.html" style="display:block;height:40px;width:170px;overflow:hidden">
+      <div style="height:40px;width:170px;display:flex;align-items:center"><img src="assets/logo-mot.png" alt="Silvousplait" style="width:170px;flex:none;margin-top:-8px"></div>
+    </a>
+    <div style="display:flex;align-items:center;gap:28px;font:600 14px 'Instrument Sans',sans-serif;color:#4A4D66">
+      <a href="#offres" style="color:#4A4D66;text-decoration:none">Offres</a>
+      <a href="#faq-premium" style="color:#4A4D66;text-decoration:none">FAQ</a>
+      <a href="connexion.html" style="background:#3347CA;color:#FFFEF5;padding:11px 22px;border-radius:100px;font-weight:700;text-decoration:none" style-hover="background:#25349B;color:#FFFEF5">Connexion</a>
+    </div>
+  </div>
+</div>
+
+<!-- BARRE URGENCE RÉELLE -->
+<div style="background:#EEF0FD;color:#3347CA;text-align:center;padding:10px 16px;font:600 13.5px 'Instrument Sans',sans-serif;border-bottom:1px solid #E1E4FA">
+  Prochaine sélection d'offres Premium dans <span style="font-variant-numeric:tabular-nums;font-weight:700">{{ countdown }}</span> — sois abonné avant l'envoi.
+</div>
+
+<!-- HERO -->
+
+
+<!-- GRANDS NOMBRES -->
+<div style="padding:84px 32px 64px;text-align:center;background:linear-gradient(180deg,#EEF0FD,#FFFEF5)">
+  
+  
+  <div style="font: 700 12.5px 'Instrument Sans',sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #3347CA; margin-bottom: 22px"><span style="color:#3347CA">●</span>&nbsp; Rejoins 2 143 amoureux de spectacles</div><h1 style="font-size: 54px; line-height: 1.07; letter-spacing: -.02em; font-weight: 800; max-width: 780px; margin: 0 auto 20px; color: #16182B"><span style="letter-spacing: -0.02em; background-color: initial;">Ton prochain spectacle en <span style="color: #3347CA;">rabais ou gratuit</span>&nbsp;</span></h1><p style="font-size: 18px; line-height: 1.55; color: #4A4D66; max-width: 520px; margin: 0 auto 34px; width: 566px; height: 54px">Rejoins la communauté qui ne paie plus jamais plein prix pour sortir.</p>
+  <a href="#pricing" style="display:inline-block;background:#3347CA;color:#FFFEF5;padding:17px 36px;border-radius:100px;font:700 16.5px 'Instrument Sans',sans-serif;text-decoration:none;box-shadow:0 12px 28px rgba(51,71,202,.4)" style-hover="background:#25349B;color:#FFFEF5">Je veux économiser sur mes shows</a>
+  <div style="margin-top:16px;font:500 13px 'Instrument Sans',sans-serif;color:#7A7C90">5$/mois · Se rembourse en 1 sortie · Annule en tout temps</div>
+</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#ECEAE0;border-top:1px solid #ECEAE0;border-bottom:1px solid #ECEAE0">
+  <sc-for list="{{ bigNumbers }}" as="b" hint-placeholder-count="4">
+    <div style="background:#FFFEF5;padding:32px;text-align:center">
+      <div style="font:800 34px 'Bricolage Grotesque',sans-serif;color:#3347CA">{{ b.value }}</div>
+      <div style="font:500 13.5px 'Instrument Sans',sans-serif;color:#8B8DA0;margin-top:4px">{{ b.label }}</div>
+    </div>
+  </sc-for>
+</div>
+
+<!-- COMMENT ÇA MARCHE -->
+<div style="max-width:1080px;margin:0 auto;padding:88px 32px 84px">
+  <div style="text-align:center;margin-bottom:60px">
+    <div style="font:700 11.5px 'Instrument Sans',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#8EA0F5;margin-bottom:14px">En 3 étapes</div>
+    <h2 style="font-size:40px;line-height:1.05;font-weight:800;letter-spacing:-.02em">Comment ça marche</h2>
+  </div>
+  <div style="position:relative">
+    <div style="position:absolute;top:34px;left:16%;right:16%;height:2px;background:#101014;z-index:0"></div>
+    <div style="position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+      <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
+        <div style="text-align:center;padding:0 12px">
+          <div style="width:68px;height:68px;margin:0 auto 22px;border-radius:50%;background:#101014;color:#8EA0F5;font:800 30px 'Bricolage Grotesque',sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 6px #FFFEF5">{{ s.n }}</div>
+          <div style="font:700 19px 'Bricolage Grotesque',sans-serif;line-height:1.2;margin-bottom:8px">{{ s.title }}</div>
+          <div style="font:400 14.5px/1.55 'Instrument Sans',sans-serif;color:#8B8DA0;max-width:220px;margin:0 auto">{{ s.text }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+<!-- OFFRES DE LA SEMAINE (carrousel sombre) -->
+<div id="offres" style="padding:76px 0;background:#101014">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;max-width:1160px;margin:0 auto 30px;padding:0 32px">
+    <div>
+      <div style="font:700 11.5px 'Instrument Sans',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8EA0F5;margin-bottom:10px">Offres de la semaine</div>
+      <h2 style="font-size:30px;color:#FFFEF5;font-weight:800">Réservé aux membres Premium</h2>
+    </div>
+    <div style="display:flex;gap:10px;flex:none">
+      <button onClick="{{ scrollPrev }}" style="width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,254,245,.2);background:transparent;color:#FFFEF5;font-size:17px;cursor:pointer" style-hover="border-color:#FFFEF5">←</button>
+      <button onClick="{{ scrollNext }}" style="width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,254,245,.2);background:transparent;color:#FFFEF5;font-size:17px;cursor:pointer" style-hover="border-color:#FFFEF5">→</button>
+    </div>
+  </div>
+
+  <div data-scroller="offres" onScroll="{{ onCarouselScroll }}" style="display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:4px 32px 12px;scrollbar-width:none">
+    <sc-for list="{{ offers }}" as="offer" hint-placeholder-count="4">
+      <div data-card="" style="position:relative;flex:none;width:290px;height:400px;scroll-snap-align:start;border-radius:20px;overflow:hidden;box-shadow:5px 6px 0 rgba(142,160,245,.3);background:repeating-linear-gradient(135deg,#4155DE,#4155DE 14px,#3347CA 14px,#3347CA 28px);display:flex;flex-direction:column;justify-content:space-between;padding:16px;cursor:pointer;transition:transform .25s,box-shadow .25s" style-hover="transform:translateY(-6px);box-shadow:5px 12px 0 rgba(142,160,245,.3)">
+        <div style="position:absolute;inset:0;z-index:0">{{ offer.mediaEl }}</div>
+        <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(8,10,26,0) 42%,rgba(8,10,26,.85) 74%)"></div>
+        <sc-if value="{{ offer.noMedia }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);width:60px;height:60px;border-radius:50%;background:rgba(255,254,245,.18);border:1.5px solid rgba(255,254,245,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:2">
+          <div style="width:0;height:0;border-left:15px solid #FFFEF5;border-top:9.5px solid transparent;border-bottom:9.5px solid transparent;margin-left:4px"></div>
+        </div></sc-if>
+        <div style="position:relative;z-index:2;display:flex;align-items:center;justify-content:flex-end;gap:10px">
+          <sc-if value="{{ offer.isPast }}"><div style="background:rgba(255,254,245,.16);color:#E4E7F5;font:800 12px 'Instrument Sans',sans-serif;padding:5px 11px;border-radius:100px;flex:none;backdrop-filter:blur(3px);margin-right:auto">Terminée</div></sc-if>
+          <div style="background:#F5E642;color:#16182B;font:800 12px 'Instrument Sans',sans-serif;padding:5px 11px;border-radius:100px;flex:none">{{ offer.badge }}</div>
+        </div><div style="position:relative;z-index:2">
+          <div style="font:700 16.5px 'Bricolage Grotesque',sans-serif;color:#FFFEF5;line-height:1.3;margin-bottom:4px">{{ offer.title }}</div>
+          <div style="font:400 13px 'Instrument Sans',sans-serif;color:#C3C8E4;margin-bottom:14px">{{ offer.venue }}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <sc-if value="{{ offer.hasPrice }}"><div style="display:flex;align-items:baseline;gap:8px">
+              <span style="font:800 20px 'Bricolage Grotesque',sans-serif;color:#FFFEF5">{{ offer.price }}</span>
+              <span style="font:400 13.5px 'Instrument Sans',sans-serif;color:#9FA3BE;text-decoration:line-through">{{ offer.original }}</span>
+            </div></sc-if>
+            <sc-if value="{{ offer.showReserve }}"><a href="#pricing" style="font:700 12.5px 'Instrument Sans',sans-serif;color:#16182B;background:#F5E642;padding:9px 17px;border-radius:100px;text-decoration:none" style-hover="background:#FBF39A;color:#16182B">Réserver</a></sc-if>
+            <sc-if value="{{ offer.isPast }}"><span style="font:700 12.5px 'Instrument Sans',sans-serif;color:#9FA3BE;background:rgba(255,254,245,.08);padding:9px 17px;border-radius:100px">Offre passée</span></sc-if>
+          </div>
+          <sc-if value="{{ offer.urgency }}"><div style="margin-top:11px;font:700 12px 'Instrument Sans',sans-serif;color:#F5E642">{{ offer.urgency }}</div></sc-if>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="max-width:1160px;margin:20px auto 0;padding:0 32px">
+    <div style="height:3px;background:rgba(255,254,245,.15);border-radius:100px;overflow:hidden">
+      <div style="height:100%;width:{{ scrollPct }}%;background:#F5E642;border-radius:100px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TÉMOIGNAGES -->
+<div style="max-width:1160px;margin:0 auto;padding:80px 32px 72px">
+  <h2 style="text-align:center;font-size:32px;font-weight:800;letter-spacing:-.01em;margin-bottom:44px">Ce que disent nos membres</h2>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px">
+    <sc-for list="{{ testimonials }}" as="t" hint-placeholder-count="3">
+      <div style="background:#fff;border:1.5px solid #ECEAE0;border-radius:16px;padding:26px">
+        <div style="color:#F5E642;letter-spacing:2px;font-size:13px;margin-bottom:12px">★★★★★</div>
+        <div style="font:400 14.5px/1.6 'Instrument Sans',sans-serif;color:#16182B;margin-bottom:16px">« {{ t.quote }} »</div>
+        <div style="font:700 13px 'Bricolage Grotesque',sans-serif;color:#4A4D66">— {{ t.name }}</div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<!-- PRICING -->
+<div id="pricing" style="padding:76px 32px 84px;background:#F4F5FD;text-align:center">
+  <h2 style="font-size:36px;font-weight:800;letter-spacing:-.01em;margin-bottom:12px">Ton abonnement Premium</h2>
+  <p style="font-size:16px;color:#4A4D66;margin:0 0 40px">Le prix d'un café par mois pour économiser sur chaque sortie.</p>
+  <div style="max-width:430px;margin:0 auto;background:#101014;border-radius:20px;padding:40px;color:#FFFEF5;box-shadow:0 24px 60px rgba(16,16,20,.4);position:relative">
+    <div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#3347CA;color:#FFFEF5;font:800 11.5px 'Instrument Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:6px 14px;border-radius:100px;white-space:nowrap">Un choix facile</div>
+    <div style="display:flex;align-items:baseline;justify-content:center;gap:8px;margin-bottom:4px">
+      <div style="font:800 48px 'Bricolage Grotesque',sans-serif">5$</div>
+      <div style="font:400 16px 'Instrument Sans',sans-serif;color:#9A9CB0">/ mois + taxe</div>
+    </div>
+    <div style="font:500 13px 'Instrument Sans',sans-serif;color:#9A9CB0;margin-bottom:26px">Facturé 60$ une fois par année</div>
+    <div style="text-align:left;display:flex;flex-direction:column;gap:13px;font:500 14.5px 'Instrument Sans',sans-serif;margin-bottom:28px">
+      <div><span style="color:#F5E642;font-weight:700">✓</span> <strong>Billets gratuits</strong> réservés aux membres</div>
+      <div><span style="color:#F5E642;font-weight:700">✓</span> <strong>Rabais exclusifs</strong> sur les billets</div>
+      <div><span style="color:#F5E642;font-weight:700">✓</span> Offres envoyées avant tout le monde</div>
+      <div><span style="color:#F5E642;font-weight:700">✓</span> Spectacles Silvousplait</div>
+    </div>
+    <a href="#" style="display:block;background:#3347CA;color:#FFFEF5;padding:16px;border-radius:12px;font:800 15.5px 'Instrument Sans',sans-serif;text-decoration:none;margin-bottom:12px" style-hover="background:#25349B;color:#FFFEF5">Commencer à économiser</a>
+    <div style="font:500 12.5px 'Instrument Sans',sans-serif;color:#7A7C90">Annule en tout temps, sans frais ni questions. Remboursé dans les 30 premiers jours si tu n'es pas satisfait.</div>
+  </div>
+  <div style="margin-top:24px;font:500 14px 'Instrument Sans',sans-serif;color:#4A4D66">Un billet moyen coûte 35–60$. <strong>Un seul rabais couvre ton mois.</strong></div>
+</div>
+
+<!-- FAQ -->
+<div id="faq-premium" style="max-width:720px;margin:0 auto;padding:76px 32px 84px">
+  <div style="font:700 11.5px 'Instrument Sans',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#3347CA;text-align:center;margin-bottom:12px">FAQ Premium</div>
+  <h2 style="text-align:center;font-size:30px;font-weight:800;margin-bottom:36px">Questions fréquentes</h2>
+  <sc-for list="{{ faqItems }}" as="item" hint-placeholder-count="4">
+    <div style="border-bottom:1px solid #ECEAE0;padding:19px 4px;cursor:pointer" onClick="{{ item.onToggle }}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;font:700 15.5px 'Instrument Sans',sans-serif;color:#16182B">{{ item.q }}<span style="color:#3347CA;font-size:18px;flex:none">{{ item.symbol }}</span></div>
+      <sc-if value="{{ item.isOpen }}"><div style="font:400 14.5px/1.6 'Instrument Sans',sans-serif;color:#4A4D66;margin-top:10px;max-width:620px">{{ item.a }}</div></sc-if>
+    </div>
+  </sc-for>
+</div>
+
+<!-- FOOTER -->
+<div style="background:#16182B;padding:28px 32px;display:flex;align-items:center;justify-content:center;gap:28px;font:500 13px 'Instrument Sans',sans-serif">
+  <a href="accueil.html" style="color:#A7A9BC;text-decoration:none">Accueil</a>
+  <a href="faq.html" style="color:#A7A9BC;text-decoration:none">Questions et aide</a>
+  <a href="contact.html" style="color:#A7A9BC;text-decoration:none">Contact</a>
+  <a href="partenariat.html" style="color:#A7A9BC;text-decoration:none">Partenariat</a>
+  <a href="termes.html" style="color:#A7A9BC;text-decoration:none">Termes</a>
+  <a href="politique.html" style="color:#A7A9BC;text-decoration:none">Politique</a>
+  <span style="color:#4A4D66">© 2026 Silvousplait</span>
+</div>
+
+<!-- STICKY BOTTOM CTA -->
+<div style="position:sticky;bottom:0;z-index:20;background:#FFFEF5;border-top:1.5px solid #16182B;padding:13px 32px;display:flex;align-items:center;justify-content:flex-end;box-shadow:0 -8px 24px rgba(22,24,43,.08)">
+  
+  <a href="#pricing" style="background:#3347CA;color:#FFFEF5;padding:12px 26px;border-radius:100px;font:700 14px 'Instrument Sans',sans-serif;text-decoration:none" style-hover="background:#25349B;color:#FFFEF5">Je veux économiser</a>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;memberCount&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;2 143&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Conversion&quot;}}">
+class Component extends DCLogic {
+  state = { annual: true, openFaq: 0, secondsLeft: 0, scrollPct: 0, dynOffers: null };
+  componentDidMount() {
+    this.tick();
+    this.timer = setInterval(() => this.tick(), 1000);
+    this.loadOffers();
+    this._onStorage = (e) => { if (!e || e.key === 'svp_premium_offers') this.loadOffers(); };
+    window.addEventListener('storage', this._onStorage);
+    this._onFocus = () => this.loadOffers();
+    window.addEventListener('focus', this._onFocus);
+  }
+  componentWillUnmount() {
+    clearInterval(this.timer);
+    if (this._onStorage) window.removeEventListener('storage', this._onStorage);
+    if (this._onFocus) window.removeEventListener('focus', this._onFocus);
+  }
+  loadOffers() {
+    try {
+      const raw = localStorage.getItem('svp_premium_offers');
+      if (raw) { const arr = JSON.parse(raw); if (Array.isArray(arr)) this.setState({ dynOffers: arr }); }
+    } catch (e) {}
+  }
+  toEmbed(url) {
+    if (!url) return '';
+    let m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/);
+    if (m) return 'https://www.youtube.com/embed/' + m[1] + '?autoplay=1&mute=1&loop=1&playlist=' + m[1] + '&controls=0&modestbranding=1&playsinline=1&rel=0';
+    m = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    if (m) return 'https://player.vimeo.com/video/' + m[1] + '?autoplay=1&muted=1&loop=1&background=1';
+    return '';
+  }
+  media(o) {
+    const vid = (o.video || '').trim();
+    const img = (o.image || '').trim();
+    const st = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 };
+    if (vid) {
+      const emb = this.toEmbed(vid);
+      if (emb) return { noMedia: false, mediaEl: React.createElement('iframe', { src: emb, allow: 'autoplay; encrypted-media', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0, zIndex: 0, pointerEvents: 'none' } }) };
+      return { noMedia: false, mediaEl: React.createElement('video', { src: vid, autoPlay: true, muted: true, loop: true, playsInline: true, style: st }) };
+    }
+    if (img) return { noMedia: false, mediaEl: React.createElement('img', { src: img, alt: '', style: st }) };
+    return { noMedia: true, mediaEl: null };
+  }
+  buildCards() {
+    const base = [
+      { title: "Cabaret Lion d'Or — Soirée burlesque", venue: "Cabaret Lion d'Or", tag: '-42%', price: '22$', original: '38$', urgency: 'Plus que 3 places', status: 'Active' },
+      { title: "Soirée d'improvisation LNI", venue: 'Théâtre Rialto', tag: '-48%', price: '15$', original: '29$', urgency: '', status: 'Active' },
+      { title: 'Huis clos — Pièce contemporaine', venue: 'Théâtre Prospero', tag: 'Billet offert', price: 'Gratuit', original: '32$', urgency: 'Plus que 5 places', status: 'Active' },
+      { title: 'Jazz au sous-sol — Trio local', venue: 'Diese Onze', tag: '-52%', price: '12$', original: '25$', urgency: '', status: 'Active' },
+      { title: 'Les Grands Ballets — Soirée découverte', venue: 'Wilfrid-Pelletier', tag: '-58%', price: '19$', original: '45$', urgency: 'Plus que 2 places', status: 'Passée' },
+      { title: 'Cabaret chansonnier — Duo acoustique', venue: 'Le Bordel', tag: '-55%', price: '10$', original: '22$', urgency: '', status: 'Passée' },
+    ];
+    let src = base;
+    if (this.state.dynOffers !== null) src = this.state.dynOffers;
+    return src.filter(o => !o.status || o.status === 'Active' || o.status === 'Passée').map(o => {
+      const isPast = o.status === 'Passée';
+      return {
+      badge: o.badge || o.tag || o.type || '',
+      title: o.title,
+      venue: o.venue,
+      price: o.price || '',
+      original: o.original || '',
+      urgency: (o.urgency && String(o.urgency).trim()) ? o.urgency : null,
+      hasPrice: !!(o.price && String(o.price).trim()),
+      isPast: isPast,
+      showReserve: !isPast,
+      ...this.media(o),
+      };
+    });
+  }
+  tick() {
+    const now = new Date();
+    const tz = 'America/Toronto';
+    const parts = (date) => {
+      const p = {};
+      for (const { type, value } of new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(date)) p[type] = value;
+      return p;
+    };
+    const offsetMs = (date) => {
+      const p = parts(date);
+      return Date.UTC(+p.year, +p.month - 1, +p.day, (+p.hour) % 24, +p.minute, +p.second) - date.getTime();
+    };
+    const p = parts(now);
+    const wd = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[p.weekday];
+    const secOfDay = ((+p.hour) % 24) * 3600 + (+p.minute) * 60 + (+p.second);
+    let add = (0 - wd + 7) % 7;
+    if (add === 0 && secOfDay >= 12 * 3600) add = 7;
+    const guessUTC = Date.UTC(+p.year, +p.month - 1, +p.day + add, 12, 0, 0);
+    const targetEpoch = guessUTC - offsetMs(new Date(guessUTC));
+    this.setState({ secondsLeft: Math.max(0, Math.floor((targetEpoch - now.getTime()) / 1000)) });
+  }
+  scrollCarousel(dir) {
+    const el = document.querySelector('[data-scroller="offres"]');
+    if (!el) return;
+    const card = el.querySelector('[data-card]');
+    el.scrollLeft += dir * ((card ? card.getBoundingClientRect().width : 290) + 20);
+  }
+  renderVals() {
+    const s = this.state;
+    const d = Math.floor(s.secondsLeft / 86400), h = Math.floor(s.secondsLeft % 86400 / 3600), m = Math.floor(s.secondsLeft % 3600 / 60), sec = s.secondsLeft % 60;
+    const pill = (on) => `border:none;cursor:pointer;padding:10px 22px;border-radius:100px;font:700 13.5px 'Instrument Sans',sans-serif;` +
+      (on ? 'background:#3347CA;color:#FFFEF5' : 'background:transparent;color:#4A4D66');
+    const faqData = [
+      { q: "À quelle fréquence je reçois les offres Premium ?", a: "Chaque semaine, le vendredi matin, directement par courriel — avant tout le monde." },
+      { q: "Premium se rembourse vraiment en une sortie ?", a: "Un billet moyen coûte 35–60$. Avec un seul rabais ou billet gratuit, tu couvres largement ton 5$/mois." },
+      { q: "Combien coûte l'abonnement ?", a: "5$/mois + taxe, facturé 60$ une fois par année. Un seul rabais ou billet gratuit rembourse largement ton année." },
+      { q: "Je peux annuler quand je veux ?", a: "Oui, en tout temps, sans frais et sans questions. Et si tu n'es pas satisfait, tu es remboursé dans les 30 premiers jours. Tu gardes l'accès jusqu'à la fin de ta période payée." },
+      { q: "Les billets gratuits, c'est quoi le piège ?", a: "Aucun. Nos partenaires (salles, producteurs) offrent des billets aux membres pour remplir leurs salles. Toi tu sors, eux ils rayonnent." },
+    ];
+    return {
+      memberCount: this.props.memberCount ?? '2 143',
+      countdown: (d > 0 ? d + 'j ' : '') + h + 'h ' + String(m).padStart(2, '0') + 'min ' + String(sec).padStart(2, '0') + 's',
+      priceText: s.annual ? '5$' : '7$',
+      billingText: s.annual ? 'Facturé 60$ une fois par année' : 'Facturé chaque mois — sans engagement',
+      setAnnual: () => this.setState({ annual: true }),
+      setMonthly: () => this.setState({ annual: false }),
+      annualBtnStyle: pill(s.annual),
+      monthlyBtnStyle: pill(!s.annual),
+      scrollPrev: () => this.scrollCarousel(-1),
+      scrollNext: () => this.scrollCarousel(1),
+      onCarouselScroll: (e) => {
+        const el = e.target, max = el.scrollWidth - el.clientWidth;
+        this.setState({ scrollPct: max > 0 ? (el.scrollLeft / max) * 100 : 0 });
+      },
+      scrollPct: s.scrollPct,
+      bigNumbers: [
+        { value: '10+', label: 'spectacles offerts chaque mois' },
+        { value: '432$', label: 'économisés en moyenne par an' },
+        { value: '4,8/5', label: 'note moyenne des membres' },
+        { value: '1 sortie', label: 'pour rembourser ton année' },
+      ],
+      steps: [
+        { n: '1', title: "Tu t'abonnes", text: "30 secondes, sans engagement." },
+        { n: '2', title: 'Tu reçois les offres', text: "Chaque dimanche, par courriel." },
+        { n: '3', title: 'Tu économises', text: "Dès ta première sortie." },
+      ],
+      offers: this.buildCards(),
+      testimonials: [
+        { quote: "Mon abonnement s'est payé dès la première sortie. Depuis, j'économise chaque mois.", name: 'Membre Premium depuis 8 mois' },
+        { quote: "Les offres arrivent avant que tout le monde les voie. Ça change tout.", name: 'Anto, membre depuis 5 mois' },
+        { quote: "J'ai économisé plus de 200$ cette année juste en sorties.", name: 'Camille, membre depuis 1 an' },
+      ],
+      faqItems: faqData.map((f, i) => ({
+        q: f.q, a: f.a,
+        isOpen: s.openFaq === i,
+        symbol: s.openFaq === i ? '−' : '+',
+        onToggle: () => this.setState({ openFaq: s.openFaq === i ? -1 : i }),
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>
