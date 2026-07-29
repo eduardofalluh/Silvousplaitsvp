@@ -475,7 +475,17 @@
     }).catch(function () {});
   }
 
+  // ---- prettify "Retour au site" / "Se déconnecter" links as pill buttons ----
+  function wireBackLinks() {
+    var pill = "display:inline-flex;align-items:center;gap:6px;background:#EEF0FD;color:#3347CA;font:700 13px 'Instrument Sans',sans-serif;padding:9px 16px;border-radius:100px;text-decoration:none;white-space:nowrap";
+    [].slice.call(document.querySelectorAll('a')).forEach(function (a) {
+      var t = (a.textContent || '').trim();
+      if (/Retour au site/i.test(t) || /Se d[ée]connecter/i.test(t)) a.setAttribute('style', pill);
+    });
+  }
+
   function init() {
+    wireBackLinks();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireCompteFilters(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers();

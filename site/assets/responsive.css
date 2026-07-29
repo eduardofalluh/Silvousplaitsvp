@@ -2,12 +2,13 @@
    Uses !important inside media queries to override the design's inline styles. */
 
 /* ---- Global fixes (all viewports) ---- */
-/* Logo was cropped by a negative margin inside a fixed-height clip box */
+/* Logo was cropped by a negative margin inside a fixed-height clip box.
+   Give it a proper fixed width, natural height, no crop. */
 img[alt="Silvousplait"] {
   margin-top: 0 !important;
   height: auto !important;
-  width: auto !important;
-  max-height: 34px !important;
+  width: 140px !important;
+  max-width: 44vw !important;
   display: block;
 }
 /* Nicer, consistent primary buttons/links */
