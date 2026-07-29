@@ -192,7 +192,144 @@
     setInterval(tick, anySeconds ? 1000 : 30000);
   }
 
-  function init() { wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown(); }
+  var SESSION_KEY = 'svp_session';
+  function getSession() { try { return localStorage.getItem(SESSION_KEY) || ''; } catch (e) { return ''; } }
+  function setSession(v) { try { localStorage.setItem(SESSION_KEY, v); } catch (e) {} }
+
+  // ---- P4: passwordless email-code login (connexion.html) ----
+  function wireConnexion() {
+    var emailInput = document.querySelector('[data-svp="login-email"]');
+    var submit = document.querySelector('[data-svp="login-submit"]');
+    if (!emailInput || !submit) return;
+    var msg = document.querySelector('[data-svp="login-msg"]');
+    function say(t, err) { if (msg) { msg.textContent = t || ''; msg.style.color = err ? '#b00020' : '#3347CA'; } }
+    var challenge = '';
+
+    function showCodeStep() {
+      if (document.querySelector('[data-svp="login-code"]')) return;
+      var wrap = document.createElement('div');
+      wrap.style.marginTop = '12px';
+      wrap.innerHTML = '<input data-svp="login-code" inputmode="numeric" maxlength="6" placeholder="Code à 6 chiffres" style="box-sizing:border-box;width:100%;border:1.5px solid #E1E0D4;border-radius:10px;padding:14px;font:500 14.5px \'Instrument Sans\',sans-serif;letter-spacing:4px;text-align:center;margin-bottom:12px"><button data-svp="login-verify" style="display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:15px;font-weight:700;font-size:15px;cursor:pointer">Se connecter</button>';
+      submit.parentNode.insertBefore(wrap, submit.nextSibling);
+      var codeInput = wrap.querySelector('[data-svp="login-code"]');
+      codeInput.focus();
+      wrap.querySelector('[data-svp="login-verify"]').addEventListener('click', function () {
+        var code = (codeInput.value || '').trim();
+        if (!/^\d{6}$/.test(code)) { say('Entre le code à 6 chiffres.', true); return; }
+        say('Vérification…');
+        fetch(FN + 'verify-login-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ challenge: challenge, code: code }) })
+          .then(function (r) { return r.json(); }).then(function (d) {
+            if (d && d.success) { setSession(d.session); setEmail(d.email); say('Connecté ! Redirection…'); window.location.href = 'compte.html'; }
+            else { say('Code invalide ou expiré. Réessaie.', true); }
+          }).catch(function () { say('Erreur. Réessaie.', true); });
+      });
+    }
+
+    submit.addEventListener('click', function () {
+      var email = (emailInput.value || '').trim();
+      if (!validEmail(email)) { say('Entre une adresse email valide.', true); return; }
+      submit.disabled = true; say('Envoi du code…');
+      fetch(FN + 'request-login-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) })
+        .then(function (r) { return r.json(); }).then(function (d) {
+          submit.disabled = false;
+          if (d && d.sent) { challenge = d.challenge; setEmail(email); say('Code envoyé ! Vérifie ton courriel.'); showCodeStep(); }
+          else { say('Aucun compte Premium trouvé pour ce courriel.', true); }
+        }).catch(function () { submit.disabled = false; say('Erreur. Réessaie plus tard.', true); });
+    });
+  }
+
+  // ---- compte gate: require a session ----
+  function wireCompteGate() {
+    if (!document.querySelector('[data-svp="compte"]')) return;
+    if (!getSession()) { window.location.href = 'connexion.html'; return; }
+    var slot = document.querySelector('[data-svp="account-email"]');
+    if (slot) slot.textContent = getEmail() || '';
+  }
+
+  // ---- P5: admin gate ----
+  function wireAdmin() {
+    var pass = document.querySelector('[data-svp="admin-pass"]');
+    var submit = document.querySelector('[data-svp="admin-submit"]');
+    if (!pass || !submit) return;
+    var msg = document.querySelector('[data-svp="admin-msg"]');
+    submit.addEventListener('click', function () {
+      submit.disabled = true; if (msg) msg.textContent = 'Vérification…';
+      fetch(FN + 'admin-login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pass.value || '' }) })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+          submit.disabled = false;
+          if (res.ok && res.d && res.d.success) {
+            try { if (res.d.token) sessionStorage.setItem('svp_admin', res.d.token); } catch (e) {}
+            window.location.href = 'premium-offers-admin.html';
+          } else if (msg) { msg.textContent = 'Mot de passe invalide.'; msg.style.color = '#b00020'; }
+        }).catch(function () { submit.disabled = false; if (msg) msg.textContent = 'Erreur. Réessaie.'; });
+    });
+  }
+
+  // ---- P5: partenariat form ----
+  function wirePartenariat() {
+    var form = document.querySelector('[data-svp="partner-form"]');
+    if (!form) return;
+    var msg = form.querySelector('[data-svp="partner-msg"]');
+    var btn = form.querySelector('[data-svp="partner-submit"]');
+    function say(t, err) { if (msg) { msg.textContent = t || ''; msg.style.color = err ? '#b00020' : '#3347CA'; } }
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var data = {
+        name: (form.querySelector('[name="name"]') || {}).value || '',
+        email: (form.querySelector('[name="email"]') || {}).value || '',
+        organisation: (form.querySelector('[name="organisation"]') || {}).value || '',
+        message: (form.querySelector('[name="message"]') || {}).value || '',
+        website: (form.querySelector('[name="website"]') || {}).value || '',
+      };
+      if (!validEmail(data.email.trim()) || !data.message.trim()) { say('Courriel valide et message requis.', true); return; }
+      if (btn) btn.disabled = true; say('Envoi…');
+      fetch(FN + 'send-partenariat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+        .then(function (r) { return r.json(); }).then(function (d) {
+          if (btn) btn.disabled = false;
+          if (d && d.sent) { form.reset(); say('Merci ! On te revient rapidement.'); }
+          else { say((d && d.error) || "L'envoi a échoué. Réessaie.", true); }
+        }).catch(function () { if (btn) btn.disabled = false; say('Erreur. Réessaie plus tard.', true); });
+    });
+  }
+
+  // ---- exit-intent popup (once per session) ----
+  function wireExitIntent() {
+    if (document.querySelector('[data-svp="funnel"]') || document.querySelector('[data-svp="compte"]')) return;
+    try { if (sessionStorage.getItem('svp_exit')) return; } catch (e) {}
+    var shown = false;
+    function show() {
+      if (shown) return; shown = true;
+      try { sessionStorage.setItem('svp_exit', '1'); } catch (e) {}
+      var o = document.createElement('div');
+      o.setAttribute('data-svp', 'exit-modal');
+      o.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(22,24,43,.55);display:flex;align-items:center;justify-content:center;padding:20px';
+      o.innerHTML = '<div style="background:#FFFEF5;max-width:420px;width:100%;border:1.5px solid #16182B;border-radius:18px;box-shadow:6px 6px 0 #3347CA;padding:28px;text-align:center;position:relative">'
+        + '<button aria-label="Fermer" data-x style="position:absolute;top:10px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:#8B8DA0">×</button>'
+        + '<h3 style="font:800 22px \'Bricolage Grotesque\',sans-serif;margin:0 0 8px;color:#16182B">Attends&nbsp;! 🎭</h3>'
+        + '<p style="font:500 14.5px \'Instrument Sans\',sans-serif;color:#4A4D66;margin:0 0 18px;line-height:1.5">Reçois chaque lundi les meilleurs spectacles pas chers de ta ville. Gratuit, 2 secondes.</p>'
+        + '<input data-x-email type="email" placeholder="ton.courriel@exemple.com" style="box-sizing:border-box;width:100%;border:1.5px solid #E1E0D4;border-radius:10px;padding:13px 14px;font:500 14px \'Instrument Sans\',sans-serif;margin-bottom:10px">'
+        + '<button data-x-go style="display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:14px;font-weight:700;font-size:15px;cursor:pointer">Je m\'inscris gratuitement</button>'
+        + '</div>';
+      document.body.appendChild(o);
+      var close = function () { o.remove(); };
+      o.querySelector('[data-x]').addEventListener('click', close);
+      o.addEventListener('click', function (e) { if (e.target === o) close(); });
+      o.querySelector('[data-x-go]').addEventListener('click', function () {
+        var em = (o.querySelector('[data-x-email]').value || '').trim();
+        if (!validEmail(em)) { o.querySelector('[data-x-email]').focus(); return; }
+        setEmail(em); pixel('track', 'Lead'); window.location.href = 'tunnel.html';
+      });
+    }
+    document.addEventListener('mouseout', function (e) {
+      if (e.clientY <= 0 && !e.relatedTarget) show();
+    });
+  }
+
+  function init() {
+    wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
+    wireConnexion(); wireCompteGate(); wireAdmin(); wirePartenariat(); wireExitIntent();
+  }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();

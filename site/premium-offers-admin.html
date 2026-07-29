@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({"gtm.start":
+  new Date().getTime(),event:"gtm.js"});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!="dataLayer"?"&l="+l:"";j.async=true;j.src=
+  "https://www.googletagmanager.com/gtm.js?id="+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,"script","dataLayer","GTM-NWXBT8XB");</script>
+  <!-- End Google Tag Manager -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Offres Premium - Silvousplait</title>
+  <meta name="robots" content="noindex, nofollow" />  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "wfqjktrqpx");
+  </script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, #fffef6, #f2f3e7);
+      color: #16203b;
+    }
+    .admin-shell {
+      width: min(1120px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 28px 0 56px;
+    }
+    .admin-card {
+      background: rgba(255,255,255,0.94);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 22px 50px rgba(18, 24, 42, 0.08);
+      border: 1px solid rgba(18, 24, 42, 0.08);
+      margin-bottom: 20px;
+    }
+    h1, h2 {
+      margin-top: 0;
+    }
+    form {
+      display: grid;
+      gap: 12px;
+    }
+    input, select, textarea, button {
+      font: inherit;
+    }
+    input, select, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid rgba(18, 24, 42, 0.14);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: #fff;
+    }
+    input[type="checkbox"] {
+      width: auto;
+      padding: 0;
+    }
+    .checkbox-inline {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 16px;
+      background: #3347ca;
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .button-secondary {
+      background: #e9ecfb;
+      color: #3347ca;
+    }
+    .button-danger {
+      background: #fce7e7;
+      color: #8a1d1d;
+    }
+    .admin-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 18px;
+    }
+    .admin-message {
+      padding: 12px 14px;
+      border-radius: 14px;
+      display: none;
+    }
+    .admin-message.ok {
+      display: block;
+      background: #e9f8db;
+      color: #244415;
+    }
+    .admin-message.err {
+      display: block;
+      background: #fdeaea;
+      color: #8f1f1f;
+    }
+    .offer-list {
+      display: grid;
+      gap: 12px;
+    }
+    .showcase-list {
+      display: grid;
+      gap: 12px;
+    }
+    .offer-admin-item {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid rgba(18, 24, 42, 0.08);
+    }
+    .offer-admin-item img {
+      width: 100%;
+      aspect-ratio: 16 / 8;
+      object-fit: cover;
+      border-radius: 14px;
+      background: #eef1f7;
+    }
+    .offer-admin-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .access-log-list {
+      display: grid;
+      gap: 10px;
+      max-height: 520px;
+      overflow: auto;
+    }
+    .access-log-item {
+      display: grid;
+      gap: 6px;
+      padding: 14px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid rgba(18, 24, 42, 0.08);
+    }
+    .access-log-item strong {
+      font-size: 16px;
+    }
+    .access-log-meta {
+      color: rgba(22, 32, 59, 0.74);
+      font-size: 14px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .showcase-admin-item {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid rgba(18, 24, 42, 0.08);
+    }
+    .showcase-admin-item img {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      border-radius: 14px;
+      background: #eef1f7;
+    }
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .region-manager {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .filter-manager-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .region-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: #fff;
+      border: 1px solid rgba(18, 24, 42, 0.08);
+    }
+    .region-row strong {
+      font-size: 16px;
+    }
+    .region-row__meta {
+      color: rgba(22, 32, 59, 0.74);
+      font-size: 14px;
+      word-break: break-word;
+    }
+    .dynamic-fields {
+      display: grid;
+      gap: 12px;
+    }
+    .dynamic-fields[hidden] {
+      display: none;
+    }
+    .dynamic-field-group {
+      display: grid;
+      gap: 6px;
+    }
+    .dynamic-field-group label {
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(22, 32, 59, 0.72);
+    }
+    #admin-app[hidden],
+    #admin-login[hidden] {
+      display: none;
+    }
+    @media (max-width: 900px) {
+      .admin-grid {
+        grid-template-columns: 1fr;
+      }
+      .filter-manager-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NWXBT8XB"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->  <main class="admin-shell">
+    <div class="admin-card">
+      <a href="premium-offers.html">Retour aux offres premium</a>
+    </div>
+
+    <section id="admin-login" class="admin-card">
+      <h1>Admin Offres Premium</h1>
+      <p>Entre le mot de passe admin pour gérer les spectacles, les images et les codes promo.</p>
+      <form id="admin-login-form">
+        <input type="password" id="admin-password" placeholder="Mot de passe admin" required />
+        <button type="submit">Ouvrir l'admin</button>
+      </form>
+      <div id="admin-login-message" class="admin-message" aria-live="polite"></div>
+    </section>
+
+    <section id="admin-app" hidden>
+      <div class="admin-card">
+        <div class="filter-manager-grid">
+          <div>
+            <h2>Gérer les régions du filtre</h2>
+            <form id="region-form">
+              <input type="text" id="region-label" placeholder="Ajouter une région au filtre" required />
+              <div class="form-actions">
+                <button type="submit">Ajouter la région</button>
+              </div>
+            </form>
+            <div id="region-form-message" class="admin-message" aria-live="polite"></div>
+            <div id="region-list" class="region-manager"></div>
+          </div>
+
+          <div>
+            <h2>Gérer les types d’offres</h2>
+            <form id="offer-type-form">
+              <input type="text" id="offer-type-label" placeholder="Ajouter un type d’offre au filtre" required />
+              <div class="form-actions">
+                <button type="submit">Ajouter le type</button>
+              </div>
+            </form>
+            <div id="offer-type-form-message" class="admin-message" aria-live="polite"></div>
+            <div id="offer-type-list" class="region-manager"></div>
+          </div>
+
+          <div>
+            <h2>Inscriptions gratuites par ville</h2>
+            <form id="free-signup-location-form">
+              <input type="hidden" id="free-signup-location-id" />
+              <input type="text" id="free-signup-location-label" placeholder="Ville affichée (ex. Québec)" required />
+              <input type="url" id="free-signup-location-embed-url" placeholder="URL embed ActiveCampaign complète (ex. https://silvousplait.activehosted.com/f/embed.php?id=9)" required />
+              <label class="checkbox-inline">
+                <input type="checkbox" id="free-signup-location-default" />
+                Définir comme ville par défaut
+              </label>
+              <div class="form-actions">
+                <button type="submit">Enregistrer la ville</button>
+                <button type="button" id="reset-free-signup-location-form" class="button-secondary">Vider le formulaire</button>
+              </div>
+            </form>
+            <div id="free-signup-location-form-message" class="admin-message" aria-live="polite"></div>
+            <div id="free-signup-location-list" class="region-manager"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-grid">
+        <div class="admin-card">
+          <h2>Ajouter ou modifier une offre</h2>
+          <form id="offer-form">
+            <input type="hidden" id="offer-id" />
+            <input type="text" id="offer-title" placeholder="Titre du spectacle" required />
+            <select id="offer-region" required>
+              <option value="">Choisir une région</option>
+              <option value="Montreal">Montréal</option>
+              <option value="Quebec">Québec</option>
+              <option value="Sherbrooke">Sherbrooke</option>
+              <option value="Trois-Rivieres">Trois-Rivières</option>
+            </select>
+            <select id="offer-type">
+              <option value="">Choisir un type d’offre</option>
+            </select>
+            <input type="text" id="offer-filter-tag" placeholder="Tag / filtre affiché (ex. Rabais)" />
+            <div id="offer-extra-fields" class="dynamic-fields" hidden></div>
+            <input type="text" id="offer-venue" placeholder="Salle / lieu" />
+            <div class="dynamic-field-group">
+              <label for="offer-date">Date et heure du spectacle</label>
+              <input type="datetime-local" id="offer-date" />
+            </div>
+            <input type="url" id="offer-image" placeholder="URL de l'image du spectacle" />
+            <textarea id="offer-description" placeholder="Description de l'offre premium"></textarea>
+            <input type="text" id="offer-code" placeholder="Code promo" />
+            <input type="url" id="offer-link" placeholder="Lien vers la billetterie / page du spectacle" />
+            <select id="offer-active">
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+            <div class="form-actions">
+              <button type="submit">Enregistrer l'offre</button>
+              <button type="button" id="reset-form" class="button-secondary">Vider le formulaire</button>
+            </div>
+          </form>
+          <div id="admin-form-message" class="admin-message" aria-live="polite"></div>
+        </div>
+
+        <div class="admin-card">
+          <h2>Offres existantes</h2>
+          <div id="offer-list" class="offer-list"></div>
+        </div>
+      </div>
+
+      <div class="admin-grid">
+        <div class="admin-card">
+          <h2>Carousel des offres déjà profitées</h2>
+          <form id="showcase-form">
+            <input type="hidden" id="showcase-id" />
+            <input type="text" id="showcase-title" placeholder="Titre de l'offre / du spectacle" required />
+            <input type="text" id="showcase-badge" placeholder="Badge (ex. Billets gratuits)" />
+            <input type="url" id="showcase-image" placeholder="URL de l'image" />
+            <textarea id="showcase-description" placeholder="Description courte de l'offre"></textarea>
+            <input type="number" id="showcase-order" placeholder="Ordre d'affichage" min="1" step="1" />
+            <select id="showcase-active">
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+            <div class="form-actions">
+              <button type="submit">Enregistrer la carte</button>
+              <button type="button" id="reset-showcase-form" class="button-secondary">Vider le formulaire</button>
+            </div>
+          </form>
+          <div id="showcase-form-message" class="admin-message" aria-live="polite"></div>
+        </div>
+
+        <div class="admin-card">
+          <h2>Cartes du carousel</h2>
+          <div id="showcase-list" class="showcase-list"></div>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h2>Logs live des connexions premium</h2>
+        <div id="access-log-list" class="access-log-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const loginPanel = document.getElementById('admin-login');
+      const appPanel = document.getElementById('admin-app');
+      const loginForm = document.getElementById('admin-login-form');
+      const passwordInput = document.getElementById('admin-password');
+      const loginMessage = document.getElementById('admin-login-message');
+      const form = document.getElementById('offer-form');
+      const formMessage = document.getElementById('admin-form-message');
+      const regionForm = document.getElementById('region-form');
+      const regionLabelInput = document.getElementById('region-label');
+      const regionFormMessage = document.getElementById('region-form-message');
+      const regionList = document.getElementById('region-list');
+      const offerTypeForm = document.getElementById('offer-type-form');
+      const offerTypeLabelInput = document.getElementById('offer-type-label');
+      const offerTypeFormMessage = document.getElementById('offer-type-form-message');
+      const offerTypeList = document.getElementById('offer-type-list');
+      const freeSignupLocationForm = document.getElementById('free-signup-location-form');
+      const freeSignupLocationFormMessage = document.getElementById('free-signup-location-form-message');
+      const freeSignupLocationList = document.getElementById('free-signup-location-list');
+      const resetFreeSignupLocationFormButton = document.getElementById('reset-free-signup-location-form');
+      const offerList = document.getElementById('offer-list');
+      const resetFormButton = document.getElementById('reset-form');
+      const showcaseForm = document.getElementById('showcase-form');
+      const showcaseFormMessage = document.getElementById('showcase-form-message');
+      const showcaseList = document.getElementById('showcase-list');
+      const resetShowcaseFormButton = document.getElementById('reset-showcase-form');
+      const accessLogList = document.getElementById('access-log-list');
+      const extraFieldsContainer = document.getElementById('offer-extra-fields');
+
+      const fieldMap = {
+        id: document.getElementById('offer-id'),
+        title: document.getElementById('offer-title'),
+        region: document.getElementById('offer-region'),
+        offer_type: document.getElementById('offer-type'),
+        filtre_offre: document.getElementById('offer-filter-tag'),
+        venue: document.getElementById('offer-venue'),
+        event_date: document.getElementById('offer-date'),
+        image_url: document.getElementById('offer-image'),
+        description: document.getElementById('offer-description'),
+        promo_code: document.getElementById('offer-code'),
+        ticket_url: document.getElementById('offer-link'),
+        is_active: document.getElementById('offer-active'),
+      };
+      const showcaseFieldMap = {
+        id: document.getElementById('showcase-id'),
+        title: document.getElementById('showcase-title'),
+        badge: document.getElementById('showcase-badge'),
+        image_url: document.getElementById('showcase-image'),
+        description: document.getElementById('showcase-description'),
+        sort_order: document.getElementById('showcase-order'),
+        is_active: document.getElementById('showcase-active'),
+      };
+
+      let offers = [];
+      let regions = [];
+      let offerTypes = [];
+      let freeSignupLocations = [];
+      let showcaseItems = [];
+      let accessLogs = [];
+      let adminAccessToken = '';
+      let accessLogsRefreshTimer = null;
+      let dynamicExtraFieldKeys = [];
+      let currentEditingExtraFields = {};
+
+      function setMessage(target, kind, message) {
+        target.className = 'admin-message';
+        if (kind) target.classList.add(kind);
+        target.textContent = message || '';
+      }
+
+      function openApp() {
+        loginPanel.hidden = true;
+        appPanel.hidden = false;
+      }
+
+      function closeApp() {
+        appPanel.hidden = true;
+        loginPanel.hidden = false;
+        if (accessLogsRefreshTimer) {
+          clearInterval(accessLogsRefreshTimer);
+          accessLogsRefreshTimer = null;
+        }
+      }
+
+      function resetForm() {
+        form.reset();
+        fieldMap.id.value = '';
+        fieldMap.is_active.value = 'true';
+        currentEditingExtraFields = {};
+        renderDynamicExtraFields();
+      }
+
+      function resetShowcaseForm() {
+        showcaseForm.reset();
+        showcaseFieldMap.id.value = '';
+        showcaseFieldMap.is_active.value = 'true';
+      }
+
+      function resetFreeSignupLocationForm() {
+        freeSignupLocationForm.reset();
+        document.getElementById('free-signup-location-id').value = '';
+        document.getElementById('free-signup-location-default').checked = false;
+      }
+
+      function buildFreeSignupEmbedUrl(item) {
+        const formId = String(item && item.f || '').trim();
+        if (!formId) return '';
+        return 'https://silvousplait.activehosted.com/f/embed.php?id=' + encodeURIComponent(formId);
+      }
+
+      function formatRegionLabel(value) {
+        const raw = String(value || '').trim();
+        const labels = {
+          Montreal: 'Montréal',
+          Quebec: 'Québec',
+          Sherbrooke: 'Sherbrooke',
+          'Trois-Rivieres': 'Trois-Rivières',
+        };
+        return labels[raw] || raw;
+      }
+
+      function syncRegionOptions() {
+        const currentValue = fieldMap.region.value;
+        const labels = Array.from(
+          new Set([
+            ...regions.map((region) => region.label),
+            currentValue,
+          ].filter(Boolean))
+        ).sort((a, b) => a.localeCompare(b, 'fr-CA', { sensitivity: 'base' }));
+
+        fieldMap.region.innerHTML = [
+          '<option value="">Choisir une région</option>',
+          ...labels.map((label) => `<option value="${label}">${formatRegionLabel(label)}</option>`),
+        ].join('');
+        fieldMap.region.value = labels.includes(currentValue) ? currentValue : '';
+      }
+
+      function syncOfferTypeOptions() {
+        const currentValue = fieldMap.offer_type.value;
+        const labels = Array.from(
+          new Set([
+            ...offerTypes.map((item) => item.label),
+            ...offers.map((offer) => offer.filtre_offre || offer.offer_type),
+            currentValue,
+          ].filter(Boolean))
+        ).sort((a, b) => a.localeCompare(b, 'fr-CA', { sensitivity: 'base' }));
+
+        fieldMap.offer_type.innerHTML = [
+          '<option value="">Choisir un type d’offre</option>',
+          ...labels.map((label) => `<option value="${label}">${label}</option>`),
+        ].join('');
+        fieldMap.offer_type.value = labels.includes(currentValue) ? currentValue : '';
+      }
+
+      fieldMap.offer_type.addEventListener('change', () => {
+        if (!fieldMap.filtre_offre.value.trim()) {
+          fieldMap.filtre_offre.value = fieldMap.offer_type.value;
+        }
+      });
+
+      function toFieldLabel(key) {
+        return String(key || '')
+          .replace(/[_-]+/g, ' ')
+          .replace(/\b\w/g, (char) => char.toUpperCase());
+      }
+
+      function collectDynamicExtraFieldKeys() {
+        return Array.from(new Set(
+          offers.flatMap((offer) => Object.keys(offer.extra_fields || {}))
+        )).filter(Boolean).sort((a, b) => a.localeCompare(b, 'fr-CA', { sensitivity: 'base' }));
+      }
+
+      function renderDynamicExtraFields(values) {
+        const data = values || currentEditingExtraFields || {};
+        dynamicExtraFieldKeys = collectDynamicExtraFieldKeys();
+        if (!dynamicExtraFieldKeys.length) {
+          extraFieldsContainer.hidden = true;
+          extraFieldsContainer.innerHTML = '';
+          return;
+        }
+
+        extraFieldsContainer.hidden = false;
+        extraFieldsContainer.innerHTML = dynamicExtraFieldKeys.map((key) => `
+          <div class="dynamic-field-group">
+            <label for="extra-field-${key}">${toFieldLabel(key)}</label>
+            <input type="text" id="extra-field-${key}" data-extra-field="${key}" value="${String(data[key] || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}" />
+          </div>
+        `).join('');
+      }
+
+      function readDynamicExtraFields() {
+        return Array.from(extraFieldsContainer.querySelectorAll('[data-extra-field]')).reduce((acc, input) => {
+          acc[input.getAttribute('data-extra-field')] = input.value;
+          return acc;
+        }, {});
+      }
+
+      function toDateTimeLocalValue(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        const offsetMs = date.getTimezoneOffset() * 60000;
+        return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+      }
+
+      function toIsoDateTimeValue(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toISOString();
+      }
+
+      function formatEventDate(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toLocaleString('fr-CA', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        });
+      }
+
+      async function authFetch(url, options) {
+        const headers = Object.assign({}, options && options.headers, {
+          Authorization: 'Bearer ' + adminAccessToken,
+        });
+        return fetch(url, Object.assign({}, options || {}, { headers }));
+      }
+
+      function renderRegions() {
+        if (!regions.length) {
+          regionList.innerHTML = '<p>Aucune région pour le moment.</p>';
+          return;
+        }
+
+        regionList.innerHTML = regions.map((region) => `
+          <div class="region-row">
+            <strong>${formatRegionLabel(region.label)}</strong>
+            <button type="button" class="button-danger" data-delete-region="${region.id}">Supprimer</button>
+          </div>
+        `).join('');
+
+        regionList.querySelectorAll('[data-delete-region]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            if (!window.confirm('Supprimer cette région du filtre ?')) return;
+
+            const response = await authFetch('/.netlify/functions/delete-premium-offer-region', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: button.getAttribute('data-delete-region') }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              setMessage(regionFormMessage, 'err', data.error || 'Suppression impossible.');
+              return;
+            }
+            setMessage(regionFormMessage, 'ok', 'Région supprimée.');
+            await loadOffers();
+          });
+        });
+      }
+
+      function renderOfferTypes() {
+        if (!offerTypes.length) {
+          offerTypeList.innerHTML = "<p>Aucun type d’offre pour le moment.</p>";
+          return;
+        }
+
+        offerTypeList.innerHTML = offerTypes.map((item) => `
+          <div class="region-row">
+            <strong>${item.label}</strong>
+            <button type="button" class="button-danger" data-delete-offer-type="${item.id}">Supprimer</button>
+          </div>
+        `).join('');
+
+        offerTypeList.querySelectorAll('[data-delete-offer-type]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            if (!window.confirm("Supprimer ce type d’offre du filtre ?")) return;
+
+            const response = await authFetch('/.netlify/functions/delete-premium-offer-type', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: button.getAttribute('data-delete-offer-type') }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              setMessage(offerTypeFormMessage, 'err', data.error || 'Suppression impossible.');
+              return;
+            }
+            setMessage(offerTypeFormMessage, 'ok', 'Type d’offre supprimé.');
+            await loadOffers();
+          });
+        });
+      }
+
+      function renderFreeSignupLocations() {
+        if (!freeSignupLocations.length) {
+          freeSignupLocationList.innerHTML = '<p>Aucune ville pour le moment.</p>';
+          return;
+        }
+
+        freeSignupLocationList.innerHTML = freeSignupLocations.map((item) => `
+          <div class="region-row">
+            <div>
+              <strong>${item.label}${item.is_default ? ' · par défaut' : ''}</strong>
+              <div class="region-row__meta">${buildFreeSignupEmbedUrl(item)}</div>
+            </div>
+            <div class="offer-admin-actions">
+              <button type="button" class="button-secondary" data-edit-free-signup-location="${item.id}">Modifier</button>
+              ${item.is_default ? '' : `<button type="button" class="button-secondary" data-set-default-free-signup-location="${item.id}">Définir par défaut</button>`}
+              <button type="button" class="button-danger" data-delete-free-signup-location="${item.id}">Supprimer</button>
+            </div>
+          </div>
+        `).join('');
+
+        freeSignupLocationList.querySelectorAll('[data-edit-free-signup-location]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const item = freeSignupLocations.find((entry) => entry.id === button.getAttribute('data-edit-free-signup-location'));
+            if (!item) return;
+            document.getElementById('free-signup-location-id').value = item.id || '';
+            document.getElementById('free-signup-location-label').value = item.label || '';
+            document.getElementById('free-signup-location-embed-url').value = buildFreeSignupEmbedUrl(item);
+            document.getElementById('free-signup-location-default').checked = !!item.is_default;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        });
+
+        freeSignupLocationList.querySelectorAll('[data-set-default-free-signup-location]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            const response = await authFetch('/.netlify/functions/set-default-free-signup-location', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: button.getAttribute('data-set-default-free-signup-location') }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              setMessage(freeSignupLocationFormMessage, 'err', data.error || 'Mise à jour impossible.');
+              return;
+            }
+            setMessage(freeSignupLocationFormMessage, 'ok', 'Ville par défaut mise à jour.');
+            await loadOffers();
+          });
+        });
+
+        freeSignupLocationList.querySelectorAll('[data-delete-free-signup-location]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            if (!window.confirm('Supprimer cette ville du formulaire gratuit ?')) return;
+
+            const response = await authFetch('/.netlify/functions/delete-free-signup-location', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: button.getAttribute('data-delete-free-signup-location') }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              setMessage(freeSignupLocationFormMessage, 'err', data.error || 'Suppression impossible.');
+              return;
+            }
+            setMessage(freeSignupLocationFormMessage, 'ok', 'Ville supprimée.');
+            await loadOffers();
+            resetFreeSignupLocationForm();
+          });
+        });
+      }
+
+      function renderOffers() {
+        if (!offers.length) {
+          offerList.innerHTML = '<p>Aucune offre pour le moment.</p>';
+          return;
+        }
+
+        offerList.innerHTML = offers.map((offer) => `
+          <article class="offer-admin-item">
+            <img src="${offer.image_url || 'assets/premium_image.avif'}" alt="${offer.title || ''}" />
+            <strong>${offer.title || ''}</strong>
+            <span>${[formatRegionLabel(offer.region), offer.filtre_offre || offer.offer_type, offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · ')}</span>
+            <span>${offer.is_active ? 'Active' : 'Inactive'}</span>
+            <div class="offer-admin-actions">
+              <button type="button" data-edit="${offer.id}" class="button-secondary">Modifier</button>
+              <button type="button" data-delete="${offer.id}" class="button-danger">Supprimer</button>
+            </div>
+          </article>
+        `).join('');
+
+        offerList.querySelectorAll('[data-edit]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const offer = offers.find((item) => item.id === button.getAttribute('data-edit'));
+            if (!offer) return;
+            Object.keys(fieldMap).forEach((key) => {
+              if (key === 'is_active') {
+                fieldMap[key].value = String(offer[key]);
+                return;
+              }
+              fieldMap[key].value = key === 'event_date'
+                ? toDateTimeLocalValue(offer[key])
+                : (offer[key] || '');
+            });
+            currentEditingExtraFields = Object.assign({}, offer.extra_fields || {});
+            renderDynamicExtraFields(currentEditingExtraFields);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        });
+
+        offerList.querySelectorAll('[data-delete]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            if (!window.confirm('Supprimer cette offre premium ?')) return;
+
+            const response = await authFetch('/.netlify/functions/delete-premium-offer', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: button.getAttribute('data-delete') }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              setMessage(formMessage, 'err', data.error || 'Suppression impossible.');
+              return;
+            }
+            setMessage(formMessage, 'ok', 'Offre supprimée.');
+            await loadOffers();
+            resetForm();
+          });
+        });
+      }
+
+      function renderShowcaseItems() {
+        if (!showcaseItems.length) {
+          showcaseList.innerHTML = '<p>Aucune carte dans le carousel pour le moment.</p>';
+          return;
+        }
+
+        showcaseList.innerHTML = showcaseItems.map((item) => `
+          <article class="showcase-admin-item">
+            <img src="${item.image_url || 'assets/premium_image.avif'}" alt="${item.title || ''}" />
+            <strong>${item.title || ''}</strong>
+            <span>${[item.badge, item.sort_order ? 'Ordre ' + item.sort_order : '', item.is_active ? 'Active' : 'Inactive'].filter(Boolean).join(' · ')}</span>
+            <p>${item.description || ''}</p>
+            <div class="offer-admin-actions">
+              <button type="button" data-edit-showcase="${item.id}" class="button-secondary">Modifier</button>
+              <button type="button" data-delete-showcase="${item.id}" class="button-danger">Supprimer</button>
+            </div>
+          </article>
+        `).join('');
+
+        showcaseList.querySelectorAll('[data-edit-showcase]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const item = showcaseItems.find((entry) => entry.id === button.getAttribute('data-edit-showcase'));
+            if (!item) return;
+            Object.keys(showcaseFieldMap).forEach((key) => {
+              if (key === 'is_active') {
+                showcaseFieldMap[key].value = String(item[key]);
+                return;
+              }
+              showcaseFieldMap[key].value = item[key] || '';
+            });
+            window.scrollTo({ top: showcaseForm.getBoundingClientRect().top + window.scrollY - 24, behavior: 'smooth' });
+          });
+        });
+
+        showcaseList.querySelectorAll('[data-delete-showcase]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            if (!window.confirm('Supprimer cette carte du carousel ?')) return;
+
+            const response = await authFetch('/.netlify/functions/delete-premium-showcase-item', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: button.getAttribute('data-delete-showcase') }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              setMessage(showcaseFormMessage, 'err', data.error || 'Suppression impossible.');
+              return;
+            }
+            setMessage(showcaseFormMessage, 'ok', 'Carte supprimée.');
+            await loadOffers();
+            resetShowcaseForm();
+          });
+        });
+      }
+
+      function formatDateTime(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toLocaleString('fr-CA', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        });
+      }
+
+      function renderAccessLogs() {
+        if (!accessLogs.length) {
+          accessLogList.innerHTML = '<p>Aucune connexion premium enregistrée pour le moment.</p>';
+          return;
+        }
+
+        accessLogList.innerHTML = accessLogs.map((entry) => `
+          <article class="access-log-item">
+            <strong>${entry.email || ''}</strong>
+            <div class="access-log-meta">${formatDateTime(entry.created_at)}</div>
+          </article>
+        `).join('');
+      }
+
+      async function loadAccessLogs() {
+        const response = await authFetch('/.netlify/functions/list-premium-access-logs-admin');
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          accessLogList.innerHTML = '<p>Impossible de charger les logs live.</p>';
+          return;
+        }
+        accessLogs = Array.isArray(data.accessLogs) ? data.accessLogs : [];
+        renderAccessLogs();
+      }
+
+      function startAccessLogsRefresh() {
+        if (accessLogsRefreshTimer) clearInterval(accessLogsRefreshTimer);
+        accessLogsRefreshTimer = setInterval(() => {
+          if (!adminAccessToken) return;
+          loadAccessLogs().catch(() => {});
+        }, 15000);
+      }
+
+      async function loadOffers() {
+        const response = await authFetch('/.netlify/functions/list-premium-offers-admin');
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          adminAccessToken = '';
+          closeApp();
+          setMessage(loginMessage, 'err', data.error || 'Session admin invalide.');
+          return;
+        }
+        offers = Array.isArray(data.offers) ? data.offers : [];
+        showcaseItems = Array.isArray(data.showcaseItems) ? data.showcaseItems : [];
+        regions = Array.isArray(data.regions)
+          ? data.regions.map((region) => ({
+              id: region.id || '',
+              label: region.label || String(region),
+            })).filter((region) => region.label)
+          : [];
+        offerTypes = Array.isArray(data.offerTypes)
+          ? data.offerTypes.map((item) => ({
+              id: item.id || '',
+              label: item.label || String(item),
+            })).filter((item) => item.label)
+          : [];
+        freeSignupLocations = Array.isArray(data.freeSignupLocations)
+          ? data.freeSignupLocations.map((item) => ({
+              id: item.id || '',
+              label: item.label || '',
+              u: item.u || '',
+              f: item.f || '',
+              s: item.s || '',
+              c: item.c || '0',
+              m: item.m || '0',
+              act: item.act || 'sub',
+              v: item.v || '2',
+              or: item.or || '',
+              is_default: !!item.is_default,
+            })).filter((item) => item.label)
+          : [];
+        syncRegionOptions();
+        syncOfferTypeOptions();
+        renderRegions();
+        renderOfferTypes();
+        renderFreeSignupLocations();
+        renderOffers();
+        renderShowcaseItems();
+        renderDynamicExtraFields(currentEditingExtraFields);
+      }
+
+      loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const response = await fetch('/.netlify/functions/admin-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: passwordInput.value }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setMessage(loginMessage, 'err', data.error || 'Connexion admin impossible.');
+          return;
+        }
+        adminAccessToken = data.accessToken || '';
+        openApp();
+        setMessage(loginMessage, '', '');
+        passwordInput.value = '';
+        await loadOffers();
+        await loadAccessLogs();
+        startAccessLogsRefresh();
+      });
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const payload = Object.keys(fieldMap).reduce((acc, key) => {
+          acc[key] = fieldMap[key].value;
+          return acc;
+        }, {});
+        payload.extra_fields = readDynamicExtraFields();
+        payload.event_date = toIsoDateTimeValue(payload.event_date);
+
+        const response = await authFetch('/.netlify/functions/save-premium-offer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setMessage(formMessage, 'err', data.error || 'Enregistrement impossible.');
+          return;
+        }
+
+        setMessage(formMessage, 'ok', 'Offre enregistrée avec succès.');
+        resetForm();
+        await loadOffers();
+      });
+
+      regionForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const label = String(regionLabelInput.value || '').trim();
+        if (!label) return;
+
+        const response = await authFetch('/.netlify/functions/save-premium-offer-region', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ label }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setMessage(regionFormMessage, 'err', data.error || 'Enregistrement impossible.');
+          return;
+        }
+
+        setMessage(regionFormMessage, 'ok', 'Région enregistrée avec succès.');
+        regionForm.reset();
+        await loadOffers();
+      });
+
+      offerTypeForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const label = String(offerTypeLabelInput.value || '').trim();
+        if (!label) return;
+
+        const response = await authFetch('/.netlify/functions/save-premium-offer-type', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ label }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setMessage(offerTypeFormMessage, 'err', data.error || 'Enregistrement impossible.');
+          return;
+        }
+
+        setMessage(offerTypeFormMessage, 'ok', 'Type d’offre enregistré avec succès.');
+        offerTypeForm.reset();
+        await loadOffers();
+      });
+
+      freeSignupLocationForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const payload = {
+          id: document.getElementById('free-signup-location-id').value,
+          label: document.getElementById('free-signup-location-label').value,
+          embed_url: document.getElementById('free-signup-location-embed-url').value,
+          is_default: document.getElementById('free-signup-location-default').checked,
+        };
+
+        const response = await authFetch('/.netlify/functions/save-free-signup-location', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setMessage(freeSignupLocationFormMessage, 'err', data.error || 'Enregistrement impossible.');
+          return;
+        }
+
+        setMessage(freeSignupLocationFormMessage, 'ok', 'Ville enregistrée avec succès.');
+        resetFreeSignupLocationForm();
+        await loadOffers();
+      });
+
+      resetFormButton.addEventListener('click', resetForm);
+      resetFreeSignupLocationFormButton.addEventListener('click', resetFreeSignupLocationForm);
+      showcaseForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const payload = Object.keys(showcaseFieldMap).reduce((acc, key) => {
+          acc[key] = showcaseFieldMap[key].value;
+          return acc;
+        }, {});
+
+        const response = await authFetch('/.netlify/functions/save-premium-showcase-item', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setMessage(showcaseFormMessage, 'err', data.error || 'Enregistrement impossible.');
+          return;
+        }
+
+        setMessage(showcaseFormMessage, 'ok', 'Carte enregistrée avec succès.');
+        resetShowcaseForm();
+        await loadOffers();
+      });
+
+      resetShowcaseFormButton.addEventListener('click', resetShowcaseForm);
+      resetForm();
+      resetFreeSignupLocationForm();
+      resetShowcaseForm();
+    })();
+  </script>
+</body>
+</html>
