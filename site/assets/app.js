@@ -538,13 +538,20 @@
       var item = ans.parentElement;
       if (!item) return;
       item.style.cursor = 'pointer';
-      var chev = [].slice.call(item.querySelectorAll('span')).filter(function (s) { return (s.textContent || '').trim() === '⌄'; })[0];
-      if (chev) { chev.style.display = 'inline-block'; chev.style.transition = 'transform .18s'; }
+      // icon is either a "⌄" chevron (faq.html) or a "+/−" toggle (premium.html)
+      var icon = [].slice.call(item.querySelectorAll('span')).filter(function (s) {
+        var t = (s.textContent || '').trim(); return t === '⌄' || t === '+' || t === '−' || t === '-';
+      })[0];
+      if (icon) { icon.style.display = 'inline-block'; icon.style.transition = 'transform .18s'; }
+      var isChevron = icon && (icon.textContent || '').trim() === '⌄';
       item.addEventListener('click', function (e) {
         if (e.target && e.target.tagName === 'A') return;
         var open = ans.style.display !== 'none';
         ans.style.display = open ? 'none' : 'block';
-        if (chev) chev.style.transform = open ? '' : 'rotate(180deg)';
+        if (icon) {
+          if (isChevron) icon.style.transform = open ? '' : 'rotate(180deg)';
+          else icon.textContent = open ? '+' : '−';
+        }
       });
     });
   }
