@@ -477,7 +477,7 @@
       + '<div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px;flex:1">'
       + '<div style="font:700 15px/1.25 \'Bricolage Grotesque\',sans-serif">' + esc(o.title) + '</div>'
       + '<div style="font:500 12.5px \'Instrument Sans\',sans-serif;color:#8B8DA0;flex:1">' + esc(o.venue || '') + (o.event_date ? ' · ' + esc(frDate(o.event_date)) : '') + '</div>'
-      + '<a href="premium-offers.html" style="margin-top:10px;text-align:center;background:#3347CA;color:#FFFEF5;border-radius:100px;padding:11px;font:700 13px \'Instrument Sans\',sans-serif;text-decoration:none">Voir l\'offre</a>'
+      + '<a href="premium.html" data-svp="premium-cta" style="margin-top:10px;text-align:center;background:#3347CA;color:#FFFEF5;border-radius:100px;padding:11px;font:700 13px \'Instrument Sans\',sans-serif;text-decoration:none">Voir l\'offre</a>'
       + '</div></div>';
   }
   // ---- Archive (past offers, from Netlify Blobs; read-only) ----
@@ -554,11 +554,14 @@
       if (!a) return;
       var href = a.getAttribute('href') || '';
       if (a.target === '_blank' || a.hasAttribute('download')) return;
-      if (!href || href.charAt(0) === '#' || /^(https?:|mailto:|tel:)/i.test(href)) return;
-      if (!/\.html(\?|#|$)/.test(href)) return; // only internal .html pages
+      if (!href || href.charAt(0) === '#' || /^(mailto:|tel:)/i.test(href)) return;
+      var url;
+      try { url = new URL(href, window.location.href); } catch (e2) { return; }
+      if (url.origin !== window.location.origin) return;          // external link
+      if (url.pathname === window.location.pathname && url.hash) return; // same-page anchor
       e.preventDefault();
       document.documentElement.classList.add('svp-leaving');
-      setTimeout(function () { window.location.href = href; }, 250);
+      setTimeout(function () { window.location.href = url.href; }, 250);
     }, false);
   }
 
