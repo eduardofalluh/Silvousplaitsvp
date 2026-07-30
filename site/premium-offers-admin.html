@@ -326,7 +326,12 @@
               <label for="offer-date">Date et heure du spectacle</label>
               <input type="datetime-local" id="offer-date" />
             </div>
-            <input type="url" id="offer-image" placeholder="URL de l'image du spectacle" />
+            <input type="url" id="offer-image" placeholder="URL de l'image du spectacle (ou glisse un fichier ci-dessous)" />
+            <input type="url" id="offer-video" placeholder="URL de la vidéo (YouTube, Vimeo, mp4) — prioritaire sur l'image" />
+            <div id="offer-drop" style="box-sizing:border-box;border:2px dashed rgba(51,71,202,.35);border-radius:12px;padding:16px 14px;text-align:center;background:#F7F8FE;cursor:pointer;font:500 13px 'Instrument Sans',system-ui,sans-serif;color:#4A4D66;margin:2px 0">
+              <strong style="color:#3347CA;font-weight:700">Importer un fichier média</strong><br>Glisse-dépose une image ou une vidéo, ou clique pour parcourir.
+              <input type="file" id="offer-file" accept="image/*,video/*" style="display:none" />
+            </div>
             <textarea id="offer-description" placeholder="Description de l'offre premium"></textarea>
             <input type="text" id="offer-code" placeholder="Code promo" />
             <input type="url" id="offer-link" placeholder="Lien vers la billetterie / page du spectacle" />
@@ -422,11 +427,31 @@
         venue: document.getElementById('offer-venue'),
         event_date: document.getElementById('offer-date'),
         image_url: document.getElementById('offer-image'),
+        video_url: document.getElementById('offer-video'),
         description: document.getElementById('offer-description'),
         promo_code: document.getElementById('offer-code'),
         ticket_url: document.getElementById('offer-link'),
         is_active: document.getElementById('offer-active'),
       };
+      (function () {
+        const drop = document.getElementById('offer-drop');
+        const file = document.getElementById('offer-file');
+        if (!drop || !file) return;
+        const handle = (f) => {
+          if (!f) return;
+          const r = new FileReader();
+          r.onload = () => {
+            if (f.type && f.type.indexOf('image') === 0) fieldMap.image_url.value = r.result;
+            else fieldMap.video_url.value = r.result;
+          };
+          r.readAsDataURL(f);
+        };
+        drop.addEventListener('click', () => file.click());
+        file.addEventListener('change', (e) => { handle(e.target.files && e.target.files[0]); e.target.value = ''; });
+        drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.style.background = '#EEF0FD'; });
+        drop.addEventListener('dragleave', (e) => { e.preventDefault(); drop.style.background = '#F7F8FE'; });
+        drop.addEventListener('drop', (e) => { e.preventDefault(); drop.style.background = '#F7F8FE'; handle(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]); });
+      })();
       const showcaseFieldMap = {
         id: document.getElementById('showcase-id'),
         title: document.getElementById('showcase-title'),
@@ -758,6 +783,7 @@
         offerList.innerHTML = offers.map((offer) => `
           <article class="offer-admin-item">
             <img src="${offer.image_url || 'assets/premium_image.avif'}" alt="${offer.title || ''}" />
+            ${offer.video_url ? '<span style="display:inline-block;background:#EEF0FD;color:#3347CA;font:700 11px sans-serif;padding:3px 9px;border-radius:100px;margin-bottom:6px">🎬 Vidéo</span>' : ''}
             <strong>${offer.title || ''}</strong>
             <span>${[formatRegionLabel(offer.region), offer.filtre_offre || offer.offer_type, offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · ')}</span>
             <span>${offer.is_active ? 'Active' : 'Inactive'}</span>

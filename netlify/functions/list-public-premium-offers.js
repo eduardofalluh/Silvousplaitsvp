@@ -13,6 +13,7 @@ function sanitizePublicOffer(offer) {
     venue: offer.venue,
     event_date: offer.event_date,
     image_url: offer.image_url,
+    video_url: offer.video_url,
   };
 }
 

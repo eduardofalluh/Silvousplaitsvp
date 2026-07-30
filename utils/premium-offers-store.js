@@ -26,6 +26,7 @@ const OFFER_HEADERS = [
   'created_at',
   'updated_at',
   'filtre_offre',
+  'video_url',
 ];
 const LEGACY_OFFER_HEADERS = [
   'id',
@@ -149,6 +150,7 @@ const OFFER_HEADER_ALIASES = {
   created_at: ['created_at'],
   updated_at: ['updated_at'],
   filtre_offre: ['filtre_offre', 'filter_tag', 'offer_filter', 'tag_offre', 'tag'],
+  video_url: ['video_url', 'video', 'video_link', 'lien_video', 'video_url_link'],
 };
 const DEFAULT_SHOWCASE_ITEMS = [
   {
@@ -355,6 +357,7 @@ function mapOfferRowWithHeaderMap(row, rowNumber, headerMap) {
     venue: values.venue,
     event_date: values.event_date,
     image_url: values.image_url,
+    video_url: values.video_url,
     description: values.description,
     promo_code: values.promo_code,
     ticket_url: values.ticket_url,
@@ -903,6 +906,7 @@ function mapOfferRow(row, rowNumber) {
     venue: values.venue,
     event_date: values.event_date,
     image_url: values.image_url,
+    video_url: values.video_url,
     description: values.description,
     promo_code: values.promo_code,
     ticket_url: values.ticket_url,
@@ -978,6 +982,8 @@ function createOfferRow(offer, existingOffer, headerRow) {
         return normalize(offer.event_date || current.event_date);
       case 'image_url':
         return normalize(offer.image_url || current.image_url);
+      case 'video_url':
+        return normalize(offer.video_url || current.video_url);
       case 'description':
         return normalize(offer.description || current.description);
       case 'promo_code':
@@ -1196,6 +1202,7 @@ function mapShowcaseRow(row, rowNumber) {
     title: values.title,
     badge: values.badge,
     image_url: values.image_url,
+    video_url: values.video_url,
     description: values.description,
     sort_order: normalizeInteger(values.sort_order, rowNumber - 1),
     is_active: normalizeBoolean(values.is_active, true),
