@@ -610,7 +610,34 @@
     });
   }
 
+  // ---- Load-in intro splash (homepage only, once per session) ----
+  function wireIntro() {
+    if (!document.querySelector('[data-svp="hero-email"]')) return; // homepage only
+    try { if (sessionStorage.getItem('svp_intro')) return; sessionStorage.setItem('svp_intro', '1'); } catch (e) {}
+    var o = document.createElement('div');
+    o.setAttribute('data-svp', 'intro');
+    o.style.cssText = 'position:fixed;inset:0;z-index:100000;background:#FFFEF5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;cursor:pointer;'
+      + (reducedMotion ? '' : 'transition:opacity .5s ease;');
+    o.innerHTML = '<img src="assets/logo-yeux.png" alt="Silvousplait" style="width:min(260px,58vw)"'
+      + (reducedMotion ? '' : ' class="svp-intro-pop"') + '>'
+      + '<div style="font:800 clamp(26px,6vw,44px) \'Bricolage Grotesque\',sans-serif;color:#16182B;text-align:center;max-width:720px;padding:0 20px;line-height:1.12">Trouve ton prochain spectacle <span style="color:#3347CA">à petit prix</span></div>'
+      + '<div style="font:600 13.5px \'Instrument Sans\',sans-serif;color:#8B8DA0;letter-spacing:.02em">Clique pour entrer →</div>';
+    document.body.appendChild(o);
+    document.body.style.overflow = 'hidden';
+    var closed = false;
+    var close = function () {
+      if (closed) return; closed = true;
+      document.body.style.overflow = '';
+      if (reducedMotion) { o.remove(); return; }
+      o.style.opacity = '0';
+      setTimeout(function () { o.remove(); }, 520);
+    };
+    o.addEventListener('click', close);
+    setTimeout(close, 2600);
+  }
+
   function init() {
+    wireIntro();
     wireBackLinks(); wireFaq(); wireScrollTop();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireAdmin(); wirePartenariat();
