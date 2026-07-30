@@ -10,7 +10,7 @@ const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 const SENDER_EMAIL = process.env.SENDER_EMAIL;
 const SENDER_NAME = process.env.SENDER_NAME || 'Silvousplait';
-const PARTNER_INBOX = process.env.PARTENARIAT_INBOX || 'promotions@silvousplaitsvp.com';
+const PARTNER_INBOX = process.env.PARTENARIAT_INBOX || 'promotion@silvousplaitsvp.com';
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
