@@ -1,0 +1,184 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter+Display:wght@400;600;700;800;900&display=swap');
+/* Page intro — exact replica of the deployed (production) home loader.
+   Same 3s white screen + title + trompette, then slide-down reveal. */
+:root { --blue: #3347CA; }
+
+/* Content wrapper starts hidden, revealed as the intro slides away. */
+#dc-root {
+  opacity: 0;
+  transform: translateY(28px) scale(0.985) translateZ(0);
+  filter: blur(10px);
+  transform-origin: center top;
+}
+body.intro-fading #dc-root,
+body.intro-complete #dc-root {
+  opacity: 1;
+  transform: translateY(0) scale(1) translateZ(0);
+  filter: blur(0);
+  transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.page-intro {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 24% 26%, rgba(51, 71, 202, 0.1), transparent 30%),
+    radial-gradient(circle at 78% 34%, rgba(232, 230, 240, 0.9), transparent 34%),
+    linear-gradient(180deg, #fffef5 0%, #fbfaef 100%);
+  z-index: 10000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 73px;
+  box-sizing: border-box;
+  overflow: hidden;
+  transform: translateY(0) translateZ(0);
+  transition: border-radius 1.15s cubic-bezier(0.76, 0, 0.24, 1),
+    box-shadow 1.15s cubic-bezier(0.76, 0, 0.24, 1),
+    transform 1.15s cubic-bezier(0.76, 0, 0.24, 1),
+    visibility 0s linear 1.15s;
+  pointer-events: auto;
+  will-change: transform;
+}
+.page-intro::before,
+.page-intro::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.page-intro::before {
+  background: linear-gradient(115deg, transparent 18%, rgba(255, 255, 255, 0.82) 42%, transparent 66%);
+  transform: translateX(-115%) translateZ(0);
+  animation: introLightSweep 1.35s cubic-bezier(0.16, 1, 0.3, 1) 0.55s forwards;
+}
+.page-intro::after {
+  background: linear-gradient(180deg, rgba(51, 71, 202, 0), rgba(51, 71, 202, 0.1));
+  opacity: 0;
+  transform: translateY(22%) translateZ(0);
+}
+body.intro-fading .page-intro {
+  border-radius: 36px 36px 0 0;
+  box-shadow: 0 -24px 70px rgba(42, 42, 140, 0.16);
+  transform: translateY(104%) translateZ(0);
+}
+body.intro-fading .page-intro::after {
+  opacity: 1;
+  transform: translateY(-8%) translateZ(0);
+  transition: opacity 0.65s ease, transform 1.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+body.intro-complete .page-intro {
+  pointer-events: none;
+  visibility: hidden;
+}
+.page-intro__inner {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  align-items: center;
+  gap: 35px;
+  max-width: 90%;
+  width: 100%;
+  margin: 0 auto;
+  padding: 40px 48px 125px 48px;
+  box-sizing: border-box;
+  justify-items: stretch;
+}
+.page-intro__visual {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  opacity: 0;
+  transform: translateX(44px) translateZ(0);
+  animation: introImage 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.18s forwards;
+}
+body.intro-fading .page-intro__title,
+body.intro-fading .page-intro__visual {
+  transition: opacity 0.65s ease, transform 1.15s cubic-bezier(0.76, 0, 0.24, 1),
+    filter 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0;
+  transform: translateY(34px) scale(0.98) translateZ(0);
+  filter: blur(4px);
+}
+.page-intro__image {
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  display: block;
+  transform: translateZ(0);
+  transform-origin: center center;
+  animation: shakeRotate 3s ease-in-out 0.9s infinite;
+}
+.page-intro__title {
+  width: 100%;
+  min-width: 0;
+  font-family: 'Inter Display', sans-serif;
+  font-size: 60px;
+  font-weight: 400;
+  line-height: 1.05;
+  margin: 0 0 32px 0;
+  color: var(--blue);
+  letter-spacing: -0.02em;
+  text-align: left;
+  opacity: 0;
+  transform: translateY(44px) translateZ(0);
+  animation: introTitle 0.6s cubic-bezier(0.34, 1.2, 0.64, 1) 0.3s forwards;
+}
+.page-intro__title span {
+  color: #3247C9;
+  font-weight: 900;
+  font-size: 1.2em;
+}
+@keyframes introTitle { to { opacity: 1; transform: translateY(0) translateZ(0); } }
+@keyframes introImage { to { opacity: 1; transform: translateX(0) translateZ(0); } }
+@keyframes introLightSweep { to { transform: translateX(115%) translateZ(0); } }
+@keyframes shakeRotate {
+  0%, 100% { transform: rotate(0deg) translateX(0) translateZ(0); }
+  10% { transform: rotate(-8deg) translateX(-5px) translateZ(0); }
+  20% { transform: rotate(8deg) translateX(5px) translateZ(0); }
+  30% { transform: rotate(-6deg) translateX(-3px) translateZ(0); }
+  40% { transform: rotate(6deg) translateX(3px) translateZ(0); }
+  50% { transform: rotate(-4deg) translateX(-2px) translateZ(0); }
+  60% { transform: rotate(4deg) translateX(2px) translateZ(0); }
+  70% { transform: rotate(-2deg) translateX(-1px) translateZ(0); }
+  80% { transform: rotate(2deg) translateX(1px) translateZ(0); }
+  90% { transform: rotate(0deg) translateX(0) translateZ(0); }
+}
+@media (max-width: 968px) {
+  .page-intro { align-items: center; padding-top: 0; }
+  .page-intro__inner { padding: 32px 32px 80px 32px; text-align: center; gap: 40px; }
+  .page-intro__image { width: min(420px, 100%); }
+}
+@media (max-width: 768px) {
+  .page-intro__inner {
+    grid-template-columns: 1fr;
+    width: 100%;
+    max-width: 100%;
+    justify-content: center;
+    justify-items: center;
+    align-items: center;
+    padding: 24px 20px 64px 20px;
+    min-height: auto;
+    gap: 18px;
+  }
+  .page-intro__visual { display: none; }
+  .page-intro__title {
+    width: 100%;
+    max-width: 100%;
+    flex: 0 0 auto;
+    font-size: clamp(32px, 10.5vw, 40px);
+    line-height: 1;
+    text-align: center;
+    overflow-wrap: normal;
+    word-break: keep-all;
+    hyphens: none;
+    text-wrap: balance;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #dc-root { opacity: 1; transform: none; filter: none; }
+  .page-intro { display: none; }
+}
