@@ -122,6 +122,11 @@ exports.handler = async (event) => {
   const trancheName = TRANCHE_TAG[String(body.tranche || '').trim()];
   if (trancheName && (await applyTag(contactId, trancheName))) appliedTags.push(trancheName);
 
+  // premium interest (yes -> "intérêt premium", no -> "refusé-premium-site")
+  const pi = String(body.premiumInterest || '').trim().toLowerCase();
+  if (pi === 'yes' || pi === 'oui') { if (await applyTag(contactId, 'intérêt premium')) appliedTags.push('intérêt premium'); }
+  else if (pi === 'no' || pi === 'non') { if (await applyTag(contactId, 'refusé-premium-site')) appliedTags.push('refusé-premium-site'); }
+
   return {
     statusCode: 200,
     headers,

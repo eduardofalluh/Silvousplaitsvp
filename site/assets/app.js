@@ -95,7 +95,7 @@
   function wireFunnel() {
     var funnel = document.querySelector('[data-svp="funnel"]');
     if (!funnel) return;
-    var state = { ville: '', interests: [], tranche: '' };
+    var state = { ville: '', interests: [], tranche: '', premium: '' };
 
     funnel.querySelectorAll('[data-svp-ville]').forEach(function (el) {
       if (el.getAttribute('data-selected') === '1') { state.ville = el.getAttribute('data-svp-ville'); }
@@ -121,9 +121,40 @@
       });
     });
 
+    // premium-interest chips (single-select yes/no)
+    funnel.querySelectorAll('[data-svp-premium]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        state.premium = el.getAttribute('data-svp-premium');
+        funnel.querySelectorAll('[data-svp-premium]').forEach(function (x) { paint(x, x === el); });
+      });
+    });
+
     var emailInput = funnel.querySelector('[data-svp="funnel-email"]');
     var known = getEmail();
     if (known && emailInput && !emailInput.value) emailInput.value = known;
+
+    // "not finished" popup — if they engaged with the funnel but try to leave
+    var funnelSubmitted = false;
+    var engaged = false;
+    funnel.addEventListener('click', function () { engaged = true; });
+    if (emailInput) emailInput.addEventListener('input', function () { engaged = true; });
+    document.addEventListener('mouseout', function (e) {
+      if (e.clientY > 0 || e.relatedTarget) return;
+      if (!engaged || funnelSubmitted) return;
+      if (funnel.__warned) return; funnel.__warned = true;
+      var o = document.createElement('div');
+      o.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(22,24,43,.55);display:flex;align-items:center;justify-content:center;padding:20px';
+      o.innerHTML = '<div style="background:#FFFEF5;max-width:400px;width:100%;border:1.5px solid #16182B;border-radius:18px;box-shadow:6px 6px 0 #3347CA;padding:26px;text-align:center;position:relative">'
+        + '<button data-x style="position:absolute;top:10px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:#8B8DA0">×</button>'
+        + '<h3 style="font:800 21px \'Bricolage Grotesque\',sans-serif;margin:0 0 8px">Ton inscription n\'est pas finie&nbsp;! ⏳</h3>'
+        + '<p style="font:500 14px \'Instrument Sans\',sans-serif;color:#4A4D66;margin:0 0 18px;line-height:1.5">Encore une étape et tu reçois nos meilleurs spectacles pas chers chaque lundi.</p>'
+        + '<button data-stay style="background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:13px 22px;font:700 14px \'Instrument Sans\',sans-serif;cursor:pointer">Terminer mon inscription</button></div>';
+      document.body.appendChild(o);
+      var close = function () { o.remove(); };
+      o.querySelector('[data-x]').addEventListener('click', close);
+      o.addEventListener('click', function (e2) { if (e2.target === o) close(); });
+      o.querySelector('[data-stay]').addEventListener('click', function () { close(); if (submit) submit.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'center' }); });
+    });
 
     var feedback = funnel.querySelector('[data-svp="funnel-feedback"]');
     function say(msg, isErr) { if (feedback) { feedback.textContent = msg || ''; feedback.style.color = isErr ? '#b00020' : '#3347CA'; } }
@@ -141,10 +172,11 @@
       say('');
       fetch(FN + 'submit-enriched', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email, firstName: prenom.trim(), ville: state.ville, interests: state.interests, tranche: state.tranche, website: honeypot }),
+        body: JSON.stringify({ email: email, firstName: prenom.trim(), ville: state.ville, interests: state.interests, tranche: state.tranche, premiumInterest: state.premium, website: honeypot }),
       }).then(function (r) { return r.json().catch(function () { return {}; }); })
         .then(function (d) {
           if (d && d.subscribed) {
+            funnelSubmitted = true;
             setEmail(email);
             pixel('track', 'Lead');
             var card = funnel.querySelector('[data-svp="funnel-card"]') || funnel;
