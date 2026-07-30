@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter+Display:wght@400;600;700;800;900&display=swap');
 /* Page intro — exact replica of the deployed (production) home loader.
    Same 3s white screen + title + trompette, then slide-down reveal. */
 :root { --blue: #3347CA; }
