@@ -598,8 +598,20 @@
     });
   }
 
+  // ---- scroll-to-top CTAs (step cards, free-plan button) ----
+  function wireScrollTop() {
+    document.querySelectorAll('[data-svp="scroll-top"]').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
+        var em = document.querySelector('[data-svp="hero-email"]');
+        if (em) setTimeout(function () { try { em.focus({ preventScroll: true }); } catch (er) {} }, reducedMotion ? 0 : 420);
+      });
+    });
+  }
+
   function init() {
-    wireBackLinks(); wireFaq();
+    wireBackLinks(); wireFaq(); wireScrollTop();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers();
