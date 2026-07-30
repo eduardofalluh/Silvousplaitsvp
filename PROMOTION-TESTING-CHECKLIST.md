@@ -21,9 +21,9 @@ tested for real on prod. ✅ = already verified on staging (still worth a quick 
 - [ ] **`video_url` sheet column:** on the first admin login after promotion, the code
       auto-adds a `video_url` header to column **O** of the `premium_offers` sheet.
       Confirm the column appears and no error shows (it's additive/empty — safe).
-- [ ] **Archive storage decision** (currently NOT working — see Part 8): either add a
-      `NETLIFY_BLOBS_TOKEN` + `NETLIFY_SITE_ID` env, or switch the archive to a Google
-      Sheet tab. Until then the archive page shows empty.
+- [ ] **Archive** is now a Google Sheet tab (`premium_offers_archive`) — no env/token needed.
+      The tab auto-creates (empty) on first use, just like the `video_url` column. Nothing to do
+      here beyond the Part 8 tests.
 - [ ] **Rotate exposed keys** (surfaced in earlier CLI output): ActiveCampaign API key
       and the Stripe read key.
 - [ ] Remove/ignore the neutralized `_tmp-list-stripe-prices` endpoint — it's absent from
@@ -95,12 +95,22 @@ tested for real on prod. ✅ = already verified on staging (still worth a quick 
       **promotion@silvousplaitsvp.com** with the selected interests included.
 - [ ] ⚠️ Contact form → email arrives at **spectacles@silvousplaitsvp.com**.
 
-## PART 8 — Archive (currently NOT working — needs a decision)
+## PART 8 — Archive (Google Sheet tab — built, ✅ read path verified, ⚠️ write paths need prod)
 
-- [ ] ⚠️ Archive page (`archive.html`) — will stay **empty** until either:
-      - a Netlify Blobs token is configured, **or**
-      - it's switched to a Google-Sheet-tab archive (recommended, more robust).
-      Then: verify an offer whose date has passed appears in the archive.
+How it works now: when an offer's `event_date` passes, on the next offer read it's **copied to
+the `premium_offers_archive` tab, then removed** from the active `premium_offers` tab (archive
+first — if archiving fails it stays active, so no data loss). The public archive page and the
+admin both read from that tab.
+
+- [ ] ✅ Archive page renders (incl. video on archived offers) — verified with mock data.
+- [ ] ⚠️ **Expiry → archive:** let an offer's date pass (or set a past date on a throwaway offer)
+      → after the offers list is read, confirm it **moves** to `premium_offers_archive` and
+      disappears from the active offers, and appears on `archive.html`.
+- [ ] ⚠️ **Admin "Offres archivées" section:** shows past offers with 🎬 badge; **Modifier**
+      loads it into the form and "Enregistrer" updates the **archive** row; **Supprimer** removes
+      it from the archive. Verify each against the sheet.
+- [ ] The empty `premium_offers_archive` tab was already created on the shared sheet during
+      staging testing (benign, additive — same as the `video_url` column).
 
 ## PART 9 — Cross-cutting
 
