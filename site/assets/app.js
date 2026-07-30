@@ -685,11 +685,23 @@
     var intro = document.getElementById('page-intro');
     if (!intro) return;
     if (reducedMotion) { document.body.classList.add('intro-complete'); return; }
+    var root = document.documentElement;
+    // Lock scroll + pin to top so the sliding intro can never be scrolled into view.
+    root.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    window.scrollTo(0, 0);
     setTimeout(function () { document.body.classList.add('intro-fading'); }, 2550);
-    setTimeout(function () { document.body.classList.add('intro-complete'); }, 3800);
+    setTimeout(function () {
+      document.body.classList.add('intro-complete');
+      root.style.overflow = '';
+      document.body.style.overflow = '';
+    }, 3800);
   }
 
   function init() {
+    // Always start at the top on (re)load — don't let the browser restore scroll.
+    if ('scrollRestoration' in history) { try { history.scrollRestoration = 'manual'; } catch (e) {} }
+    try { window.scrollTo(0, 0); } catch (e) {}
     wireIntro();
     wireBackLinks(); wireFaq(); wireScrollTop();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();

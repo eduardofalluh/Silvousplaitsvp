@@ -70,7 +70,7 @@ body.intro-fading .page-intro::after {
 }
 body.intro-complete .page-intro {
   pointer-events: none;
-  visibility: hidden;
+  display: none;
 }
 .page-intro__inner {
   display: grid;
