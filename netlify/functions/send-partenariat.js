@@ -37,6 +37,8 @@ exports.handler = async (event) => {
   const email = String(body.email || '').trim();
   const organisation = String(body.organisation || body.company || '').trim();
   const message = String(body.message || '').trim();
+  const interests = Array.isArray(body.interests) ? body.interests.map((x) => String(x).trim()).filter(Boolean) : [];
+  const interestLine = interests.length ? interests.join(', ') : '(non précisé)';
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !message) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Nom, courriel valide et message requis' }) };
   }
@@ -52,8 +54,8 @@ exports.handler = async (event) => {
       to: PARTNER_INBOX,
       replyTo: email,
       subject: `Nouvelle demande de partenariat — ${organisation || name || email}`,
-      text: `Nom: ${name}\nCourriel: ${email}\nOrganisation: ${organisation}\n\nMessage:\n${message}`,
-      html: `<div style="font-family:Arial,sans-serif"><p><strong>Nom&nbsp;:</strong> ${esc(name)}</p><p><strong>Courriel&nbsp;:</strong> ${esc(email)}</p><p><strong>Organisation&nbsp;:</strong> ${esc(organisation)}</p><p><strong>Message&nbsp;:</strong></p><p style="white-space:pre-wrap">${esc(message)}</p></div>`,
+      text: `Nom: ${name}\nCourriel: ${email}\nOrganisation: ${organisation}\nIntérêt: ${interestLine}\n\nMessage:\n${message}`,
+      html: `<div style="font-family:Arial,sans-serif"><p><strong>Nom&nbsp;:</strong> ${esc(name)}</p><p><strong>Courriel&nbsp;:</strong> ${esc(email)}</p><p><strong>Organisation&nbsp;:</strong> ${esc(organisation)}</p><p><strong>Intérêt&nbsp;:</strong> ${esc(interestLine)}</p><p><strong>Message&nbsp;:</strong></p><p style="white-space:pre-wrap">${esc(message)}</p></div>`,
     });
   } catch (err) {
     return { statusCode: 502, headers, body: JSON.stringify({ error: "L'envoi a échoué. Réessaie plus tard." }) };

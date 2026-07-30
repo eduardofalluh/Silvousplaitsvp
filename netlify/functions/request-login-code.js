@@ -58,10 +58,16 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Adresse email invalide' }) };
   }
 
-  // Only premium members have an account to log into.
-  const status = await premiumChecker.isPremiumMember(email, false);
-  if (!status.isPremium) {
-    return { statusCode: 200, headers, body: JSON.stringify({ sent: false, reason: 'no-account' }) };
+  // Any existing contact (premium OR free subscriber) can log in to see their
+  // info. Only send a code if the email already exists in ActiveCampaign.
+  try {
+    const look = await fetch(`${process.env.ACTIVECAMPAIGN_API_URL}/api/3/contacts?email=${encodeURIComponent(email)}`, { headers: { 'Api-Token': process.env.ACTIVECAMPAIGN_API_KEY } });
+    const data = await look.json();
+    if (!((data.contacts || []).length)) {
+      return { statusCode: 200, headers, body: JSON.stringify({ sent: false, reason: 'no-account' }) };
+    }
+  } catch (e) {
+    return { statusCode: 502, headers, body: JSON.stringify({ error: 'Lookup failed. Réessaie.' }) };
   }
 
   const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');

@@ -374,30 +374,38 @@
     });
   }
 
-  // ---- P5: partenariat form ----
+  // ---- P5: partenariat form (interest selector + fields) ----
   function wirePartenariat() {
     var form = document.querySelector('[data-svp="partner-form"]');
     if (!form) return;
     var msg = form.querySelector('[data-svp="partner-msg"]');
     var btn = form.querySelector('[data-svp="partner-submit"]');
+    var interests = [];
+    form.querySelectorAll('[data-svp-partner-interest]').forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        var v = opt.getAttribute('data-svp-partner-interest');
+        var i = interests.indexOf(v);
+        if (i >= 0) { interests.splice(i, 1); opt.removeAttribute('data-selected'); }
+        else { interests.push(v); opt.setAttribute('data-selected', '1'); }
+      });
+    });
     function say(t, err) { if (msg) { msg.textContent = t || ''; msg.style.color = err ? '#b00020' : '#3347CA'; } }
-    form.addEventListener('submit', function (e) {
+    function val(n) { var el = form.querySelector('[name="' + n + '"]'); return el ? el.value : ''; }
+    if (!btn) return;
+    btn.addEventListener('click', function (e) {
       e.preventDefault();
-      var data = {
-        name: (form.querySelector('[name="name"]') || {}).value || '',
-        email: (form.querySelector('[name="email"]') || {}).value || '',
-        organisation: (form.querySelector('[name="organisation"]') || {}).value || '',
-        message: (form.querySelector('[name="message"]') || {}).value || '',
-        website: (form.querySelector('[name="website"]') || {}).value || '',
-      };
+      var data = { name: val('name'), email: val('email'), organisation: val('organisation'), message: val('message'), website: val('website'), interests: interests };
       if (!validEmail(data.email.trim()) || !data.message.trim()) { say('Courriel valide et message requis.', true); return; }
-      if (btn) btn.disabled = true; say('Envoi…');
+      btn.disabled = true; say('Envoi…');
       fetch(FN + 'send-partenariat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
         .then(function (r) { return r.json(); }).then(function (d) {
-          if (btn) btn.disabled = false;
-          if (d && d.sent) { form.reset(); say('Merci ! On te revient rapidement.'); }
-          else { say((d && d.error) || "L'envoi a échoué. Réessaie.", true); }
-        }).catch(function () { if (btn) btn.disabled = false; say('Erreur. Réessaie plus tard.', true); });
+          btn.disabled = false;
+          if (d && d.sent) {
+            ['name', 'email', 'organisation', 'message'].forEach(function (n) { var el = form.querySelector('[name="' + n + '"]'); if (el) el.value = ''; });
+            interests = []; form.querySelectorAll('[data-svp-partner-interest]').forEach(function (o) { o.removeAttribute('data-selected'); });
+            say('Merci ! On vous revient rapidement.');
+          } else { say((d && d.error) || "L'envoi a échoué. Réessaie.", true); }
+        }).catch(function () { btn.disabled = false; say('Erreur. Réessaie plus tard.', true); });
     });
   }
 
