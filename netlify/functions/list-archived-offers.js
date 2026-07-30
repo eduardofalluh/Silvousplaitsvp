@@ -1,33 +1,36 @@
-/**
- * Read-only archive of PAST premium offers, from the Netlify Blobs store
- * populated by snapshot-offers. Returns offers whose event_date is in the past,
- * newest first. Never touches the Sheet.
- */
-const { getStore } = require('@netlify/blobs');
+// Public: list archived (past) premium offers from the Google Sheet archive tab.
+const {
+  getMissingSheetEnvVars,
+  listArchivedOffers,
+} = require('../../utils/premium-offers-store');
+const { buildJsonHeaders, isAllowedOrigin } = require('../../utils/http-security');
 
-function archiveStore() {
-  const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
-  const token = process.env.NETLIFY_BLOBS_TOKEN || process.env.NETLIFY_API_TOKEN;
-  return siteID && token
-    ? getStore({ name: 'premium-offers-archive', siteID, token })
-    : getStore('premium-offers-archive');
+function sanitizePublicOffer(offer) {
+  return {
+    id: offer.id,
+    title: offer.title,
+    region: offer.region,
+    offer_type: offer.filtre_offre || offer.offer_type,
+    venue: offer.venue,
+    event_date: offer.event_date,
+    image_url: offer.image_url,
+    video_url: offer.video_url,
+  };
 }
 
-
-const headers = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
-
 exports.handler = async (event) => {
+  const headers = buildJsonHeaders(event, { noStore: true });
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
+  if (!isAllowedOrigin(event)) return { statusCode: 403, headers, body: JSON.stringify({ error: 'Forbidden origin' }) };
+  if (event.httpMethod !== 'GET') return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
+
+  const missing = getMissingSheetEnvVars();
+  if (missing.length) return { statusCode: 500, headers, body: JSON.stringify({ error: `Missing env vars: ${missing.join(', ')}` }) };
+
   try {
-    const store = archiveStore();
-    const { blobs } = await store.list();
-    const now = Date.now();
-    const all = await Promise.all(blobs.map((b) => store.get(b.key, { type: 'json' }).catch(() => null)));
-    const past = all
-      .filter((o) => o && o.event_date && !isNaN(new Date(o.event_date)) && new Date(o.event_date).getTime() < now)
-      .sort((a, b) => new Date(b.event_date) - new Date(a.event_date));
-    return { statusCode: 200, headers, body: JSON.stringify({ success: true, offers: past }) };
-  } catch (err) {
-    return { statusCode: 200, headers, body: JSON.stringify({ success: true, offers: [], note: 'archive-empty-or-unavailable' }) };
+    const offers = await listArchivedOffers({ includeInactive: false });
+    return { statusCode: 200, headers, body: JSON.stringify({ success: true, offers: offers.map(sanitizePublicOffer) }) };
+  } catch (error) {
+    return { statusCode: 200, headers, body: JSON.stringify({ success: true, offers: [], note: error.message || 'archive-unavailable' }) };
   }
 };

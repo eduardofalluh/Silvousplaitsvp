@@ -4,6 +4,7 @@ const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 const GOOGLE_PRIVATE_KEY = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
 const PREMIUM_OFFERS_SHEET_ID = process.env.PREMIUM_OFFERS_SHEET_ID || process.env.GOOGLE_SHEET_ID;
 const PREMIUM_OFFERS_TAB = process.env.PREMIUM_OFFERS_TAB || 'premium_offers';
+const PREMIUM_OFFERS_ARCHIVE_TAB = process.env.PREMIUM_OFFERS_ARCHIVE_TAB || 'premium_offers_archive';
 const PREMIUM_OFFERS_REGIONS_TAB = process.env.PREMIUM_OFFERS_REGIONS_TAB || 'premium_regions';
 const PREMIUM_OFFERS_TYPES_TAB = process.env.PREMIUM_OFFERS_TYPES_TAB || 'premium_offer_types';
 const FREE_SIGNUP_LOCATIONS_TAB = process.env.FREE_SIGNUP_LOCATIONS_TAB || 'free_signup_locations';
@@ -946,7 +947,11 @@ async function listPremiumOffers({ includeInactive = false, sheets: providedShee
 
   const expiredOffers = offers.filter((offer) => isExpiredOffer(offer));
   if (expiredOffers.length) {
-    await deleteOfferRows(sheets, expiredOffers);
+    // Move expired offers to the archive tab BEFORE removing them from the active
+    // tab. If archiving fails, keep them active (no data loss) and retry next read.
+    let archived = false;
+    try { await archiveExpiredOffers(sheets, expiredOffers); archived = true; } catch (e) { archived = false; }
+    if (archived) await deleteOfferRows(sheets, expiredOffers);
   }
 
   const availableOffers = offers.filter((offer) => !isExpiredOffer(offer));
@@ -1060,6 +1065,104 @@ async function deletePremiumOffer(id) {
 
   await deleteOfferRows(sheets, [existingOffer]);
 
+  return { deleted: true, id: normalizedId };
+}
+
+// ----- Premium offers ARCHIVE (past offers kept in their own sheet tab) -----
+async function ensureArchiveSheet(sheets) {
+  await getOrCreateSheet(sheets, PREMIUM_OFFERS_ARCHIVE_TAB, true);
+  const lastCol = columnNumberToLetter(OFFER_HEADERS.length);
+  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_ARCHIVE_TAB}!A1:${lastCol}1`, 'archive header read');
+  const headerRow = (read.data.values || [])[0] || [];
+  const hasHeaders = OFFER_HEADERS.every((h) => headerRow.some((c) => normalizeForCompare(c) === normalizeForCompare(h)));
+  if (!hasHeaders) {
+    await safeWriteRange(sheets, `${PREMIUM_OFFERS_ARCHIVE_TAB}!A1:${lastCol}1`, [OFFER_HEADERS], 'archive header write');
+  }
+}
+
+async function readArchiveSheetData(sheets) {
+  await ensureArchiveSheet(sheets);
+  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_ARCHIVE_TAB}!A:ZZ`, 'archive read');
+  const rows = read.data.values || [];
+  const headerRow = (rows[0] || []).map((cell) => normalize(cell));
+  const headerMap = buildHeaderIndexMap(headerRow);
+  return { rows, headerRow, headerMap };
+}
+
+function mapArchiveRows(rows, headerMap) {
+  const offers = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i] || [];
+    const offer = Object.keys(headerMap).length
+      ? mapOfferRowWithHeaderMap(row, i + 1, headerMap)
+      : mapOfferRow(row, i + 1);
+    if (!offer.id || !offer.title) continue;
+    offers.push(offer);
+  }
+  return offers;
+}
+
+async function listArchivedOffers({ includeInactive = false, sheets: providedSheets } = {}) {
+  const sheets = providedSheets || await getSheetsClient();
+  const { rows, headerMap } = await readArchiveSheetData(sheets);
+  if (rows.length < 2) return [];
+  return mapArchiveRows(rows, headerMap)
+    .filter((offer) => includeInactive || offer.is_active)
+    .sort((a, b) => {
+      const dateA = a.event_date || '0000-01-01';
+      const dateB = b.event_date || '0000-01-01';
+      if (dateA !== dateB) return dateB.localeCompare(dateA); // most-recent past first
+      return a.title.localeCompare(b.title, 'fr-CA', { sensitivity: 'base' });
+    });
+}
+
+// Append expired offers to the archive tab (idempotent by id).
+async function archiveExpiredOffers(sheets, expiredOffers) {
+  if (!expiredOffers || !expiredOffers.length) return;
+  const { rows, headerRow } = await readArchiveSheetData(sheets);
+  const existingIds = new Set();
+  for (let i = 1; i < rows.length; i++) {
+    const id = normalize((rows[i] || [])[0]);
+    if (id) existingIds.add(id);
+  }
+  const targetHeaders = headerRow && headerRow.length ? headerRow : OFFER_HEADERS;
+  const newRows = expiredOffers
+    .filter((o) => !existingIds.has(normalize(o.id)))
+    .map((o) => createOfferRow(o, o, targetHeaders));
+  if (!newRows.length) return;
+  const lastCol = columnNumberToLetter((targetHeaders && targetHeaders.length) || OFFER_HEADERS.length);
+  const startRow = Math.max(rows.length, 1) + 1;
+  await safeWriteRange(
+    sheets,
+    `${PREMIUM_OFFERS_ARCHIVE_TAB}!A${startRow}:${lastCol}${startRow + newRows.length - 1}`,
+    newRows,
+    'archive append'
+  );
+}
+
+// Admin: upsert an archived offer (edit an offer already in the archive).
+async function saveArchivedOffer(offer) {
+  const sheets = await getSheetsClient();
+  const { rows, headerRow, headerMap } = await readArchiveSheetData(sheets);
+  const existing = mapArchiveRows(rows, headerMap).find((o) => o.id === normalize(offer.id));
+  const values = [createOfferRow(offer, existing, headerRow)];
+  const lastCol = columnNumberToLetter((headerRow && headerRow.length) || OFFER_HEADERS.length);
+  if (existing) {
+    await safeWriteRange(sheets, `${PREMIUM_OFFERS_ARCHIVE_TAB}!A${existing.rowNumber}:${lastCol}${existing.rowNumber}`, values, 'archive offer update');
+    return { id: existing.id, updated: true };
+  }
+  const newRow = Math.max(rows.length, 1) + 1;
+  await safeWriteRange(sheets, `${PREMIUM_OFFERS_ARCHIVE_TAB}!A${newRow}:${lastCol}${newRow}`, values, 'archive offer insert');
+  return { id: values[0][0], created: true };
+}
+
+async function deleteArchivedOffer(id) {
+  const normalizedId = normalize(id);
+  if (!normalizedId) throw new Error('Offer id is required');
+  const sheets = await getSheetsClient();
+  const existing = (await listArchivedOffers({ includeInactive: true, sheets })).find((o) => o.id === normalizedId);
+  if (!existing) throw new Error('Archived offer not found');
+  await deleteOfferRows(sheets, [existing], PREMIUM_OFFERS_ARCHIVE_TAB);
   return { deleted: true, id: normalizedId };
 }
 
@@ -1771,6 +1874,10 @@ module.exports = {
   getSheetsClient,
   getMissingSheetEnvVars,
   listPremiumOffers,
+  listArchivedOffers,
+  saveArchivedOffer,
+  deleteArchivedOffer,
+  PREMIUM_OFFERS_ARCHIVE_TAB,
   listPremiumOfferRegions,
   listPremiumOfferTypes,
   listFreeSignupLocations,

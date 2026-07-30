@@ -351,6 +351,12 @@
           <h2>Offres existantes</h2>
           <div id="offer-list" class="offer-list"></div>
         </div>
+
+        <div class="admin-card">
+          <h2>Offres archivées (passées)</h2>
+          <p style="margin:0 0 12px;color:#4A4D66;font-size:13.5px">Les offres dont la date est passée. Modifie-les (via le formulaire ci-dessus) ou supprime-les.</p>
+          <div id="archived-offer-list" class="offer-list"></div>
+        </div>
       </div>
 
       <div class="admin-grid">
@@ -463,6 +469,8 @@
       };
 
       let offers = [];
+      let archivedOffers = [];
+      let editingArchived = false;
       let regions = [];
       let offerTypes = [];
       let freeSignupLocations = [];
@@ -498,6 +506,7 @@
         fieldMap.id.value = '';
         fieldMap.is_active.value = 'true';
         currentEditingExtraFields = {};
+        editingArchived = false;
         renderDynamicExtraFields();
       }
 
@@ -798,6 +807,7 @@
           button.addEventListener('click', () => {
             const offer = offers.find((item) => item.id === button.getAttribute('data-edit'));
             if (!offer) return;
+            editingArchived = false;
             Object.keys(fieldMap).forEach((key) => {
               if (key === 'is_active') {
                 fieldMap[key].value = String(offer[key]);
@@ -828,6 +838,60 @@
               return;
             }
             setMessage(formMessage, 'ok', 'Offre supprimée.');
+            await loadOffers();
+            resetForm();
+          });
+        });
+      }
+
+      function renderArchivedOffers() {
+        const list = document.getElementById('archived-offer-list');
+        if (!list) return;
+        if (!archivedOffers.length) {
+          list.innerHTML = '<p>Aucune offre archivée pour le moment.</p>';
+          return;
+        }
+        list.innerHTML = archivedOffers.map((offer) => `
+          <article class="offer-admin-item">
+            <img src="${offer.image_url || 'assets/premium_image.avif'}" alt="${offer.title || ''}" />
+            ${offer.video_url ? '<span style="display:inline-block;background:#EEF0FD;color:#3347CA;font:700 11px sans-serif;padding:3px 9px;border-radius:100px;margin-bottom:6px">🎬 Vidéo</span>' : ''}
+            <strong>${offer.title || ''}</strong>
+            <span>${[formatRegionLabel(offer.region), offer.filtre_offre || offer.offer_type, offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · ')}</span>
+            <span>${offer.is_active ? 'Active' : 'Inactive'}</span>
+            <div class="offer-admin-actions">
+              <button type="button" data-edit-archived="${offer.id}" class="button-secondary">Modifier</button>
+              <button type="button" data-delete-archived="${offer.id}" class="button-danger">Supprimer</button>
+            </div>
+          </article>
+        `).join('');
+
+        list.querySelectorAll('[data-edit-archived]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const offer = archivedOffers.find((item) => item.id === button.getAttribute('data-edit-archived'));
+            if (!offer) return;
+            editingArchived = true;
+            Object.keys(fieldMap).forEach((key) => {
+              if (key === 'is_active') { fieldMap[key].value = String(offer[key]); return; }
+              fieldMap[key].value = key === 'event_date' ? toDateTimeLocalValue(offer[key]) : (offer[key] || '');
+            });
+            currentEditingExtraFields = Object.assign({}, offer.extra_fields || {});
+            renderDynamicExtraFields(currentEditingExtraFields);
+            setMessage(formMessage, '', "Modification d'une offre ARCHIVÉE — « Enregistrer » mettra à jour l'archive.");
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        });
+
+        list.querySelectorAll('[data-delete-archived]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            if (!window.confirm('Supprimer cette offre archivée ?')) return;
+            const response = await authFetch('/.netlify/functions/delete-archived-offer', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: button.getAttribute('data-delete-archived') }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) { setMessage(formMessage, 'err', data.error || 'Suppression impossible.'); return; }
+            setMessage(formMessage, 'ok', 'Offre archivée supprimée.');
             await loadOffers();
             resetForm();
           });
@@ -942,6 +1006,7 @@
           return;
         }
         offers = Array.isArray(data.offers) ? data.offers : [];
+        archivedOffers = Array.isArray(data.archivedOffers) ? data.archivedOffers : [];
         showcaseItems = Array.isArray(data.showcaseItems) ? data.showcaseItems : [];
         regions = Array.isArray(data.regions)
           ? data.regions.map((region) => ({
@@ -976,6 +1041,7 @@
         renderOfferTypes();
         renderFreeSignupLocations();
         renderOffers();
+        renderArchivedOffers();
         renderShowcaseItems();
         renderDynamicExtraFields(currentEditingExtraFields);
       }
@@ -1010,7 +1076,8 @@
         payload.extra_fields = readDynamicExtraFields();
         payload.event_date = toIsoDateTimeValue(payload.event_date);
 
-        const response = await authFetch('/.netlify/functions/save-premium-offer', {
+        const saveEndpoint = editingArchived ? '/.netlify/functions/save-archived-offer' : '/.netlify/functions/save-premium-offer';
+        const response = await authFetch(saveEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),

@@ -3,6 +3,7 @@ const {
   getSheetsClient,
   getMissingSheetEnvVars,
   listPremiumOffers,
+  listArchivedOffers,
   listPremiumOfferRegions,
   listPremiumOfferTypes,
   listFreeSignupLocations,
@@ -45,8 +46,9 @@ exports.handler = async (event) => {
 
   try {
     const sheets = await getSheetsClient();
-    const [offers, regions, showcaseItems, freeSignupLocations] = await Promise.all([
+    const [offers, archivedOffers, regions, showcaseItems, freeSignupLocations] = await Promise.all([
       listPremiumOffers({ includeInactive: true, sheets }),
+      listArchivedOffers({ includeInactive: true, sheets }).catch(() => []),
       listPremiumOfferRegions({ sheets }),
       listPremiumShowcaseItems({ includeInactive: true, sheets }),
       listFreeSignupLocations({ sheets }),
@@ -60,7 +62,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ success: true, offers, regions, offerTypes, showcaseItems, freeSignupLocations }),
+      body: JSON.stringify({ success: true, offers, archivedOffers, regions, offerTypes, showcaseItems, freeSignupLocations }),
     };
   } catch (error) {
     return {

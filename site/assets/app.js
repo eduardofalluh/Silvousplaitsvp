@@ -564,13 +564,6 @@
       grid.innerHTML = offers.map(compteCard).join('');
     }).catch(function () { if (empty) empty.style.display = 'block'; });
   }
-  // On the premium page, snapshot current offers to the archive (fire-and-forget,
-  // read-only on the Sheet) so offers are captured before they expire.
-  function triggerSnapshot() {
-    if (!document.querySelector('[data-scroller="offres"]')) return;
-    try { fetch(FN + 'snapshot-offers', { method: 'POST', keepalive: true }); } catch (e) {}
-  }
-
   function wireLiveOffers() {
     var carousel = document.querySelector('[data-scroller="offres"]');
     var grid = document.querySelector('[data-svp="offers-grid"]');
@@ -711,7 +704,7 @@
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers();
-    wireArchive(); triggerSnapshot();
+    wireArchive();
     wireReveal(); wirePageTransitions();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
