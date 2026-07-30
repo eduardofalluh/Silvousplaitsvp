@@ -369,21 +369,25 @@
   function wirePremiumCheckout() {
     var btns = document.querySelectorAll('[data-svp="checkout"]');
     if (!btns.length) return;
+    function resetBtn(btn) { var o = btn.getAttribute('data-orig-label'); if (o != null) btn.textContent = o; btn.disabled = false; }
     btns.forEach(function (btn) {
+      if (btn.getAttribute('data-orig-label') == null) btn.setAttribute('data-orig-label', btn.textContent);
       btn.addEventListener('click', function (e) {
         e.preventDefault();
         var plan = btn.getAttribute('data-plan') || 'yearly';
         var email = getEmail();
         if (email) { try { fetch(FN + 'tag-contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, tag: 'a-cliqué-premium-siteweb' }), keepalive: true }); } catch (er) {} }
         pixel('track', 'InitiateCheckout');
-        var original = btn.textContent; btn.textContent = 'Redirection…';
+        btn.textContent = 'Redirection…';
         fetch(FN + 'create-checkout-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planKey: plan, returnPath: '/premium.html' }) })
           .then(function (r) { return r.json(); }).then(function (d) {
             if (d && d.url) { window.location.href = d.url; }
-            else { btn.textContent = original; alert("Le paiement n'a pas pu démarrer. Réessaie."); }
-          }).catch(function () { btn.textContent = original; alert('Erreur. Réessaie plus tard.'); });
+            else { resetBtn(btn); alert("Le paiement n'a pas pu démarrer. Réessaie."); }
+          }).catch(function () { resetBtn(btn); alert('Erreur. Réessaie plus tard.'); });
       });
     });
+    // Returning to the page (e.g. Back from Stripe, incl. bfcache) restores the button.
+    window.addEventListener('pageshow', function () { btns.forEach(resetBtn); });
   }
 
   // ---- P5: admin gate ----
