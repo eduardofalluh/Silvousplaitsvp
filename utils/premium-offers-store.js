@@ -589,7 +589,8 @@ async function ensurePremiumOffersSheet(sheets) {
     meta = await getSpreadsheetMeta(sheets, { forceRefresh: true });
   }
 
-  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:N2`, 'header read');
+  const lastCol = columnNumberToLetter(OFFER_HEADERS.length);
+  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:${lastCol}2`, 'header read');
   const rows = read.data.values || [];
   const headerRow = rows[0] || [];
   const legacyHeaders = [
@@ -632,12 +633,13 @@ async function ensurePremiumOffersSheet(sheets) {
       normalize(row[10]),
       normalize(row[11]),
       '',
+      '',
     ]);
-    await safeWriteRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:N1`, [OFFER_HEADERS], 'header migration write');
+    await safeWriteRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:${lastCol}1`, [OFFER_HEADERS], 'header migration write');
     if (migratedRows.length) {
       await safeWriteRange(
         sheets,
-        `${PREMIUM_OFFERS_TAB}!A2:N${migratedRows.length + 1}`,
+        `${PREMIUM_OFFERS_TAB}!A2:${lastCol}${migratedRows.length + 1}`,
         migratedRows,
         'row migration write'
       );
@@ -646,7 +648,7 @@ async function ensurePremiumOffersSheet(sheets) {
   }
 
   if (!matches && !hasAllCurrentHeaders) {
-    await safeWriteRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:N1`, [OFFER_HEADERS], 'header write');
+    await safeWriteRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:${lastCol}1`, [OFFER_HEADERS], 'header write');
   }
 }
 
