@@ -45,6 +45,11 @@ img[alt="Silvousplait"] {
 [data-svp="checkout"], [data-svp="login-submit"], [data-svp="login-verify"],
 [data-svp="funnel-submit"], [data-svp="contact-submit"], [data-svp="partner-submit"],
 [data-svp="admin-submit"] { cursor: pointer; transition: filter .15s, transform .05s; }
+[data-svp="hero-submit"] {
+  font-family: 'Instrument Sans', system-ui, sans-serif !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+}
 [data-svp="checkout"]:hover, [data-svp="login-submit"]:hover, [data-svp="login-verify"]:hover,
 [data-svp="funnel-submit"]:hover, [data-svp="contact-submit"]:hover, [data-svp="partner-submit"]:hover,
 [data-svp="admin-submit"]:hover { filter: brightness(1.08); }

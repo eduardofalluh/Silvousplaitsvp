@@ -26,6 +26,14 @@ const CITY_LIST = (() => {
   return { montreal: '4', quebec: '8', 'trois-rivieres': '9', sherbrooke: '10' };
 })();
 const DEFAULT_LIST = process.env.ACTIVECAMPAIGN_FREE_LIST_ID || '4';
+const PREMIUM_LIST_ID = process.env.ACTIVECAMPAIGN_PREMIUM_LIST_ID || '';
+const PREMIUM_TAG = process.env.ACTIVECAMPAIGN_PREMIUM_TAG || 'premium_active';
+const SUBSCRIPTION_LIST_IDS = new Set(
+  Object.values(CITY_LIST)
+    .concat([DEFAULT_LIST, PREMIUM_LIST_ID])
+    .filter(Boolean)
+    .map((id) => String(id).trim())
+);
 
 // UI label -> existing AC tag name (so we reuse tags instead of duplicating).
 const INTEREST_TAG = {
@@ -57,6 +65,34 @@ async function acApi(path, options = {}) {
   let data = {};
   try { data = await res.json(); } catch { data = {}; }
   return { ok: res.ok, status: res.status, data };
+}
+
+async function findContactByEmail(email) {
+  const found = await acApi(`contacts?email=${encodeURIComponent(email)}`);
+  const contacts = (found.data && found.data.contacts) || [];
+  return contacts.find((c) => norm(c.email) === norm(email)) || contacts[0] || null;
+}
+
+async function activeSubscriptionLists(contactId) {
+  const lists = await acApi(`contacts/${encodeURIComponent(contactId)}/contactLists`);
+  return ((lists.data && lists.data.contactLists) || []).filter((cl) => {
+    const listId = String(cl.list || '').trim();
+    const status = String(cl.status || '').trim();
+    return status === '1' && SUBSCRIPTION_LIST_IDS.has(listId);
+  });
+}
+
+async function hasPremiumTag(contactId) {
+  if (!PREMIUM_TAG) return false;
+  const tagLinks = await acApi(`contacts/${encodeURIComponent(contactId)}/contactTags`);
+  const tagIds = [...new Set(((tagLinks.data && tagLinks.data.contactTags) || []).map((ct) => ct.tag).filter(Boolean))];
+  const expected = norm(PREMIUM_TAG);
+  for (const tagId of tagIds) {
+    const tagRes = await acApi(`tags/${encodeURIComponent(tagId)}`);
+    const tagName = tagRes.data && tagRes.data.tag && tagRes.data.tag.tag;
+    if (norm(tagName) === expected) return true;
+  }
+  return false;
 }
 
 // Resolve a tag id by name, creating the tag if it does not exist yet.
@@ -96,6 +132,24 @@ exports.handler = async (event) => {
   const email = norm(body.email);
   if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Adresse email invalide' }) };
+  }
+
+  const existing = await findContactByEmail(email);
+  if (existing && existing.id) {
+    const activeLists = await activeSubscriptionLists(existing.id);
+    const premiumTagged = await hasPremiumTag(existing.id);
+    if (activeLists.length || premiumTagged) {
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          subscribed: false,
+          alreadySubscribed: true,
+          alreadyPremium: premiumTagged || activeLists.some((cl) => String(cl.list) === String(PREMIUM_LIST_ID)),
+          contactId: existing.id,
+        }),
+      };
+    }
   }
 
   // 1) sync contact (email + prénom)

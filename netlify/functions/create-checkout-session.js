@@ -1,4 +1,11 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const premiumChecker = require('../../utils/premium-checker');
+
+const headers = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
 
 const PLAN_PRICE_IDS = {
   monthly: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID || '',
@@ -105,17 +112,44 @@ function buildCancelUrl(baseUrl, returnPath) {
   return cancelUrl.toString();
 }
 
+function validEmail(email) {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(email || '').trim());
+}
+
+async function hasActiveStripeSubscription(email) {
+  if (!validEmail(email)) return false;
+  const customers = await stripe.customers.list({ email, limit: 10 });
+  const activeStatuses = new Set(['active', 'trialing', 'past_due', 'unpaid']);
+  for (const customer of customers.data || []) {
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customer.id,
+      status: 'all',
+      limit: 100,
+    });
+    if ((subscriptions.data || []).some((sub) => activeStatuses.has(String(sub.status || '').toLowerCase()))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 204, headers, body: '' };
+  }
+
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
+      headers,
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
 
   try {
     const { email, priceId, planKey, returnPath } = JSON.parse(event.body);
+    const normalizedEmail = String(email || '').trim().toLowerCase();
     const resolvedCheckout = resolveLineItem(planKey, priceId);
     const successBaseUrl = process.env.URL || 'https://silvousplaitsvp.com';
     const isProductionCheckout =
@@ -126,6 +160,7 @@ exports.handler = async (event) => {
     if (!resolvedCheckout.lineItem) {
       return {
         statusCode: 400,
+        headers,
         body: JSON.stringify({
           error: 'A valid Stripe price configuration is required',
           planKey: String(planKey || '').trim().toLowerCase() || null,
@@ -136,12 +171,29 @@ exports.handler = async (event) => {
     if (isProductionCheckout && resolvedCheckout.source !== 'price_id') {
       return {
         statusCode: 400,
+        headers,
         body: JSON.stringify({
           error: 'A live Stripe Price ID is required for this checkout flow',
           planKey: String(planKey || '').trim().toLowerCase() || null,
           checkoutSource: resolvedCheckout.source,
         })
       };
+    }
+
+    if (normalizedEmail && validEmail(normalizedEmail)) {
+      const premiumStatus = await premiumChecker.isPremiumMember(normalizedEmail, false);
+      const stripeAlreadySubscribed = await hasActiveStripeSubscription(normalizedEmail);
+      if ((premiumStatus && premiumStatus.isPremium) || stripeAlreadySubscribed) {
+        return {
+          statusCode: 409,
+          headers,
+          body: JSON.stringify({
+            error: 'This email already has an active Premium subscription.',
+            code: 'already_premium',
+            source: stripeAlreadySubscribed ? 'stripe' : 'activecampaign',
+          }),
+        };
+      }
     }
 
     // Create Stripe Checkout Session
@@ -172,26 +224,24 @@ exports.handler = async (event) => {
       },
     };
 
-    if (email) {
-      sessionConfig.customer_email = email;
-      sessionConfig.metadata.customer_email = email;
-      sessionConfig.subscription_data.metadata.customer_email = email;
+    if (normalizedEmail && validEmail(normalizedEmail)) {
+      sessionConfig.customer_email = normalizedEmail;
+      sessionConfig.metadata.customer_email = normalizedEmail;
+      sessionConfig.subscription_data.metadata.customer_email = normalizedEmail;
     }
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
+      headers,
       body: JSON.stringify({ sessionId: session.id, url: session.url }),
     };
   } catch (error) {
     console.error('Stripe checkout error:', error);
     return {
       statusCode: 500,
+      headers,
       body: JSON.stringify({
         error: 'Failed to create checkout session',
         details: error.message

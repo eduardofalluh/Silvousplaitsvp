@@ -21,6 +21,22 @@
     el.style.fontWeight = s.fontWeight;
   }
 
+  function markSelected(el, on) {
+    if (!el) return;
+    if (on) el.setAttribute('data-selected', '1');
+    else el.removeAttribute('data-selected');
+  }
+
+  function setAllText(root, selector, text) {
+    [].slice.call(root.querySelectorAll(selector)).forEach(function (el) { el.textContent = text; });
+  }
+
+  function slugify(s) {
+    return String(s || '').trim().toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'ami';
+  }
+
   // ---- Hero signup (accueil): capture email, continue to the funnel ----
   function wireHero() {
     var emails = Array.prototype.slice.call(document.querySelectorAll('[data-svp="hero-email"]'));
@@ -91,10 +107,219 @@
     offers.forEach(function (o) { io.observe(o); });
   }
 
+  function wireFunnelV2(funnel) {
+    var state = { ville: 'montreal', cityLabel: 'Montréal', interests: [], tranche: '2-3', premium: '' };
+    var current = 1;
+    var submitted = false;
+    var exitShown = false;
+    var steps = [].slice.call(funnel.querySelectorAll('[data-funnel-step]'));
+    var tabs = [].slice.call(funnel.querySelectorAll('[data-step-tab]'));
+    var progress = funnel.querySelector('[data-funnel-progress]');
+    var badge = funnel.querySelector('[data-funnel-badge]');
+    var emailInput = funnel.querySelector('[data-svp="funnel-email"]');
+    var nameInput = funnel.querySelector('[data-svp="prenom"]');
+    var feedback = funnel.querySelector('[data-svp="funnel-feedback"]');
+    var submit = funnel.querySelector('[data-svp="funnel-submit"]');
+    var exitModal = funnel.querySelector('[data-funnel-exit]');
+
+    function say(msg, isErr) {
+      if (!feedback) return;
+      feedback.textContent = msg || '';
+      feedback.style.color = isErr ? '#b00020' : '#3347CA';
+    }
+    function firstName() {
+      var v = (nameInput && nameInput.value || '').trim();
+      return v || 'Alex';
+    }
+    function cityName() { return state.cityLabel || 'Montréal'; }
+    function interestsPhrase() {
+      var arts = { 'Théâtre': 'le théâtre', 'Musique': 'la musique', 'Humour': "l'humour", 'Cinéma': 'le cinéma', 'Arts visuels': 'les arts visuels', 'Festivals': 'les festivals', 'Sport': 'le sport' };
+      var picked = state.interests.slice(0, 2).map(function (x) { return arts[x] || x; });
+      return picked.length ? picked.join(' et ') : 'sortir';
+    }
+    function inviteUrl() {
+      return 'https://silvousplaitsvp.com/i/' + slugify(firstName());
+    }
+    function updateCopy() {
+      setAllText(funnel, '[data-funnel-name]', firstName());
+      setAllText(funnel, '[data-funnel-city]', cityName());
+      setAllText(funnel, '[data-funnel-interests]', interestsPhrase());
+      setAllText(funnel, '[data-funnel-invite]', inviteUrl().replace(/^https?:\/\//, ''));
+      var pct = current === 4 || current === 'already' ? 100 : Math.max(33, current * 33);
+      if (progress) progress.style.width = Math.min(100, pct) + '%';
+      if (badge) {
+        if (current === 4) badge.textContent = '✓ INSCRIT';
+        else if (current === 'already') badge.textContent = 'DÉJÀ INSCRIT';
+        else badge.textContent = 'ÉTAPE ' + current + ' / 3';
+      }
+      tabs.forEach(function (tab) {
+        tab.setAttribute('aria-selected', String(Number(tab.getAttribute('data-step-tab')) === current));
+      });
+    }
+    function showStep(n) {
+      current = n;
+      steps.forEach(function (step) {
+        step.hidden = step.getAttribute('data-funnel-step') !== String(n);
+      });
+      say('');
+      updateCopy();
+      window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
+    }
+    function validateStep1() {
+      var email = ((emailInput && emailInput.value) || '').trim();
+      if (!validEmail(email)) {
+        say('Entre une adresse courriel valide pour continuer.', true);
+        if (emailInput) emailInput.focus();
+        return false;
+      }
+      if (!state.ville) state.ville = 'montreal';
+      if (!state.cityLabel) state.cityLabel = 'Montréal';
+      return true;
+    }
+    function setSingle(selector, attr, el) {
+      funnel.querySelectorAll(selector).forEach(function (x) { markSelected(x, x === el); });
+      state[attr] = el.getAttribute(selector.indexOf('ville') >= 0 ? 'data-svp-ville' : 'data-svp-tranche') || '';
+    }
+
+    funnel.querySelectorAll('[data-svp-ville]').forEach(function (el) {
+      if (el.getAttribute('data-selected') === '1') {
+        state.ville = el.getAttribute('data-svp-ville') || state.ville;
+        state.cityLabel = el.getAttribute('data-city-label') || el.textContent.trim() || state.cityLabel;
+      }
+      el.addEventListener('click', function () {
+        setSingle('[data-svp-ville]', 'ville', el);
+        state.cityLabel = el.getAttribute('data-city-label') || el.textContent.trim();
+        updateCopy();
+      });
+    });
+    funnel.querySelectorAll('[data-svp-interest]').forEach(function (el) {
+      var v = el.getAttribute('data-svp-interest');
+      if (el.getAttribute('data-selected') === '1' && state.interests.indexOf(v) < 0) state.interests.push(v);
+      el.addEventListener('click', function () {
+        var i = state.interests.indexOf(v);
+        if (i >= 0) { state.interests.splice(i, 1); markSelected(el, false); }
+        else { state.interests.push(v); markSelected(el, true); }
+        updateCopy();
+      });
+    });
+    funnel.querySelectorAll('[data-svp-tranche]').forEach(function (el) {
+      if (el.getAttribute('data-selected') === '1') state.tranche = el.getAttribute('data-svp-tranche');
+      el.addEventListener('click', function () { setSingle('[data-svp-tranche]', 'tranche', el); });
+    });
+    if (nameInput) nameInput.addEventListener('input', updateCopy);
+    var known = getEmail();
+    if (known && emailInput && !emailInput.value) emailInput.value = known;
+
+    funnel.querySelectorAll('[data-funnel-next]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var next = Number(btn.getAttribute('data-funnel-next') || 1);
+        if (next > 1 && !validateStep1()) return;
+        showStep(next);
+      });
+    });
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var next = Number(tab.getAttribute('data-step-tab'));
+        if (next > 1 && !validateStep1()) return;
+        if (next === 4 && !submitted) return;
+        showStep(next);
+      });
+    });
+    funnel.querySelectorAll('[data-premium-choice]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        state.premium = btn.getAttribute('data-premium-choice') || '';
+        showStep(3);
+      });
+    });
+    var copy = funnel.querySelector('[data-funnel-copy]');
+    if (copy) copy.addEventListener('click', function () {
+      try { navigator.clipboard.writeText(inviteUrl()); } catch (e) {}
+      copy.textContent = 'Copié ✓';
+      setTimeout(function () { copy.textContent = 'Copier le lien'; }, 1800);
+    });
+    funnel.querySelectorAll('[data-faq-item]').forEach(function (item) {
+      item.addEventListener('click', function () {
+        var answer = item.querySelector('span[hidden], span:not(:first-child)');
+        var chev = item.querySelector('span span');
+        var open = answer && !answer.hidden;
+        if (answer) answer.hidden = open;
+        if (chev) chev.textContent = open ? '⌄' : '⌃';
+      });
+    });
+
+    function openExit() { if (exitModal) { updateCopy(); exitModal.hidden = false; } }
+    function closeExit() { if (exitModal) exitModal.hidden = true; }
+    var openExitBtn = funnel.querySelector('[data-funnel-open-exit]');
+    if (openExitBtn) openExitBtn.addEventListener('click', openExit);
+    funnel.querySelectorAll('[data-funnel-close-exit]').forEach(function (btn) { btn.addEventListener('click', closeExit); });
+    if (exitModal) {
+      exitModal.addEventListener('click', function (e) { if (e.target === exitModal) closeExit(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeExit(); });
+    }
+    document.addEventListener('mouseleave', function (e) {
+      if (e.clientY > 0 || exitShown || submitted || current === 4 || current === 'already') return;
+      exitShown = true;
+      openExit();
+    });
+
+    function finishSignup() {
+      if (!validateStep1()) return;
+      var email = ((emailInput && emailInput.value) || '').trim().toLowerCase();
+      var honeypot = (funnel.querySelector('[name="website"]') || {}).value || '';
+      if (!submit) return;
+      submit.disabled = true;
+      var original = submit.textContent;
+      submit.textContent = 'Envoi…';
+      say('');
+      fetch(FN + 'submit-enriched', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          firstName: (nameInput && nameInput.value || '').trim(),
+          ville: state.ville,
+          cityLabel: state.cityLabel,
+          interests: state.interests,
+          tranche: state.tranche,
+          premiumInterest: state.premium,
+          inviteLink: inviteUrl(),
+          website: honeypot,
+        }),
+      }).then(function (r) { return r.json().catch(function () { return {}; }); })
+        .then(function (d) {
+          submit.disabled = false;
+          submit.textContent = original;
+          if (d && d.alreadySubscribed) {
+            setEmail(email);
+            showStep('already');
+            return;
+          }
+          if (d && d.subscribed) {
+            submitted = true;
+            setEmail(email);
+            pixel('track', 'Lead');
+            showStep(4);
+            wirePremiumCtas();
+            return;
+          }
+          say((d && d.error) || "L'inscription n'a pas fonctionné. Réessaie.", true);
+        }).catch(function () {
+          submit.disabled = false;
+          submit.textContent = original;
+          say("Impossible d'envoyer pour le moment. Réessaie plus tard.", true);
+        });
+    }
+    if (submit) submit.addEventListener('click', finishSignup);
+    var skip = funnel.querySelector('[data-funnel-submit-skip]');
+    if (skip) skip.addEventListener('click', finishSignup);
+    updateCopy();
+  }
+
   // ---- Enriched signup funnel (P3): tunnel.html ----
   function wireFunnel() {
     var funnel = document.querySelector('[data-svp="funnel"]');
     if (!funnel) return;
+    if (funnel.hasAttribute('data-svp-funnel-v2')) { wireFunnelV2(funnel); return; }
     var state = { ville: '', interests: [], tranche: '', premium: '' };
 
     funnel.querySelectorAll('[data-svp-ville]').forEach(function (el) {
@@ -403,12 +628,21 @@
         var plan = btn.getAttribute('data-plan') || 'yearly';
         var email = getEmail();
         if (email) { try { fetch(FN + 'tag-contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, tag: 'a-cliqué-premium-siteweb' }), keepalive: true }); } catch (er) {} }
-        pixel('track', 'InitiateCheckout');
         btn.textContent = 'Redirection…';
-        fetch(FN + 'create-checkout-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planKey: plan, returnPath: '/premium.html' }) })
-          .then(function (r) { return r.json(); }).then(function (d) {
-            if (d && d.url) { window.location.href = d.url; }
-            else { resetBtn(btn); alert("Le paiement n'a pas pu démarrer. Réessaie."); }
+        fetch(FN + 'create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ planKey: plan, returnPath: '/premium.html', email: email || undefined }),
+        })
+          .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }).catch(function () { return { ok: r.ok, d: {} }; }); })
+          .then(function (res) {
+            var d = res.d || {};
+            if (d && d.url) { pixel('track', 'InitiateCheckout'); window.location.href = d.url; }
+            else {
+              resetBtn(btn);
+              if (d.code === 'already_premium') alert('Tu as déjà un abonnement Premium actif avec cette adresse.');
+              else alert("Le paiement n'a pas pu démarrer. Réessaie.");
+            }
           }).catch(function () { resetBtn(btn); alert('Erreur. Réessaie plus tard.'); });
       });
     });
@@ -436,10 +670,215 @@
     });
   }
 
+  function wirePartnerFunnel(form) {
+    var state = {
+      step: 1,
+      types: [],
+      cities: [],
+      dates: [],
+      month: new Date().getMonth(),
+      year: new Date().getFullYear(),
+    };
+    var steps = [].slice.call(form.querySelectorAll('[data-partner-step]'));
+    var progress = form.querySelector('[data-partner-progress]');
+    var msg = form.querySelector('[data-svp="partner-msg"]');
+    var submit = form.querySelector('[data-svp="partner-submit"]');
+    var back = form.querySelector('[data-partner-back]');
+    var feeNote = form.querySelector('[data-partner-fee-note]');
+    var sent = form.querySelector('[data-partner-sent]');
+    var card = form.querySelector('[data-partner-card]');
+    var actions = form.querySelector('[data-partner-actions]');
+    var monthLabel = form.querySelector('[data-partner-month]');
+    var daysWrap = form.querySelector('[data-partner-days]');
+    var datesText = form.querySelector('[data-partner-dates]');
+    var months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+    function say(t, err) {
+      if (!msg) return;
+      msg.textContent = t || '';
+      msg.style.color = err ? '#b00020' : '#3347CA';
+    }
+    function val(n) {
+      var el = form.querySelector('[name="' + n + '"]');
+      return el ? String(el.value || '').trim() : '';
+    }
+    function lastStep() {
+      return 6;
+    }
+    function visibleStep(n) {
+      if (n === 5 && state.types.indexOf('premium') < 0) return 6;
+      return n;
+    }
+    function showStep(n) {
+      state.step = visibleStep(n);
+      steps.forEach(function (step) { step.hidden = step.getAttribute('data-partner-step') !== String(state.step); });
+      var total = state.types.indexOf('premium') >= 0 ? 6 : 5;
+      var normalized = state.types.indexOf('premium') >= 0 ? state.step : (state.step > 5 ? 5 : state.step);
+      if (progress) progress.style.width = Math.max(20, Math.round((normalized / total) * 100)) + '%';
+      if (back) back.hidden = state.step <= 1;
+      if (submit) submit.textContent = state.step >= lastStep() ? 'Envoyer ma demande de partenariat' : 'Continuer →';
+      say('');
+      window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
+    }
+    function selectedLabels(selector, attr) {
+      return [].slice.call(form.querySelectorAll(selector + '[data-selected="1"]')).map(function (el) {
+        return el.getAttribute(attr) || el.textContent.trim();
+      });
+    }
+    function validate() {
+      if (state.step === 1 && !state.types.length) {
+        say('Choisissez au moins une option de partenariat.', true);
+        return false;
+      }
+      if (state.step === 2) {
+        if (!val('organisation') && !val('name')) { say('Ajoutez un nom ou une organisation.', true); return false; }
+        if (!validEmail(val('email'))) { say('Ajoutez un courriel valide.', true); return false; }
+      }
+      if (state.step === 3 && !state.cities.length && !val('otherCity')) {
+        say('Choisissez au moins une ville ou indiquez une autre ville.', true);
+        return false;
+      }
+      if (state.step === 4 && !state.dates.length) {
+        say('Choisissez au moins une date.', true);
+        return false;
+      }
+      if (state.step === 5 && state.types.indexOf('premium') >= 0 && !val('offerType') && !val('message')) {
+        say("Décrivez l'offre Premium ou le type d'avantage proposé.", true);
+        return false;
+      }
+      return true;
+    }
+    function pad(n) { return n < 10 ? '0' + n : String(n); }
+    function dateKey(y, m, d) { return y + '-' + pad(m + 1) + '-' + pad(d); }
+    function formatDate(key) {
+      var parts = String(key).split('-');
+      return Number(parts[2]) + ' ' + months[Number(parts[1]) - 1].toLowerCase() + ' ' + parts[0];
+    }
+    function renderDates() {
+      if (monthLabel) monthLabel.textContent = months[state.month] + ' ' + state.year;
+      if (!daysWrap) return;
+      var first = (new Date(state.year, state.month, 1).getDay() + 6) % 7;
+      var count = new Date(state.year, state.month + 1, 0).getDate();
+      daysWrap.innerHTML = '';
+      for (var i = 0; i < first; i++) {
+        var blank = document.createElement('button');
+        blank.type = 'button'; blank.className = 'partner-day'; blank.disabled = true; blank.textContent = '.';
+        daysWrap.appendChild(blank);
+      }
+      for (var d = 1; d <= count; d++) {
+        (function (day) {
+          var key = dateKey(state.year, state.month, day);
+          var btn = document.createElement('button');
+          btn.type = 'button'; btn.className = 'partner-day'; btn.textContent = String(day);
+          markSelected(btn, state.dates.indexOf(key) >= 0);
+          btn.addEventListener('click', function () {
+            var ix = state.dates.indexOf(key);
+            if (ix >= 0) state.dates.splice(ix, 1); else state.dates.push(key);
+            renderDates();
+          });
+          daysWrap.appendChild(btn);
+        })(d);
+      }
+      if (datesText) {
+        var sorted = state.dates.slice().sort();
+        datesText.textContent = sorted.length ? 'Dates choisies : ' + sorted.map(formatDate).join(', ') : 'Dates choisies : aucune';
+      }
+    }
+    function submitPartner() {
+      var data = {
+        name: val('name'),
+        email: val('email'),
+        organisation: val('organisation'),
+        role: val('role'),
+        interests: selectedLabels('[data-svp-partner-interest]', 'data-svp-partner-interest'),
+        types: state.types.slice(),
+        cities: state.cities.slice(),
+        otherCity: val('otherCity'),
+        dates: state.dates.slice().sort(),
+        offerType: val('offerType'),
+        ticketQuantity: val('ticketQuantity'),
+        message: val('message'),
+        generalMessage: val('generalMessage'),
+        website: val('website'),
+      };
+      if (!submit) return;
+      submit.disabled = true;
+      var original = submit.textContent;
+      submit.textContent = 'Envoi…';
+      say('');
+      fetch(FN + 'send-partenariat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }).catch(function () { return { ok: r.ok, d: {} }; }); })
+        .then(function (res) {
+          submit.disabled = false;
+          submit.textContent = original;
+          if (res.ok && res.d && res.d.sent) {
+            if (card) card.hidden = true;
+            if (sent) sent.hidden = false;
+            if (actions) actions.hidden = true;
+            if (progress) progress.style.width = '100%';
+            say('');
+            window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
+          } else {
+            say((res.d && res.d.error) || "L'envoi a échoué. Réessaie.", true);
+          }
+        }).catch(function () {
+          submit.disabled = false;
+          submit.textContent = original;
+          say('Erreur. Réessaie plus tard.', true);
+        });
+    }
+
+    form.querySelectorAll('[data-svp-partner-interest]').forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        var type = opt.getAttribute('data-partner-type') || opt.getAttribute('data-svp-partner-interest') || '';
+        var i = state.types.indexOf(type);
+        if (i >= 0) state.types.splice(i, 1); else state.types.push(type);
+        markSelected(opt, state.types.indexOf(type) >= 0);
+        if (feeNote) feeNote.hidden = state.types.indexOf('edito') < 0;
+        showStep(state.step);
+      });
+    });
+    form.querySelectorAll('[data-partner-city]').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        var city = chip.getAttribute('data-partner-city') || chip.textContent.trim();
+        var i = state.cities.indexOf(city);
+        if (i >= 0) state.cities.splice(i, 1); else state.cities.push(city);
+        markSelected(chip, state.cities.indexOf(city) >= 0);
+      });
+    });
+    var prev = form.querySelector('[data-partner-prev]');
+    var nextMonth = form.querySelector('[data-partner-next-month]');
+    if (prev) prev.addEventListener('click', function () {
+      if (state.month === 0) { state.month = 11; state.year -= 1; } else state.month -= 1;
+      renderDates();
+    });
+    if (nextMonth) nextMonth.addEventListener('click', function () {
+      if (state.month === 11) { state.month = 0; state.year += 1; } else state.month += 1;
+      renderDates();
+    });
+    if (back) back.addEventListener('click', function () {
+      var next = state.step - 1;
+      if (next === 5 && state.types.indexOf('premium') < 0) next = 4;
+      showStep(Math.max(1, next));
+    });
+    if (submit) submit.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (!validate()) return;
+      if (state.step >= lastStep()) { submitPartner(); return; }
+      showStep(state.step + 1);
+    });
+    renderDates();
+    showStep(1);
+  }
+
   // ---- P5: partenariat form (interest selector + fields) ----
   function wirePartenariat() {
     var form = document.querySelector('[data-svp="partner-form"]');
     if (!form) return;
+    if (form.hasAttribute('data-svp-partner-funnel')) { wirePartnerFunnel(form); return; }
     var msg = form.querySelector('[data-svp="partner-msg"]');
     var btn = form.querySelector('[data-svp="partner-submit"]');
     var interests = [];

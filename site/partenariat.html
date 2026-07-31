@@ -1,22 +1,86 @@
 <!DOCTYPE html>
-<html lang="fr"><head><style>html{background-color:#FFFEF5}</style><script>try{if(sessionStorage.getItem('svp-nav')==='1'){var d=document.documentElement;d.classList.add('svp-nav');sessionStorage.removeItem('svp-nav');setTimeout(function(){d.classList.add('svp-revealed');},1600);}}catch(e){}</script>
+<html lang="fr">
+<head>
+<style>html{background-color:#FFFEF5}</style>
+<script>try{if(sessionStorage.getItem('svp-nav')==='1'){var d=document.documentElement;d.classList.add('svp-nav');sessionStorage.removeItem('svp-nav');setTimeout(function(){d.classList.add('svp-revealed');},1600);}}catch(e){}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Partenariat — Silvousplait</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="assets/responsive.css"><link rel="stylesheet" href="assets/animations.css">
+<link rel="stylesheet" href="assets/responsive.css">
+<link rel="stylesheet" href="assets/animations.css">
 <style>
   body{margin:0;background:#FFFEF5;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#16182B}
   h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;margin:0}
   a{color:#3347CA}
-  input,textarea{font-family:'Instrument Sans',system-ui,sans-serif}
-  input:focus,textarea:focus{outline:none;border-color:#3347CA !important}
-  .field{box-sizing:border-box;width:100%;border:1.5px solid #E1E0D4;border-radius:10px;padding:13px 14px;font-size:14.5px;font-weight:500;color:#16182B;background:#fff}
-  .opt{border:1.5px solid #E1E0D4;border-radius:14px;padding:18px 18px;cursor:pointer;user-select:none;transition:.15s;background:#fff}
-  .opt[data-selected="1"]{border-color:#3347CA;background:#EEF0FD}
-  .opt h3{font-size:15.5px;font-weight:700;margin-bottom:5px}
-  .opt p{font-size:13px;color:#4A4D66;margin:0;line-height:1.45}
+  input,textarea,select,button{font-family:'Instrument Sans',system-ui,sans-serif}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:#3347CA !important}
+  .partner-page{min-height:100vh;display:flex;flex-direction:column}
+  .partner-header{border-bottom:1.5px solid #ECEAE0;background:#FFFEF5}
+  .partner-header__inner{max-width:1160px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 32px}
+  .partner-logo{display:flex;align-items:center;height:34px;width:145px;overflow:hidden;flex:0 0 auto}
+  .partner-logo img{width:145px;flex:none;margin-top:-7px}
+  .partner-nav{display:flex;align-items:center;justify-content:flex-end;gap:20px;font:600 14px 'Instrument Sans',sans-serif;min-width:0}
+  .partner-nav a{color:#4A4D66;text-decoration:none;white-space:nowrap}
+  .partner-nav a[aria-current="page"]{color:#3347CA}
+  .partner-nav .partner-pill{background:#3347CA;color:#FFFEF5;padding:11px 22px;border-radius:100px;font-weight:700}
+  .partner-nav .partner-back{color:#3347CA;font:600 13.5px 'Instrument Sans',sans-serif}
+  .partner-main{flex:1;max-width:640px;width:100%;margin:0 auto;padding:56px 24px 80px;box-sizing:border-box}
+  .partner-hero{text-align:center;margin-bottom:28px}
+  .partner-hero img{width:64px;margin-bottom:12px;mix-blend-mode:multiply}
+  .partner-hero h1{font-size:34px;font-weight:800;letter-spacing:-.01em;margin-bottom:8px}
+  .partner-hero p{font:400 15px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin:0;max-width:480px;margin-left:auto;margin-right:auto}
+  .partner-progress{height:6px;background:#EEF0FD;border-radius:100px;margin-bottom:22px;overflow:hidden}
+  .partner-progress span{display:block;height:100%;width:20%;background:#3347CA;border-radius:100px;transition:width .25s ease}
+  .partner-card{background:#fff;border:1.5px solid #16182B;border-radius:18px;padding:30px 28px;box-shadow:6px 6px 0 #3347CA}
+  .partner-step[hidden],.partner-sent[hidden]{display:none}
+  .partner-card h3{font:800 20px 'Bricolage Grotesque',sans-serif;margin-bottom:4px}
+  .partner-muted{font:400 13.5px 'Instrument Sans',sans-serif;color:#8B8DA0;margin:0 0 18px}
+  .partner-option-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px}
+  .partner-option{border-radius:14px;padding:20px;cursor:pointer;transition:.13s;text-align:left;user-select:none;border:1.5px solid #ECEAE0;background:#FFFEF5}
+  .partner-option[data-selected="1"]{border:2px solid #3347CA;background:#EEF0FD}
+  .partner-option img{height:40px;mix-blend-mode:multiply;margin-bottom:10px}
+  .partner-option div{font:700 16px 'Bricolage Grotesque',sans-serif;margin-bottom:4px}
+  .partner-option p{font:400 13px/1.5 'Instrument Sans',sans-serif;color:#4A4D66;margin:0}
+  .partner-note{border:1.5px solid #ECEAE0;border-radius:10px;background:#FFFDF0;padding:11px 14px;font:400 12.5px/1.55 'Instrument Sans',sans-serif;color:#8B8DA0;margin-bottom:20px}
+  .partner-field{box-sizing:border-box;width:100%;border:1.5px solid #E1E0D4;border-radius:10px;padding:13px 14px;font:500 14px 'Instrument Sans',sans-serif;color:#16182B;background:#FFFEF5}
+  .partner-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+  .partner-field-stack{display:grid;gap:12px}
+  .partner-chip-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .partner-chip{border-radius:100px;padding:10px 18px;font:500 13.5px 'Instrument Sans',sans-serif;cursor:pointer;user-select:none;transition:.13s;border:1.5px solid #E1E0D4;background:#fff;color:#16182B}
+  .partner-chip[data-selected="1"]{border-color:#3347CA;background:#EEF0FD;color:#3347CA;font-weight:700}
+  .partner-calendar{border:1.5px solid #ECEAE0;border-radius:14px;padding:18px;background:#FFFEF5;margin-bottom:14px}
+  .partner-calendar-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .partner-calendar-top button{width:34px;height:34px;border-radius:100px;border:1.5px solid #E1E0D4;background:#fff;cursor:pointer;font-size:15px;color:#3347CA}
+  .partner-weekdays,.partner-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .partner-weekdays div{text-align:center;font:700 11px 'Instrument Sans',sans-serif;color:#8B8DA0;padding:4px 0}
+  .partner-day{border:none;text-align:center;padding:9px 0;border-radius:9px;cursor:pointer;user-select:none;font:500 13px 'Instrument Sans',sans-serif;transition:.1s;color:#16182B;background:transparent}
+  .partner-day[disabled]{cursor:default;color:transparent}
+  .partner-day[data-selected="1"]{background:#3347CA;color:#FFFEF5;font-weight:700}
+  .partner-actions{display:flex;gap:10px;margin-top:20px}
+  .partner-back-btn{flex:0 0 auto;background:#fff;color:#4A4D66;border:1.5px solid #E1E0D4;border-radius:100px;padding:15px 24px;font:700 14.5px 'Instrument Sans',sans-serif;cursor:pointer}
+  .partner-next{flex:1;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:15px;font:700 15px 'Instrument Sans',sans-serif;cursor:pointer}
+  .partner-msg{min-height:18px;margin:12px 0 0;text-align:center;font-weight:600;font-size:13px;color:#3347CA}
+  .partner-sent{text-align:center}
+  .partner-footer-link{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:26px;font:500 13.5px 'Instrument Sans',sans-serif;color:#8B8DA0;text-align:center;flex-wrap:wrap}
+  footer{background:#16182B;padding:28px 32px;display:flex;align-items:center;justify-content:center;gap:28px;font:500 13px 'Instrument Sans',sans-serif;flex-wrap:wrap}
+  footer a{color:#A7A9BC;text-decoration:none}
+  @media(max-width:760px){
+    .partner-header__inner{padding:16px;align-items:flex-start;flex-direction:column;gap:14px}
+    .partner-nav{width:100%;justify-content:flex-start;gap:10px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+    .partner-nav a{font-size:13px}
+    .partner-nav .partner-pill{padding:9px 15px}
+    .partner-main{padding:38px 18px 64px}
+    .partner-hero{text-align:left}
+    .partner-hero h1{font-size:clamp(28px,8vw,34px)}
+    .partner-hero p{margin-left:0;margin-right:0}
+    .partner-card{padding:24px 20px}
+    .partner-option-grid,.partner-field-grid{grid-template-columns:1fr}
+    .partner-actions{flex-direction:column}
+    .partner-back-btn{width:100%}
+    footer{padding:24px 16px;gap:16px}
+  }
 </style>
 </head>
 <body>
@@ -25,53 +89,140 @@
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({"gtm.start":new Date().getTime(),event:"gtm.js"});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!="dataLayer"?"&l="+l:"";j.async=true;j.src="https://www.googletagmanager.com/gtm.js?id="+i+dl;f.parentNode.insertBefore(j,f);})(window,document,"script","dataLayer","GTM-NWXBT8XB");</script>
 <script>(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window,document,"clarity","script","wfqjktrqpx");</script>
 
-<header style="max-width:1160px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid #ECEAE0">
-  <a href="accueil.html"><img src="assets/logo-mot.png" alt="Silvousplait" style="width:150px"></a>
-  <nav style="display:flex;align-items:center;gap:22px;font:600 14px 'Instrument Sans',sans-serif">
-    <a href="premium.html" style="color:#4A4D66;text-decoration:none">Premium</a>
-    <a href="contact.html" style="color:#4A4D66;text-decoration:none">Contact</a>
-    <a href="connexion.html" style="color:#3347CA;text-decoration:none">Connexion</a>
-  </nav>
-</header>
-
-<main style="max-width:640px;margin:0 auto;padding:48px 20px 90px">
-  <h1 style="font-size:34px;font-weight:800;letter-spacing:-.01em;margin-bottom:10px">Devenez partenaire de Silvousplait</h1>
-  <p style="font-size:15.5px;color:#4A4D66;line-height:1.55;margin:0 0 32px">Artiste, producteur, salle, festival ou diffuseur&nbsp;: si vous avez un spectacle à faire découvrir, on veut vous lire.</p>
-
-  <div data-svp="partner-form">
-    <div style="font:700 14px 'Instrument Sans',sans-serif;margin-bottom:4px">Qu'est-ce qui vous intéresse&nbsp;? <span style="font-weight:400;color:#8B8DA0">— vous pouvez choisir les deux</span></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 8px">
-      <div class="opt" data-svp-partner-interest="Mise en avant éditoriale">
-        <h3>Mise en avant éditoriale</h3>
-        <p>Faites découvrir votre spectacle en tête d'infolettre.</p>
-      </div>
-      <div class="opt" data-svp-partner-interest="Partenariat Premium">
-        <h3>Partenariat Premium</h3>
-        <p>Offrez des billets ou rabais exclusifs à nos membres Premium.</p>
-      </div>
+<div class="partner-page">
+  <header class="partner-header">
+    <div class="partner-header__inner">
+      <a class="partner-logo" href="accueil.html" aria-label="Retour à l'accueil">
+        <img src="assets/logo-mot.png" alt="Silvousplait">
+      </a>
+      <nav class="partner-nav" aria-label="Navigation principale">
+        <a href="premium.html">Premium</a>
+        <a href="contact.html">Contact</a>
+        <a href="partenariat.html" aria-current="page">Partenariat</a>
+        <a href="connexion.html">Connexion</a>
+        <a class="partner-pill" href="accueil.html#inscription">S'inscrire</a>
+        <a class="partner-back" href="accueil.html">← Retour au site</a>
+      </nav>
     </div>
-    <p style="font-size:12.5px;color:#8B8DA0;margin:0 0 26px">💡 Astuce&nbsp;: combinez les deux options pour maximiser votre visibilité.</p>
+  </header>
 
-    <div style="display:grid;gap:12px">
-      <input name="name" placeholder="Votre nom" class="field">
-      <input name="email" type="email" placeholder="Votre courriel" class="field">
-      <input name="organisation" placeholder="Organisation (salle, festival, compagnie…)" class="field">
-      <textarea name="message" rows="5" placeholder="Parlez-nous de votre spectacle ou de votre projet" class="field" style="resize:vertical"></textarea>
+  <main class="partner-main" data-svp="partner-form" data-svp-partner-funnel>
+    <div class="partner-hero">
+      <img src="assets/icon-megaphone.png" alt="">
+      <h1>Devenez partenaire de Silvousplait</h1>
+      <p>Artiste, producteur, salle, festival ou diffuseur&nbsp;: si vous avez un spectacle à faire découvrir, on veut vous lire.</p>
+    </div>
+
+    <div class="partner-progress" aria-hidden="true"><span data-partner-progress></span></div>
+
+    <section class="partner-card" data-partner-card>
+      <div class="partner-step" data-partner-step="1">
+        <h3>Qu'est-ce qui vous intéresse&nbsp;?</h3>
+        <p class="partner-muted">Vous pouvez choisir les deux.</p>
+        <div class="partner-option-grid">
+          <button class="partner-option" type="button" data-svp-partner-interest="Mise en avant éditoriale" data-partner-type="edito">
+            <img src="assets/icon-clipboard.png" alt="">
+            <div>Mise en avant éditoriale</div>
+            <p>Faites découvrir votre spectacle en tête d'infolettre.</p>
+          </button>
+          <button class="partner-option" type="button" data-svp-partner-interest="Partenariat Premium" data-partner-type="premium">
+            <img src="assets/icon-tickets.png" alt="">
+            <div>Partenariat Premium</div>
+            <p>Offrez des billets ou rabais exclusifs à nos membres Premium.</p>
+          </button>
+        </div>
+        <div style="text-align:center;font:500 12.5px 'Instrument Sans',sans-serif;color:#8B8DA0;margin-bottom:14px">Astuce&nbsp;: combinez les deux options pour maximiser votre visibilité.</div>
+        <div class="partner-note" data-partner-fee-note hidden>À noter&nbsp;: la mise en avant éditoriale peut comporter des frais. Notre équipe vous présentera les détails avant toute entente.</div>
+      </div>
+
+      <div class="partner-step" data-partner-step="2" hidden>
+        <h3>Qui êtes-vous&nbsp;?</h3>
+        <div class="partner-field-stack" style="margin-top:18px">
+          <input class="partner-field" name="organisation" placeholder="Nom (artiste ou organisation)" autocomplete="organization">
+          <input class="partner-field" name="role" placeholder="Vous êtes : artiste, producteur, salle…">
+          <div class="partner-field-grid" style="margin-bottom:0">
+            <input class="partner-field" name="name" placeholder="Nom du contact" autocomplete="name">
+            <input class="partner-field" name="email" type="email" placeholder="Courriel" autocomplete="email">
+          </div>
+        </div>
+      </div>
+
+      <div class="partner-step" data-partner-step="3" hidden>
+        <h3>Villes concernées</h3>
+        <p class="partner-muted">Plusieurs choix possibles.</p>
+        <div class="partner-chip-wrap">
+          <button class="partner-chip" type="button" data-partner-city="Montréal">Montréal</button>
+          <button class="partner-chip" type="button" data-partner-city="Québec">Québec</button>
+          <button class="partner-chip" type="button" data-partner-city="Sherbrooke">Sherbrooke</button>
+          <button class="partner-chip" type="button" data-partner-city="Trois-Rivières">Trois-Rivières</button>
+        </div>
+        <input class="partner-field" name="otherCity" placeholder="Autre : écrivez la ville de votre choix">
+      </div>
+
+      <div class="partner-step" data-partner-step="4" hidden>
+        <h3>Dates de votre spectacle</h3>
+        <p class="partner-muted">Sélectionnez une ou plusieurs dates.</p>
+        <div class="partner-calendar">
+          <div class="partner-calendar-top">
+            <button type="button" data-partner-prev aria-label="Mois précédent">‹</button>
+            <div style="font:700 15px 'Bricolage Grotesque',sans-serif" data-partner-month>Août 2026</div>
+            <button type="button" data-partner-next-month aria-label="Mois suivant">›</button>
+          </div>
+          <div class="partner-weekdays" aria-hidden="true">
+            <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
+          </div>
+          <div class="partner-days" data-partner-days></div>
+        </div>
+        <div style="font:500 13px 'Instrument Sans',sans-serif;color:#3347CA;margin-bottom:20px" data-partner-dates>Dates choisies&nbsp;: aucune</div>
+      </div>
+
+      <div class="partner-step" data-partner-step="5" hidden>
+        <h3>Votre offre pour les membres Premium</h3>
+        <p class="partner-muted">Billets gratuits ou rabais exclusifs.</p>
+        <div class="partner-field-grid" style="margin-bottom:12px">
+          <input class="partner-field" name="offerType" placeholder="Type d'offre (billets gratuits, rabais…)">
+          <input class="partner-field" name="ticketQuantity" inputmode="numeric" placeholder="Quantité de billets">
+        </div>
+        <textarea class="partner-field" name="message" rows="5" placeholder="Parlez-nous de votre spectacle ou de votre offre" style="resize:vertical"></textarea>
+      </div>
+
+      <div class="partner-step" data-partner-step="6" hidden>
+        <h3>Derniers détails</h3>
+        <p class="partner-muted">Ajoutez tout ce qui aidera notre équipe à vous répondre vite.</p>
+        <textarea class="partner-field" name="generalMessage" rows="5" placeholder="Lien de billetterie, site web, dates supplémentaires, objectifs, contraintes…" style="resize:vertical"></textarea>
+      </div>
+
       <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
-      <button data-svp="partner-submit" type="button" style="background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:15px;font-weight:700;font-size:15.5px;cursor:pointer">Envoyer ma demande →</button>
-      <p data-svp="partner-msg" role="status" aria-live="polite" style="min-height:18px;margin:0;text-align:center;font-weight:600;font-size:13px;color:#3347CA"></p>
+
+      <div class="partner-actions" data-partner-actions>
+        <button class="partner-back-btn" type="button" data-partner-back hidden>← Retour</button>
+        <button class="partner-next" type="button" data-svp="partner-submit">Continuer →</button>
+      </div>
+      <p class="partner-msg" data-svp="partner-msg" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="partner-card partner-sent" data-partner-sent hidden>
+      <div style="width:64px;height:64px;border-radius:100px;background:#E3F4EC;display:inline-flex;align-items:center;justify-content:center;font-size:28px;color:#1D9E75;margin-bottom:14px">✓</div>
+      <h3 style="font:800 21px 'Bricolage Grotesque',sans-serif;margin-bottom:8px">Demande envoyée&nbsp;!</h3>
+      <p style="font:400 14px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin:0">Merci de votre intérêt. Notre équipe vous répond dans les prochains jours ouvrables.</p>
+      <a href="accueil.html" style="display:inline-block;margin-top:22px;background:#3347CA;color:#FFFEF5;padding:13px 22px;border-radius:100px;font:700 14px 'Instrument Sans',sans-serif;text-decoration:none">Retour au site</a>
+    </section>
+
+    <div class="partner-footer-link">
+      Ou écrivez-nous directement à <a href="mailto:promotion@silvousplaitsvp.com" style="font-weight:600">promotion@silvousplaitsvp.com</a>
     </div>
-  </div>
+  </main>
 
-  <p style="text-align:center;font-size:13.5px;color:#8B8DA0;margin:26px 0 0">Ou écrivez-nous directement à <a href="mailto:promotion@silvousplaitsvp.com">promotion@silvousplaitsvp.com</a></p>
-</main>
+  <footer>
+    <a href="faq.html">Questions et aide</a>
+    <a href="contact.html">Contact</a>
+    <a href="partenariat.html">Partenariat</a>
+    <a href="termes.html">Termes</a>
+    <a href="politique.html">Politique</a>
+    <span style="color:#4A4D66">© 2026 Silvousplait</span>
+  </footer>
+</div>
 
-<footer style="background:#16182B;padding:26px 32px;display:flex;align-items:center;justify-content:center;gap:24px;font:500 13px 'Instrument Sans',sans-serif;flex-wrap:wrap">
-  <a href="faq.html" style="color:#A7A9BC;text-decoration:none">Questions et aide</a>
-  <a href="contact.html" style="color:#A7A9BC;text-decoration:none">Contact</a>
-  <a href="termes.html" style="color:#A7A9BC;text-decoration:none">Termes</a>
-  <a href="politique.html" style="color:#A7A9BC;text-decoration:none">Politique</a>
-  <span style="color:#6b6f80">© 2026 Silvousplait</span>
-</footer>
 <script src="assets/app.js"></script>
-</body></html>
+</body>
+</html>

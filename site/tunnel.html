@@ -1,101 +1,292 @@
 <!DOCTYPE html>
-<html lang="fr"><head><style>html{background-color:#FFFEF5}</style><script>try{if(sessionStorage.getItem('svp-nav')==='1'){var d=document.documentElement;d.classList.add('svp-nav');sessionStorage.removeItem('svp-nav');setTimeout(function(){d.classList.add('svp-revealed');},1600);}}catch(e){}</script>
+<html lang="fr">
+<head>
+<style>html{background-color:#FFFEF5}</style>
+<script>try{if(sessionStorage.getItem('svp-nav')==='1'){var d=document.documentElement;d.classList.add('svp-nav');sessionStorage.removeItem('svp-nav');setTimeout(function(){d.classList.add('svp-revealed');},1600);}}catch(e){}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Inscription — Silvousplait</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="assets/responsive.css">
+<link rel="stylesheet" href="assets/animations.css">
 <style>
   body{margin:0;background:#FFFEF5;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#16182B}
   h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;margin:0}
   a{color:#3347CA}a:hover{color:#25349B}
   input,select,button{font-family:'Instrument Sans',system-ui,sans-serif}
   input:focus{outline:none;border-color:#3347CA !important}
-  .chip{border-radius:10px;padding:11px 6px;text-align:center;font-size:13px;cursor:pointer;user-select:none;transition:.13s;border:1.5px solid #E1E0D4;background:#fff;color:#16182B;font-weight:500}
-  .chip--pill{border-radius:100px;padding:10px 16px}
-  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-  .wrap{display:flex;flex-wrap:wrap;gap:8px}
-  .qlabel{font-weight:700;font-size:12.5px;margin-bottom:9px}
-  .qlabel span{font-weight:400;color:#8B8DA0}
-  .field{width:100%;box-sizing:border-box;border:1.5px solid #E1E0D4;border-radius:10px;padding:12px 14px;font-size:14.5px;font-weight:500;color:#16182B;background:#FFFEF5}
-  @media(max-width:520px){.grid4{grid-template-columns:repeat(2,1fr)}}
+  .funnel-page{min-height:100vh;padding:28px 16px 80px}
+  .funnel-tabs{max-width:540px;margin:0 auto 26px;display:flex;gap:6px;background:#fff;border:1.5px solid #ECEAE0;border-radius:100px;padding:5px}
+  .funnel-tab{flex:1;border:none;border-radius:100px;padding:10px 4px;cursor:pointer;font:700 12.5px 'Instrument Sans',sans-serif;letter-spacing:.01em;transition:.15s;background:transparent;color:#8B8DA0}
+  .funnel-tab[aria-selected="true"]{background:#3347CA;color:#FFFEF5}
+  .funnel-card{max-width:540px;margin:0 auto;background:#fff;border:1.5px solid #16182B;border-radius:18px;padding:30px 28px;box-shadow:6px 6px 0 #3347CA}
+  .funnel-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:14px}
+  .funnel-logo{height:34px;width:145px;overflow:hidden;display:flex;align-items:center;flex:0 0 auto}
+  .funnel-logo img{width:145px;flex:none;margin-top:-7px}
+  .funnel-badge{font:700 11.5px 'Instrument Sans',sans-serif;letter-spacing:.05em;padding:5px 13px;border-radius:100px;background:#EEF0FD;color:#3347CA;white-space:nowrap}
+  .funnel-progress{height:6px;background:#EEF0FD;border-radius:100px;margin-bottom:24px;overflow:hidden}
+  .funnel-progress span{display:block;height:100%;width:33%;background:#3347CA;border-radius:100px;transition:width .25s ease}
+  .funnel-step[hidden]{display:none}
+  .funnel-title{font-size:26px;line-height:1.15;letter-spacing:-.01em;font-weight:800;margin-bottom:8px}
+  .funnel-title span{color:#3347CA}
+  .funnel-copy{font-size:14.5px;line-height:1.55;color:#4A4D66;margin:0 0 26px}
+  .funnel-label{font:700 12.5px 'Instrument Sans',sans-serif;margin-bottom:9px}
+  .funnel-label span{font-weight:400;color:#8B8DA0}
+  .funnel-block{margin-bottom:22px}
+  .funnel-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .funnel-wrap{display:flex;flex-wrap:wrap;gap:8px}
+  .funnel-chip{border-radius:10px;padding:11px 6px;text-align:center;font-size:13px;cursor:pointer;user-select:none;transition:.13s;border:1.5px solid #E1E0D4;background:#fff;color:#16182B;font-weight:500}
+  .funnel-chip[data-selected="1"]{border-color:#3347CA;background:#EEF0FD;color:#3347CA;font-weight:700}
+  .funnel-chip--pill{border-radius:100px;padding:10px 16px}
+  .funnel-field{width:100%;box-sizing:border-box;border:1.5px solid #E1E0D4;border-radius:10px;padding:12px 14px;font-size:14.5px;font-weight:500;color:#16182B;background:#FFFEF5}
+  .funnel-primary{display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:16px;font:700 15.5px 'Instrument Sans',sans-serif;cursor:pointer;text-decoration:none;text-align:center}
+  .funnel-link-button{display:block;width:100%;background:none;border:none;margin-top:14px;font:500 13px 'Instrument Sans',sans-serif;color:#8B8DA0;text-decoration:underline;cursor:pointer}
+  .funnel-offers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:26px}
+  .funnel-offer{border:1.5px solid #ECEAE0;border-radius:14px;padding:12px;background:#FFFEF5}
+  .funnel-offer-visual{height:80px;border-radius:9px;background:#EEF0FD;margin-bottom:10px;display:flex;align-items:center;justify-content:center}
+  .funnel-offer-visual img{max-height:60px;max-width:70%;mix-blend-mode:multiply}
+  .funnel-offer-title{font:700 13px/1.25 'Bricolage Grotesque',sans-serif;margin-bottom:2px}
+  .funnel-offer-meta{font:500 11px 'Instrument Sans',sans-serif;color:#8B8DA0;margin-bottom:6px}
+  .funnel-offer-price{font:700 12px 'Instrument Sans',sans-serif;color:#3347CA}
+  .funnel-compare{border-top:1.5px solid #ECEAE0;padding-top:22px}
+  .funnel-compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px}
+  .funnel-plan{border:1.5px solid #ECEAE0;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:7px}
+  .funnel-plan--premium{border:2px solid #3347CA;background:#EEF0FD}
+  .funnel-invite-link{flex:1;border:1.5px solid #E1E0D4;border-radius:100px;padding:12px 16px;font:500 13px 'Instrument Sans',sans-serif;color:#4A4D66;overflow:hidden;white-space:nowrap;background:#FFFEF5}
+  .funnel-secondary{background:#16182B;color:#FFFEF5;border:none;padding:12px 20px;border-radius:100px;font:700 13px 'Instrument Sans',sans-serif;white-space:nowrap;cursor:pointer}
+  .funnel-success-logo{width:110px;margin-bottom:10px}
+  .funnel-modal{position:fixed;inset:0;background:rgba(37,52,155,.55);display:flex;align-items:center;justify-content:center;padding:24px;z-index:99999}
+  .funnel-modal[hidden]{display:none}
+  .funnel-modal-card{background:#FFFEF5;border:1.5px solid #16182B;border-radius:18px;padding:32px 28px;max-width:360px;width:100%;text-align:center;box-shadow:6px 6px 0 #3347CA}
+  .funnel-msg{min-height:18px;margin:12px 0 0;text-align:center;font-weight:600;font-size:13px;color:#3347CA}
+  .funnel-bottom-note{max-width:540px;margin:18px auto 0;text-align:center;font:500 11.5px 'Instrument Sans',sans-serif;color:#B3B1A4}
+  @media(max-width:640px){
+    .funnel-page{padding:18px 14px 64px}
+    .funnel-card{padding:24px 20px}
+    .funnel-tabs{display:none}
+    .funnel-grid-4{grid-template-columns:repeat(2,1fr)}
+    .funnel-offers,.funnel-compare-grid{grid-template-columns:1fr}
+    .funnel-invite-row{flex-direction:column;align-items:stretch !important}
+    .funnel-invite-link{width:100%;border-radius:12px}
+    .funnel-secondary{width:100%}
+  }
 </style>
-
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({"gtm.start":new Date().getTime(),event:"gtm.js"});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!="dataLayer"?"&l="+l:"";j.async=true;j.src="https://www.googletagmanager.com/gtm.js?id="+i+dl;f.parentNode.insertBefore(j,f);})(window,document,"script","dataLayer","GTM-NWXBT8XB");</script>
-<!-- Microsoft Clarity -->
 <script>(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window,document,"clarity","script","wfqjktrqpx");</script>
-<link rel="stylesheet" href="assets/responsive.css"><link rel="stylesheet" href="assets/animations.css"></head>
+</head>
 <body>
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NWXBT8XB" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-<div data-svp="funnel" style="min-height:100vh;padding:28px 16px 80px">
-  <div data-svp="funnel-card" style="max-width:540px;margin:0 auto;background:#fff;border:1.5px solid #16182B;border-radius:18px;padding:30px 28px;box-shadow:6px 6px 0 #3347CA">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <div style="height:34px;width:145px;overflow:hidden;display:flex;align-items:center"><img src="assets/logo-mot.png" alt="Silvousplait" style="width:145px;flex:0 0 auto;margin-top:-7px"></div>
-      <span style="font-weight:700;font-size:11.5px;letter-spacing:.05em;padding:5px 13px;border-radius:100px;background:#EEF0FD;color:#3347CA">QUIZ EXPRESS</span>
+
+<main class="funnel-page" data-svp="funnel" data-svp-funnel-v2>
+  <nav class="funnel-tabs" aria-label="Étapes du tunnel">
+    <button class="funnel-tab" type="button" data-step-tab="1" aria-selected="true">1 · Quiz</button>
+    <button class="funnel-tab" type="button" data-step-tab="2" aria-selected="false">2 · Premium</button>
+    <button class="funnel-tab" type="button" data-step-tab="3" aria-selected="false">3 · Invitation</button>
+    <button class="funnel-tab" type="button" data-step-tab="4" aria-selected="false">Bienvenue</button>
+  </nav>
+
+  <section class="funnel-card" data-svp="funnel-card">
+    <div class="funnel-top">
+      <a class="funnel-logo" href="accueil.html" aria-label="Retour à l'accueil">
+        <img src="assets/logo-mot.png" alt="Silvousplait">
+      </a>
+      <span class="funnel-badge" data-funnel-badge>ÉTAPE 1 / 3</span>
     </div>
-    <div style="height:6px;background:#EEF0FD;border-radius:100px;margin-bottom:24px;overflow:hidden"><div style="width:100%;height:100%;background:#3347CA;border-radius:100px"></div></div>
+    <div class="funnel-progress" aria-hidden="true"><span data-funnel-progress></span></div>
 
-    <h1 style="font-size:26px;line-height:1.15;letter-spacing:-.01em;font-weight:800;margin-bottom:8px">Bienvenue&nbsp;! On veut <span style="color:#3347CA">apprendre à te connaître</span></h1>
-    <p style="font-size:14.5px;line-height:1.55;color:#4A4D66;margin:0 0 26px">Quelques questions rapides pour t'envoyer seulement les sorties qui te ressemblent.</p>
+    <div class="funnel-step" data-funnel-step="1">
+      <h1 class="funnel-title">Bienvenue&nbsp;! On veut <span>apprendre à te connaître</span></h1>
+      <p class="funnel-copy">Quelques questions rapides pour t'envoyer seulement les sorties qui te ressemblent.</p>
 
-    <div style="margin-bottom:22px">
-      <div class="qlabel">Ta ville <span>— pour ta bonne infolettre</span></div>
-      <div class="grid4">
-        <div class="chip" data-svp-ville="montreal" data-selected="1" style="border-color:#3347CA;background:#EEF0FD;color:#3347CA;font-weight:700">Montréal</div>
-        <div class="chip" data-svp-ville="quebec">Québec</div>
-        <div class="chip" data-svp-ville="sherbrooke">Sherbrooke</div>
-        <div class="chip" data-svp-ville="trois-rivieres">Trois-Rivières</div>
+      <div class="funnel-block">
+        <div class="funnel-label">Ta ville <span>— pour ta bonne infolettre</span></div>
+        <div class="funnel-grid-4">
+          <button class="funnel-chip" type="button" data-svp-ville="montreal" data-city-label="Montréal" data-selected="1">Montréal</button>
+          <button class="funnel-chip" type="button" data-svp-ville="quebec" data-city-label="Québec">Québec</button>
+          <button class="funnel-chip" type="button" data-svp-ville="sherbrooke" data-city-label="Sherbrooke">Sherbrooke</button>
+          <button class="funnel-chip" type="button" data-svp-ville="trois-rivieres" data-city-label="Trois-Rivières">Trois-Rivières</button>
+        </div>
+      </div>
+
+      <div class="funnel-block">
+        <div class="funnel-label">Qu'est-ce que tu aimes sortir voir&nbsp;? <span>— plusieurs choix</span></div>
+        <div class="funnel-wrap">
+          <button class="funnel-chip funnel-chip--pill" type="button" data-svp-interest="Théâtre" data-selected="1">Théâtre</button>
+          <button class="funnel-chip funnel-chip--pill" type="button" data-svp-interest="Musique" data-selected="1">Musique</button>
+          <button class="funnel-chip funnel-chip--pill" type="button" data-svp-interest="Humour">Humour</button>
+          <button class="funnel-chip funnel-chip--pill" type="button" data-svp-interest="Cinéma">Cinéma</button>
+          <button class="funnel-chip funnel-chip--pill" type="button" data-svp-interest="Arts visuels">Arts visuels</button>
+          <button class="funnel-chip funnel-chip--pill" type="button" data-svp-interest="Festivals">Festivals</button>
+          <button class="funnel-chip funnel-chip--pill" type="button" data-svp-interest="Sport">Sport</button>
+        </div>
+      </div>
+
+      <div class="funnel-block">
+        <div class="funnel-label">Tu sors combien de fois par mois&nbsp;? <span>— environ</span></div>
+        <div class="funnel-grid-4">
+          <button class="funnel-chip" type="button" data-svp-tranche="0-1">0–1</button>
+          <button class="funnel-chip" type="button" data-svp-tranche="2-3" data-selected="1">2–3</button>
+          <button class="funnel-chip" type="button" data-svp-tranche="4-6">4–6</button>
+          <button class="funnel-chip" type="button" data-svp-tranche="7+">7+</button>
+        </div>
+      </div>
+
+      <div class="funnel-block" style="margin-bottom:14px">
+        <div class="funnel-label">Ton prénom</div>
+        <input data-svp="prenom" class="funnel-field" placeholder="Alex" autocomplete="given-name">
+      </div>
+
+      <div class="funnel-block" style="margin-bottom:26px">
+        <div class="funnel-label">Ton courriel <span>— pour recevoir la sélection gratuite</span></div>
+        <input data-svp="funnel-email" class="funnel-field" type="email" placeholder="alex@exemple.com" autocomplete="email">
+      </div>
+
+      <button class="funnel-primary" type="button" data-funnel-next="2">Continuer →</button>
+    </div>
+
+    <div class="funnel-step" data-funnel-step="2" hidden>
+      <div style="text-align:center;margin-bottom:12px"><span style="display:inline-block;background:#16182B;color:#FFFEF5;font:800 11.5px 'Instrument Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:6px 15px;border-radius:100px">Membre Premium</span></div>
+      <h1 class="funnel-title" style="text-align:center;font-size:25px"><span data-funnel-name>Alex</span>, les membres Premium ont économisé <span>361&nbsp;$</span> en juin</h1>
+      <p class="funnel-copy" style="text-align:center">Toi, as-tu payé plein prix&nbsp;? Voici ce que des membres qui aiment <b style="color:#16182B" data-funnel-interests>le théâtre et la musique</b> ont reçu à <span data-funnel-city>Montréal</span>.</p>
+
+      <div class="funnel-offers">
+        <article class="funnel-offer">
+          <div class="funnel-offer-visual"><img src="assets/icon-mic-circle.png" alt=""></div>
+          <div class="funnel-offer-title">Lou-Adriane Cassidy</div>
+          <div class="funnel-offer-meta">Musique · Francos</div>
+          <div class="funnel-offer-price">Billet gratuit <span style="font-weight:400;color:#B3B1A4;text-decoration:line-through">55&nbsp;$</span></div>
+        </article>
+        <article class="funnel-offer">
+          <div class="funnel-offer-visual"><img src="assets/icon-mic-dance.png" alt=""></div>
+          <div class="funnel-offer-title">Waahli</div>
+          <div class="funnel-offer-meta">Musique · Montréal</div>
+          <div class="funnel-offer-price">Billet gratuit <span style="font-weight:400;color:#B3B1A4;text-decoration:line-through">21&nbsp;$</span></div>
+        </article>
+        <article class="funnel-offer">
+          <div class="funnel-offer-visual"><img src="assets/icon-curtain.png" alt=""></div>
+          <div class="funnel-offer-title">Jeudi Comédie Club</div>
+          <div class="funnel-offer-meta">Humour · Longueuil</div>
+          <div class="funnel-offer-price">Entrée gratuite <span style="font-weight:400;color:#B3B1A4;text-decoration:line-through">27&nbsp;$</span></div>
+        </article>
+      </div>
+
+      <div class="funnel-compare">
+        <div style="text-align:center;font:700 15px 'Bricolage Grotesque',sans-serif;margin-bottom:12px">Ce que tu débloques en Premium</div>
+        <div class="funnel-compare-grid">
+          <div class="funnel-plan">
+            <div style="font:800 11px 'Instrument Sans',sans-serif;letter-spacing:.08em;color:#8B8DA0">GRATUIT</div>
+            <div style="font:500 12.5px 'Instrument Sans',sans-serif;display:flex;gap:6px"><span style="color:#3347CA;font-weight:700">✓</span> La sélection hebdo</div>
+            <div style="font:500 12.5px 'Instrument Sans',sans-serif;color:#B3B1A4;display:flex;gap:6px"><span style="font-weight:700">—</span> Pas de billets gratuits</div>
+            <div style="font:500 12.5px 'Instrument Sans',sans-serif;color:#B3B1A4;display:flex;gap:6px"><span style="font-weight:700">—</span> Pas de rabais membres</div>
+          </div>
+          <div class="funnel-plan funnel-plan--premium">
+            <div style="font:800 11px 'Instrument Sans',sans-serif;letter-spacing:.08em;color:#3347CA">PREMIUM</div>
+            <div style="font:500 12.5px 'Instrument Sans',sans-serif;display:flex;gap:6px"><span style="color:#3347CA;font-weight:700">✓</span> La sélection hebdo</div>
+            <div style="font:500 12.5px 'Instrument Sans',sans-serif;display:flex;gap:6px"><span style="color:#3347CA;font-weight:700">✓</span> Billets gratuits chaque semaine</div>
+            <div style="font:500 12.5px 'Instrument Sans',sans-serif;display:flex;gap:6px"><span style="color:#3347CA;font-weight:700">✓</span> Rabais exclusifs + primeurs</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font:700 16.5px 'Bricolage Grotesque',sans-serif;margin-bottom:2px">Total&nbsp;: 361&nbsp;$ d'économies. Abonnement&nbsp;: 5&nbsp;$/mois.</div>
+        <div style="font:500 13px 'Instrument Sans',sans-serif;color:#8B8DA0">Le calcul est simple.</div>
+      </div>
+
+      <button class="funnel-primary" type="button" data-premium-choice="yes">Je veux mes billets gratuits — 5&nbsp;$/mois</button>
+      <div style="text-align:center;font:500 11.5px 'Instrument Sans',sans-serif;color:#8B8DA0;margin-top:9px">Annule en tout temps · Garantie 30 jours</div>
+      <button class="funnel-link-button" type="button" data-premium-choice="no">Non merci, je reste au forfait gratuit</button>
+    </div>
+
+    <div class="funnel-step" data-funnel-step="3" hidden>
+      <div style="width:76px;height:76px;border-radius:100px;background:#EEF0FD;display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><img src="assets/icon-megaphone.png" alt="" style="max-height:50px;max-width:50px;mix-blend-mode:multiply"></div>
+      <h1 class="funnel-title" style="text-align:center;font-size:25px">Les meilleures sorties,<br>c'est encore mieux <span>à deux</span></h1>
+      <p class="funnel-copy" style="text-align:center">Invite quelqu'un avec qui tu aimes sortir à découvrir Silvousplait.</p>
+
+      <div class="funnel-label">Ce que ton ami va recevoir</div>
+      <div style="border:1.5px solid #ECEAE0;border-radius:12px;padding:15px 17px;background:#FFFEF5;font:400 13.5px/1.55 'Instrument Sans',sans-serif;color:#4A4D66">
+        <b style="color:#16182B"><span data-funnel-name>Alex</span> t'invite à rejoindre Silvousplait</b><br>
+        Les meilleures sorties culturelles à <span data-funnel-city>Montréal</span>, chaque semaine. Rejoins gratuitement.
+      </div>
+
+      <div class="funnel-invite-row" style="display:flex;gap:8px;align-items:center;margin:16px 0 26px">
+        <div class="funnel-invite-link" data-funnel-invite>silvousplaitsvp.com/i/alex</div>
+        <button class="funnel-secondary" type="button" data-funnel-copy>Copier le lien</button>
+      </div>
+
+      <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
+      <button class="funnel-primary" type="button" data-svp="funnel-submit">Terminer mon inscription →</button>
+      <button class="funnel-link-button" type="button" data-funnel-submit-skip>Passer cette étape</button>
+    </div>
+
+    <div class="funnel-step" data-funnel-step="4" hidden>
+      <div style="text-align:center;margin-bottom:24px">
+        <img src="assets/logo-yeux.png" alt="" class="funnel-success-logo">
+        <h1 class="funnel-title" style="font-size:26px">Bienvenue, <span data-funnel-name>Alex</span>&nbsp;!</h1>
+        <p class="funnel-copy" style="margin-bottom:0">Tu es inscrit à l'infolettre <b style="color:#16182B" data-funnel-city>Montréal</b>. Ta première sélection arrive lundi.</p>
+      </div>
+
+      <div style="border:1.5px solid #3347CA;background:#EEF0FD;border-radius:14px;padding:16px 18px;margin-bottom:22px">
+        <div style="font:700 13.5px 'Instrument Sans',sans-serif;color:#3347CA;margin-bottom:5px">Une dernière étape importante</div>
+        <div style="font:400 13.5px/1.55 'Instrument Sans',sans-serif;color:#25349B">On vient de t'envoyer un courriel. Ouvre-le et réponds «&nbsp;Je confirme&nbsp;» pour bien recevoir nos offres.</div>
+      </div>
+
+      <div style="border:1.5px solid #16182B;border-radius:16px;padding:20px;margin-bottom:8px;background:#FFFEF5;box-shadow:4px 4px 0 rgba(142,160,245,.4)">
+        <div style="display:flex;align-items:flex-start;gap:14px">
+          <img src="assets/icon-premium.png" alt="" style="width:52px;flex:none;mix-blend-mode:multiply">
+          <div>
+            <div style="font:700 15.5px 'Bricolage Grotesque',sans-serif;margin-bottom:3px">Les membres Premium ont économisé 361&nbsp;$ en juin</div>
+            <div style="font:400 13px/1.5 'Instrument Sans',sans-serif;color:#4A4D66;margin-bottom:14px">Billets gratuits et rabais exclusifs, à partir de 5&nbsp;$/mois. Un seul billet gratuit rembourse ton année.</div>
+            <a href="premium.html" data-svp="premium-cta" style="display:inline-block;background:#3347CA;color:#FFFEF5;padding:12px 24px;border-radius:100px;font:700 14px 'Instrument Sans',sans-serif;text-decoration:none">Passer au Premium →</a>
+          </div>
+        </div>
+      </div>
+
+      <div style="font:700 15px 'Bricolage Grotesque',sans-serif;margin:22px 0 12px">Questions fréquentes</div>
+      <div data-funnel-faq>
+        <button type="button" class="funnel-chip" style="display:block;width:100%;text-align:left;border-radius:12px;padding:13px 16px;margin-bottom:8px" data-faq-item>
+          <span style="display:flex;justify-content:space-between;align-items:center;gap:12px;font:600 13.5px 'Instrument Sans',sans-serif">Comment ne pas manquer les courriels ?<span style="color:#3347CA;font-size:16px;flex:none">⌄</span></span>
+          <span hidden style="font:400 13px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin-top:8px">Ajoute bonjour@silvousplaitsvp.com à tes contacts et réponds à notre premier courriel.</span>
+        </button>
+        <button type="button" class="funnel-chip" style="display:block;width:100%;text-align:left;border-radius:12px;padding:13px 16px;margin-bottom:8px" data-faq-item>
+          <span style="display:flex;justify-content:space-between;align-items:center;gap:12px;font:600 13.5px 'Instrument Sans',sans-serif">À quelle fréquence je reçois des offres ?<span style="color:#3347CA;font-size:16px;flex:none">⌄</span></span>
+          <span hidden style="font:400 13px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin-top:8px">Une sélection par semaine, le lundi matin. Premium ajoute les billets gratuits et rabais exclusifs.</span>
+        </button>
+        <button type="button" class="funnel-chip" style="display:block;width:100%;text-align:left;border-radius:12px;padding:13px 16px;margin-bottom:8px" data-faq-item>
+          <span style="display:flex;justify-content:space-between;align-items:center;gap:12px;font:600 13.5px 'Instrument Sans',sans-serif">C'est quoi la différence entre gratuit et Premium ?<span style="color:#3347CA;font-size:16px;flex:none">⌄</span></span>
+          <span hidden style="font:400 13px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin-top:8px">Gratuit : la sélection hebdo. Premium : des billets gratuits, des rabais réservés aux membres et des primeurs.</span>
+        </button>
       </div>
     </div>
 
-    <div style="margin-bottom:22px">
-      <div class="qlabel">Qu'est-ce que tu aimes sortir voir&nbsp;? <span>— plusieurs choix</span></div>
-      <div class="wrap">
-        <div class="chip chip--pill" data-svp-interest="Théâtre">Théâtre</div>
-        <div class="chip chip--pill" data-svp-interest="Musique">Musique</div>
-        <div class="chip chip--pill" data-svp-interest="Humour">Humour</div>
-        <div class="chip chip--pill" data-svp-interest="Cinéma">Cinéma</div>
-        <div class="chip chip--pill" data-svp-interest="Arts visuels">Arts visuels</div>
-        <div class="chip chip--pill" data-svp-interest="Festivals">Festivals</div>
-        <div class="chip chip--pill" data-svp-interest="Sport">Sport</div>
+    <div class="funnel-step" data-funnel-step="already" hidden>
+      <div style="text-align:center;padding:12px 4px 2px">
+        <img src="assets/logo-yeux.png" alt="" style="width:118px;margin-bottom:14px">
+        <h1 class="funnel-title" style="font-size:26px">Tu es déjà inscrit.</h1>
+        <p class="funnel-copy" style="margin-bottom:18px">Cette adresse reçoit déjà Silvousplait. On évite de créer un doublon dans ActiveCampaign.</p>
+        <a class="funnel-primary" href="premium.html" data-svp="premium-cta">Découvrir Premium →</a>
+        <a href="accueil.html" style="display:inline-block;margin-top:14px;color:#8B8DA0;font:600 13px 'Instrument Sans',sans-serif;text-decoration:underline">Retour au site</a>
       </div>
     </div>
 
-    <div style="margin-bottom:22px">
-      <div class="qlabel">Tu sors combien de fois par mois&nbsp;? <span>— environ</span></div>
-      <div class="grid4">
-        <div class="chip" data-svp-tranche="0-1">0–1</div>
-        <div class="chip" data-svp-tranche="2-3">2–3</div>
-        <div class="chip" data-svp-tranche="4-6">4–6</div>
-        <div class="chip" data-svp-tranche="7+">7+</div>
-      </div>
+    <p class="funnel-msg" data-svp="funnel-feedback" role="status" aria-live="polite"></p>
+  </section>
+
+  <p class="funnel-bottom-note">Gratuit pour toujours · Désabonnement en 1 clic · <button type="button" data-funnel-open-exit style="border:none;background:none;color:#8B8DA0;text-decoration:underline;cursor:pointer;font:inherit;padding:0">Retour au site</button></p>
+
+  <div class="funnel-modal" data-funnel-exit hidden>
+    <div class="funnel-modal-card" role="dialog" aria-modal="true" aria-labelledby="funnel-exit-title">
+      <div style="width:64px;height:64px;border-radius:100px;background:#EEF0FD;display:inline-flex;align-items:center;justify-content:center;margin-bottom:15px"><img src="assets/icon-tickets.png" alt="" style="max-height:42px;max-width:42px;mix-blend-mode:multiply"></div>
+      <h3 id="funnel-exit-title" style="font:800 21px 'Bricolage Grotesque',sans-serif;letter-spacing:-.01em;margin:0 0 9px">Tu y es presque, <span data-funnel-name>Alex</span></h3>
+      <p style="font:400 14px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin:0 0 20px">Termine tes questions pour recevoir les meilleures offres et sorties culturelles à <span data-funnel-city>Montréal</span>.</p>
+      <button class="funnel-primary" type="button" data-funnel-close-exit>Continuer mes questions →</button>
+      <a href="accueil.html" style="display:block;width:100%;background:none;border:none;margin-top:12px;font:500 12.5px 'Instrument Sans',sans-serif;color:#8B8DA0;text-decoration:underline;cursor:pointer">Quitter quand même</a>
     </div>
-
-    <div style="margin-bottom:18px">
-      <div class="qlabel">Ton prénom</div>
-      <input data-svp="prenom" placeholder="Alex" class="field">
-    </div>
-
-    <div style="margin-bottom:22px">
-      <div class="qlabel">Ton courriel</div>
-      <input data-svp="funnel-email" type="email" placeholder="ton.courriel@exemple.com" class="field">
-    </div>
-
-    <div style="margin-bottom:22px">
-      <div class="qlabel">Le Premium t'intéresse&nbsp;? <span>— billets gratuits &amp; rabais exclusifs</span></div>
-      <div class="wrap">
-        <div class="chip chip--pill" data-svp-premium="yes">Oui, ça m'intéresse&nbsp;!</div>
-        <div class="chip chip--pill" data-svp-premium="no">Pas pour l'instant</div>
-      </div>
-    </div>
-
-    <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
-
-    <button data-svp="funnel-submit" style="display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:16px;font-weight:700;font-size:15.5px;cursor:pointer">M'inscrire gratuitement →</button>
-    <p data-svp="funnel-feedback" role="status" aria-live="polite" style="min-height:18px;margin:12px 0 0;text-align:center;font-weight:600;font-size:13px;color:#3347CA"></p>
-    <p style="margin:6px 0 0;text-align:center;font-size:11.5px;color:#B3B1A4">Gratuit pour toujours · Désabonnement en 1 clic</p>
   </div>
-</div>
+</main>
+
 <script src="assets/app.js"></script>
-</body></html>
+</body>
+</html>
