@@ -927,12 +927,19 @@
     root.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     window.scrollTo(0, 0);
-    setTimeout(function () { document.body.classList.add('intro-fading'); }, 2550);
-    setTimeout(function () {
-      document.body.classList.add('intro-complete');
-      root.style.overflow = '';
-      document.body.style.overflow = '';
-    }, 3800);
+    var done = false;
+    function complete() { document.body.classList.add('intro-complete'); root.style.overflow = ''; document.body.style.overflow = ''; }
+    var t1 = setTimeout(function () { document.body.classList.add('intro-fading'); }, 2550);
+    var t2 = setTimeout(function () { if (!done) { done = true; complete(); } }, 3800);
+    // Let visitors skip/close the loader — click anywhere or the "Entrer" button.
+    function skip() { if (done) return; done = true; clearTimeout(t1); clearTimeout(t2); document.body.classList.add('intro-fading'); setTimeout(complete, 600); }
+    intro.style.cursor = 'pointer';
+    intro.addEventListener('click', skip);
+    var btn = document.createElement('button');
+    btn.type = 'button'; btn.textContent = 'Entrer →'; btn.setAttribute('aria-label', 'Entrer sur le site');
+    btn.style.cssText = 'position:absolute;bottom:28px;left:50%;transform:translateX(-50%);z-index:2;background:rgba(51,71,202,.12);color:#3347CA;border:none;border-radius:100px;padding:10px 22px;font:700 13px \'Instrument Sans\',sans-serif;cursor:pointer';
+    btn.addEventListener('click', function (e) { e.stopPropagation(); skip(); });
+    intro.appendChild(btn);
   }
 
   function init() {
