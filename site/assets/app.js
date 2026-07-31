@@ -1429,6 +1429,170 @@
     }, false);
   }
 
+  // ---- universal public mobile header ----
+  function wireUniversalMobileHeader() {
+    if (document.querySelector('.svp-mobile-header')) return;
+
+    function pageNameFromPath(pathname) {
+      var file = String(pathname || '').split('/').pop() || 'accueil';
+      if (!file || file === '/') file = 'accueil';
+      if (/^index(\.html)?$/i.test(file)) file = 'accueil';
+      if (file.indexOf('.') < 0) file += '.html';
+      return file;
+    }
+    var currentPage = pageNameFromPath(location.pathname);
+    if (/^(admin|premium-offers-admin)\.html$/i.test(currentPage)) return;
+
+    function isBrandLogo(img) {
+      if (!img || !img.getAttribute) return false;
+      var src = img.getAttribute('src') || '';
+      var alt = String(img.getAttribute('alt') || '').trim();
+      return src.indexOf('logo-mot') >= 0 || /^Silvousplait$/i.test(alt);
+    }
+    function containsBrandLogo(el) {
+      return !!(el && el.querySelector && [].some.call(el.querySelectorAll('img'), isBrandLogo));
+    }
+    function closestForbiddenLogoContext(img) {
+      return img.closest && img.closest('.svp-mobile-header, .page-intro, [data-svp="funnel-card"], .funnel-card');
+    }
+    function headerCandidateForLogo(img) {
+      if (closestForbiddenLogoContext(img)) return null;
+      var best = null;
+      var bestScore = -1;
+      var n = img.parentElement;
+      while (n && n !== document.body && n.nodeType === 1) {
+        if (n.matches && n.matches('main, section, form, .page-intro')) break;
+        var rect = n.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0 && rect.height <= 360 && rect.top < 300 && containsBrandLogo(n)) {
+          var css = window.getComputedStyle ? getComputedStyle(n) : null;
+          var style = String(n.getAttribute('style') || '').toLowerCase();
+          var className = String(n.className || '').toLowerCase();
+          var tag = String(n.tagName || '').toLowerCase();
+          var linkCount = n.querySelectorAll ? n.querySelectorAll('a[href]').length : 0;
+          var score = 0;
+          if (tag === 'header') score += 20;
+          if (className.indexOf('header') >= 0) score += 12;
+          if ((css && css.position === 'sticky') || style.indexOf('sticky') >= 0) score += 9;
+          if ((css && parseFloat(css.borderBottomWidth || '0') > 0) || style.indexOf('border-bottom') >= 0) score += 7;
+          if (linkCount > 1) score += 6;
+          else if (linkCount === 1) score += 2;
+          if (css && css.display.indexOf('flex') >= 0) score += 2;
+          if (!best || score > bestScore || (score === bestScore && rect.height > best.getBoundingClientRect().height)) {
+            best = n;
+            bestScore = score;
+          }
+        }
+        n = n.parentElement;
+      }
+      return best;
+    }
+    function uniquePush(list, el) {
+      if (el && list.indexOf(el) < 0) list.push(el);
+    }
+
+    var candidates = [];
+    [].slice.call(document.querySelectorAll('header')).forEach(function (header) {
+      if (!header.classList.contains('svp-mobile-header')) uniquePush(candidates, header);
+    });
+    [].slice.call(document.querySelectorAll('img')).forEach(function (img) {
+      if (isBrandLogo(img)) uniquePush(candidates, headerCandidateForLogo(img));
+    });
+    candidates.sort(function (a, b) { return a.getBoundingClientRect().top - b.getBoundingClientRect().top; });
+
+    function normalizedHref(href) {
+      if (!href) return '';
+      var a = document.createElement('a');
+      a.href = href;
+      if (a.origin !== location.origin) return href;
+      return pageNameFromPath(a.pathname) + (a.hash || '');
+    }
+    function labelForLink(a) {
+      return String((a && a.textContent) || '').replace(/\s+/g, ' ').trim();
+    }
+    function isCurrent(href) {
+      var a = document.createElement('a');
+      a.href = href;
+      return a.origin === location.origin && pageNameFromPath(a.pathname) === currentPage && !a.hash;
+    }
+
+    var items = [];
+    var seen = {};
+    function addItem(label, href, primary) {
+      label = String(label || '').replace(/\s+/g, ' ').trim();
+      if (!label || !href) return;
+      var key = normalizedHref(href);
+      if (/s'?inscrire|inscription/i.test(label)) key = 'signup';
+      if (/^connexion$/i.test(label)) key = 'connexion';
+      if (key === 'accueil.html' && /retour|accueil/i.test(label)) key = 'home';
+      if (seen[key]) return;
+      seen[key] = true;
+      items.push({ label: label, href: href, primary: !!primary });
+    }
+
+    addItem('Accueil', 'accueil.html', false);
+    candidates.forEach(function (header) {
+      [].slice.call(header.querySelectorAll('a[href]')).forEach(function (a) {
+        if (a.closest && a.closest('.svp-mobile-header')) return;
+        if (a.querySelector('img') && !labelForLink(a)) return;
+        var label = labelForLink(a);
+        if (!label) return;
+        addItem(label, a.getAttribute('href'), /s'?inscrire|inscription|commencer|choisir|je veux/i.test(label));
+      });
+    });
+    addItem('Premium', 'premium.html', false);
+    addItem('Contact', 'contact.html', false);
+    addItem('Partenariat', 'partenariat.html', false);
+    addItem('Connexion', 'connexion.html', false);
+    addItem("S'inscrire", 'accueil.html#inscription', true);
+
+    var headerEl = document.createElement('header');
+    headerEl.className = 'svp-mobile-header';
+    headerEl.setAttribute('data-open', 'false');
+    var menuId = 'svp-mobile-menu';
+    var bar = document.createElement('div');
+    bar.className = 'svp-mobile-header__bar';
+    var logo = document.createElement('a');
+    logo.className = 'svp-mobile-header__logo';
+    logo.href = 'accueil.html';
+    logo.setAttribute('aria-label', "Retour à l'accueil");
+    logo.innerHTML = '<img src="assets/logo-mot.png" alt="Silvousplait">';
+    var toggle = document.createElement('button');
+    toggle.className = 'svp-mobile-header__toggle';
+    toggle.type = 'button';
+    toggle.setAttribute('aria-label', 'Ouvrir le menu');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-controls', menuId);
+    toggle.setAttribute('data-svp-mobile-menu-toggle', '');
+    toggle.innerHTML = '<span class="svp-mobile-header__icon" aria-hidden="true"><span></span><span></span><span></span></span>';
+    bar.appendChild(logo);
+    bar.appendChild(toggle);
+
+    var nav = document.createElement('nav');
+    nav.className = 'svp-mobile-header__panel';
+    nav.id = menuId;
+    nav.setAttribute('aria-label', 'Navigation principale');
+    nav.setAttribute('data-svp-mobile-menu', '');
+    nav.setAttribute('data-open', 'false');
+    items.forEach(function (item) {
+      var a = document.createElement('a');
+      a.href = item.href;
+      a.textContent = item.label;
+      if (item.primary) a.setAttribute('data-primary', 'true');
+      if (isCurrent(item.href)) a.setAttribute('aria-current', 'page');
+      nav.appendChild(a);
+    });
+    headerEl.appendChild(bar);
+    headerEl.appendChild(nav);
+
+    candidates.forEach(function (el) { el.setAttribute('data-svp-mobile-hide', 'header'); });
+    var anchor = candidates[0] || [].slice.call(document.body.children).filter(function (el) {
+      return !/^(script|noscript)$/i.test(el.tagName || '');
+    })[0] || null;
+    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(headerEl, anchor);
+    else document.body.insertBefore(headerEl, document.body.firstChild);
+    document.body.classList.add('svp-mobile-header-ready');
+  }
+
   // ---- uniform "back to main page" affordance: the header logo ----
   // On the flattened pages some logos aren't links (premium/tunnel/archive), so
   // there was no way home — especially on mobile where the text nav is hidden.
@@ -1527,6 +1691,8 @@
     function setOpen(btn, menu, open) {
       btn.setAttribute('aria-expanded', open ? 'true' : 'false');
       if (menu) menu.setAttribute('data-open', open ? 'true' : 'false');
+      var owner = btn.closest && btn.closest('.svp-mobile-header');
+      if (owner) owner.setAttribute('data-open', open ? 'true' : 'false');
     }
     function closeAll(exceptBtn) {
       toggles.forEach(function (btn) {
@@ -1637,7 +1803,7 @@
     if ('scrollRestoration' in history) { try { history.scrollRestoration = 'manual'; } catch (e) {} }
     if (!hashTargetEl()) { try { window.scrollTo(0, 0); } catch (e) {} }
     wireIntro();
-    wireHomeLink(); wireBackLinks(); wireMobileMenus(); wireFaq(); wireScrollTop(); wireAnchorScroll();
+    wireUniversalMobileHeader(); wireHomeLink(); wireBackLinks(); wireMobileMenus(); wireFaq(); wireScrollTop(); wireAnchorScroll();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireBilling(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers(); wireOffersCarousel();
