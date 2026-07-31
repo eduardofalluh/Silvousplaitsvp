@@ -748,7 +748,7 @@
   // View Transitions — they get "skipped" unpredictably and leave a hard cut.
   function wirePageTransitions() {
     if (reducedMotion) return;
-    var leaving = false;
+    var leaving = false, overlay = null, spinTimer = null, navTimer = null;
     document.addEventListener('click', function (e) {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       var a = e.target.closest && e.target.closest('a[href]');
@@ -763,28 +763,44 @@
       e.preventDefault();
       if (leaving) return;                                        // ignore double-clicks
       leaving = true;
-      // Fade the current page out to the cream <html> background, then navigate.
-      // We release the entrance animation and force a reflow BEFORE setting the
-      // target opacity so the transition actually interpolates 1 -> 0 (a running
-      // animation would otherwise make it snap instantly). Opacity only = a
-      // clean crossfade: no white flash, no layout jump.
-      var b = document.body;
-      b.style.animation = 'none';
-      b.style.transition = 'opacity .22s ease';
-      void b.offsetWidth;                                         // flush current opacity(=1)
-      b.style.opacity = '0';
-      document.documentElement.classList.add('svp-leaving');
-      setTimeout(function () { window.location.href = url.href; }, 220);
+      // Flag this as a click navigation so the NEXT page fades itself in (the
+      // nav-gate script reads this before first paint). Fresh loads never set
+      // it, so the entrance fade is strictly a click-to-switch-page effect.
+      try { sessionStorage.setItem('svp-nav', '1'); } catch (e3) {}
+
+      // Fade a cream cover IN over the current page — this is the fade-out half
+      // of the crossfade, and the surface that carries a loading spinner if the
+      // next page is slow to arrive. Cream (never white) = no flash. It sits on
+      // the outgoing page, which the browser keeps painted (paint holding) while
+      // the next page loads, so the cover + spinner stay visible during the wait.
+      overlay = document.createElement('div');
+      overlay.setAttribute('aria-hidden', 'true');
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483600;background:#FFFEF5;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .22s ease;pointer-events:none;-webkit-tap-highlight-color:transparent';
+      var spin = document.createElement('div');
+      spin.style.cssText = 'width:40px;height:40px;border-radius:50%;border:3px solid rgba(51,71,202,.2);border-top-color:#3347CA;opacity:0;transition:opacity .3s ease';
+      overlay.appendChild(spin);
+      document.body.appendChild(overlay);
+      void overlay.offsetWidth;                                   // commit opacity:0 as the start
+      overlay.style.opacity = '1';                                // fade the page out to cream
+      try { spin.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: 750, iterations: Infinity }); } catch (e4) {}
+      // Reveal the spinner ONLY if the next page is still loading after ~0.55s,
+      // so it never flashes on a fast navigation but reassures on slow ones
+      // (equally on mobile). The outgoing document's timers keep running until
+      // the new page commits, so this fires precisely when the load is slow.
+      spinTimer = setTimeout(function () { spin.style.opacity = '1'; }, 550);
+      // Start the navigation once the cream cover is in place.
+      navTimer = setTimeout(function () { window.location.href = url.href; }, 220);
     }, false);
     // If the page is restored from the bfcache (Safari/Firefox back-forward), it
-    // may still carry the faded-out inline styles from when we navigated away —
-    // undo them so the restored page isn't stuck invisible.
+    // may still carry the cream cover from when we navigated away — tear it down
+    // so the restored page isn't stuck under the loading screen.
     window.addEventListener('pageshow', function (ev) {
       if (!ev.persisted) return;
       leaving = false;
-      document.documentElement.classList.remove('svp-leaving');
-      var b = document.body;
-      b.style.opacity = ''; b.style.transition = ''; b.style.animation = '';
+      if (spinTimer) { clearTimeout(spinTimer); spinTimer = null; }
+      if (navTimer) { clearTimeout(navTimer); navTimer = null; }
+      if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      overlay = null;
     });
   }
 
