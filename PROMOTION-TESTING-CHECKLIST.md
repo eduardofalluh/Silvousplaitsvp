@@ -68,8 +68,13 @@ tested for real on prod. ✅ = already verified on staging (still worth a quick 
 - [ ] ⚠️ Request login code → **email arrives** → enter code → logged in.
 - [ ] ⚠️ Compte shows the member's **real** name / info (not a placeholder).
 - [ ] ⚠️ A **non-premium** subscriber can also log in and see their info.
-- [ ] ⚠️ "Se désinscrire de l'infolettre" → confirm the contact's AC list status becomes
-      unsubscribed (2).
+- [ ] ✅ "Me désinscrire de l'infolettre" → sets the contact's AC list status to unsubscribed
+      (2) — verified end-to-end on staging (important: must always work for subscribers).
+- [ ] ⚠️ "Historique de facturation" / "Annuler mon abonnement" → both open the **Stripe
+      billing portal** (create-billing-portal-session, finds customer by email). Needs the
+      Stripe **Customer Portal to be enabled/configured** in the Stripe dashboard, and a real
+      premium customer. If not configured it shows an error message. Test with a real member.
+- [ ] ✅ Account name + offers show **loading skeletons** (never the fake "Alex"/sample offers).
 - [ ] Compte offer **filters** (search / type / region) work.
 - [ ] "Se déconnecter" + "Retour au site" links work.
 
