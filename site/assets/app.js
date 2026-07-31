@@ -476,6 +476,12 @@
     if (document.querySelector('[data-svp="funnel"]') || document.querySelector('[data-svp="compte"]')) return;
     try { if (sessionStorage.getItem('svp_exit')) return; } catch (e) {}
     var shown = false;
+    // Only arm the exit-intent AFTER the visitor has been on the page a while
+    // AND has scrolled a bit — otherwise it fires the instant the cursor drifts
+    // up to the tab/address bar on arrival, which reads as "pops up too fast".
+    var dwelled = false, engaged = false;
+    setTimeout(function () { dwelled = true; }, 18000);
+    window.addEventListener('scroll', function () { if (window.pageYOffset > 400) engaged = true; }, { passive: true });
     function show() {
       if (shown) return; shown = true;
       try { sessionStorage.setItem('svp_exit', '1'); } catch (e) {}
@@ -500,6 +506,7 @@
       });
     }
     document.addEventListener('mouseout', function (e) {
+      if (!dwelled && !engaged) return;                 // not yet armed — ignore
       if (e.clientY <= 0 && !e.relatedTarget) show();
     });
   }

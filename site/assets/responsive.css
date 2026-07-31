@@ -4,6 +4,21 @@
 /* Brand background so page-to-page navigation never flashes white. */
 html { background-color: #FFFEF5; }
 
+/* ---- Kill backdrop-filter blur (Retina Mac stutter) ----
+   backdrop-filter: blur() is a heavy compositor cost on high-DPI Macs — it has
+   to re-rasterise the blur every frame, which stutters page transitions AND
+   scrolling (invisible in headless/low-DPI testing, very visible on a real
+   Retina display). The frosted bars already sit on a near-opaque cream
+   background, so we drop the blur (barely perceptible) and make those sticky
+   bars fully opaque to compensate. Big smoothness win, negligible visual change. */
+[style*="backdrop-filter"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+[style*="rgba(255, 254, 245, 0.92)"][style*="backdrop-filter"] {
+  background: #FBFAF0 !important;
+}
+
 /* ---- Loading skeletons (shown while real data loads, all viewports) ---- */
 .svp-skel { position: relative; overflow: hidden; background: #E9ECF5; border-radius: 8px; }
 .svp-skel::after {
