@@ -775,7 +775,7 @@
       // the next page loads, so the cover + spinner stay visible during the wait.
       overlay = document.createElement('div');
       overlay.setAttribute('aria-hidden', 'true');
-      overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483600;background:#FFFEF5;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .22s ease;pointer-events:none;-webkit-tap-highlight-color:transparent';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483600;background:#FFFEF5;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .14s ease;pointer-events:none;-webkit-tap-highlight-color:transparent';
       var spin = document.createElement('div');
       spin.style.cssText = 'width:40px;height:40px;border-radius:50%;border:3px solid rgba(51,71,202,.2);border-top-color:#3347CA;opacity:0;transition:opacity .3s ease';
       overlay.appendChild(spin);
@@ -783,13 +783,14 @@
       void overlay.offsetWidth;                                   // commit opacity:0 as the start
       overlay.style.opacity = '1';                                // fade the page out to cream
       try { spin.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: 750, iterations: Infinity }); } catch (e4) {}
-      // Reveal the spinner ONLY if the next page is still loading after ~0.55s,
+      // Reveal the spinner ONLY if the next page is still loading after ~0.5s,
       // so it never flashes on a fast navigation but reassures on slow ones
       // (equally on mobile). The outgoing document's timers keep running until
       // the new page commits, so this fires precisely when the load is slow.
-      spinTimer = setTimeout(function () { spin.style.opacity = '1'; }, 550);
-      // Start the navigation once the cream cover is in place.
-      navTimer = setTimeout(function () { window.location.href = url.href; }, 220);
+      spinTimer = setTimeout(function () { spin.style.opacity = '1'; }, 500);
+      // Start the navigation as soon as the cream cover is in place — kept short
+      // so the blank/cream gap between pages is minimal (snappy on desktop too).
+      navTimer = setTimeout(function () { window.location.href = url.href; }, 150);
     }, false);
     // If the page is restored from the bfcache (Safari/Firefox back-forward), it
     // may still carry the cream cover from when we navigated away — tear it down
@@ -802,6 +803,25 @@
       if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
       overlay = null;
     });
+  }
+
+  // ---- uniform "back to main page" affordance: the header logo ----
+  // On the flattened pages some logos aren't links (premium/tunnel/archive), so
+  // there was no way home — especially on mobile where the text nav is hidden.
+  // Make the header logo a link to the home page everywhere except home itself.
+  // The logo stays visible on mobile (responsive.css), giving every page a
+  // consistent top-left home button.
+  function wireHomeLink() {
+    var path = location.pathname;
+    if (/(^|\/)(accueil|index)(\.html)?$/i.test(path) || path === '/') return; // already home
+    var logo = document.querySelector('img[src*="logo-mot"], img[alt="Silvousplait"]');
+    if (!logo || logo.closest('a')) return;         // missing, or already a link (faq, partenariat…)
+    var a = document.createElement('a');
+    a.href = 'accueil.html';
+    a.setAttribute('aria-label', "Retour à l'accueil");
+    a.style.cssText = 'display:inline-flex;align-items:center;text-decoration:none;cursor:pointer';
+    logo.parentNode.insertBefore(a, logo);
+    a.appendChild(logo);
   }
 
   // ---- prettify "Retour au site" / "Se déconnecter" links as pill buttons ----
@@ -873,7 +893,7 @@
     if ('scrollRestoration' in history) { try { history.scrollRestoration = 'manual'; } catch (e) {} }
     try { window.scrollTo(0, 0); } catch (e) {}
     wireIntro();
-    wireBackLinks(); wireFaq(); wireScrollTop();
+    wireHomeLink(); wireBackLinks(); wireFaq(); wireScrollTop();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireBilling(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers(); wireOffersCarousel();

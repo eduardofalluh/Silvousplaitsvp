@@ -17,7 +17,7 @@
      paint by the per-page nav-gate script). On a fresh load / reload / the
      accueil intro there's no svp-nav, so the page is untouched — the transition
      is strictly a click-to-switch-page effect. */
-  html.svp-nav body { animation: svp-page-in .34s ease both; }
+  html.svp-nav body { animation: svp-page-in .2s ease both; }
   @keyframes svp-page-in { from { opacity: 0; } to { opacity: 1; } }
 
   /* Outgoing page: the fade-OUT is driven in JS (wirePageTransitions in app.js).
