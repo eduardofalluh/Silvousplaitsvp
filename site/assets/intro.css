@@ -1,5 +1,8 @@
 /* Page intro — exact replica of the deployed (production) home loader.
-   Same 3s white screen + title + trompette, then slide-down reveal. */
+   Same 3s white screen + title + trompette, then slide-down reveal.
+   NOTE: the critical initial state (title/visual hidden + styled) is also
+   inlined in accueil.html <head> so no unstyled text flashes before this file
+   loads — keep them consistent. */
 :root { --blue: #3347CA; }
 
 /* Content wrapper starts hidden, revealed as the intro slides away. */
@@ -114,7 +117,7 @@ body.intro-fading .page-intro__visual {
 .page-intro__title {
   width: 100%;
   min-width: 0;
-  font-family: 'Inter Display', sans-serif;
+  font-family: 'Inter Display', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 60px;
   font-weight: 400;
   line-height: 1.05;

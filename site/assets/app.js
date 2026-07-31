@@ -775,7 +775,7 @@
       // the next page loads, so the cover + spinner stay visible during the wait.
       overlay = document.createElement('div');
       overlay.setAttribute('aria-hidden', 'true');
-      overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483600;background:#FFFEF5;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .14s ease;pointer-events:none;-webkit-tap-highlight-color:transparent';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483600;background:#FFFEF5;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .14s ease;pointer-events:none;will-change:opacity;transform:translateZ(0);-webkit-tap-highlight-color:transparent';
       var spin = document.createElement('div');
       spin.style.cssText = 'width:40px;height:40px;border-radius:50%;border:3px solid rgba(51,71,202,.2);border-top-color:#3347CA;opacity:0;transition:opacity .3s ease';
       overlay.appendChild(spin);
@@ -939,6 +939,15 @@
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers(); wireOffersCarousel();
     wireArchive();
     wireReveal(); wireCountUp(); wirePageTransitions();
+    // Reveal the incoming-page cover (see animations.css html.svp-nav ::after)
+    // only now — after all wiring ran and one more frame has painted — so the
+    // fade never competes with this heavy init work. No-op unless we arrived via
+    // a click navigation (html.svp-nav). Two rAFs = let a clean frame paint.
+    if (!reducedMotion && document.documentElement.classList.contains('svp-nav')) {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { document.documentElement.classList.add('svp-revealed'); });
+      });
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

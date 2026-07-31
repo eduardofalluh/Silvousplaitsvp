@@ -30,10 +30,16 @@
     z-index: 2147483200;
     background: #FFFEF5;
     pointer-events: none;
+    opacity: 1;
     will-change: opacity;
-    animation: svp-cover-out .2s ease forwards;
+    transition: opacity .25s ease;
   }
-  @keyframes svp-cover-out { from { opacity: 1; } to { opacity: 0; } }
+  /* The cover stays OPAQUE until app.js adds .svp-revealed at the very end of
+     init() (i.e. after the incoming page has painted and all wiring ran). Only
+     then does it fade out — so the reveal fade runs on a free main thread and
+     never stutters against the heavy initial layout/JS of pages like premium.
+     A per-page failsafe timeout also adds .svp-revealed in case init is slow. */
+  html.svp-nav.svp-revealed body::after { opacity: 0; }
 
   /* Outgoing page: the fade-OUT is driven in JS (wirePageTransitions in app.js).
      It must release the entrance animation with an explicit reflow before
