@@ -814,14 +814,54 @@
   function wireHomeLink() {
     var path = location.pathname;
     if (/(^|\/)(accueil|index)(\.html)?$/i.test(path) || path === '/') return; // already home
+
+    // 1) Make the header logo a home link (if it isn't already).
     var logo = document.querySelector('img[src*="logo-mot"], img[alt="Silvousplait"]');
-    if (!logo || logo.closest('a')) return;         // missing, or already a link (faq, partenariat…)
-    var a = document.createElement('a');
-    a.href = 'accueil.html';
-    a.setAttribute('aria-label', "Retour à l'accueil");
-    a.style.cssText = 'display:inline-flex;align-items:center;text-decoration:none;cursor:pointer';
-    logo.parentNode.insertBefore(a, logo);
-    a.appendChild(logo);
+    var logoLink = logo && logo.closest('a');
+    if (logo && !logoLink) {
+      logoLink = document.createElement('a');
+      logoLink.href = 'accueil.html';
+      logoLink.setAttribute('aria-label', "Retour à l'accueil");
+      logoLink.style.cssText = 'display:inline-flex;align-items:center;text-decoration:none;cursor:pointer';
+      logo.parentNode.insertBefore(logoLink, logo);
+      logoLink.appendChild(logo);
+    }
+
+    // 2) Guarantee a visible home button IN THE HEADER. Skip only if one is
+    //    already up top (the sub-pages' "← Retour" pill) — NOT a footer "Accueil"
+    //    link (premium has one in the footer, but that's not reachable without
+    //    scrolling, which is exactly the complaint).
+    if (document.querySelector('[data-svp="home"]')) return;
+    var hasHeaderHome = [].some.call(document.querySelectorAll('a[href*="accueil"]'), function (x) {
+      if (!(x.textContent || '').trim()) return false;     // has visible text, not just the logo image
+      var r = x.getBoundingClientRect();
+      return r.width > 0 && r.top < 240;                   // sits in the header area
+    });
+    if (hasHeaderHome) return;
+
+    // 2a) If there's a top nav (detected via an in-page hash link), add "Accueil"
+    //     as the first item, styled like its siblings.
+    var sample = document.querySelector('a[href="#offres"], a[href="#faq-premium"], a[href="#faq"], a[href="#tarifs"]');
+    if (sample && sample.parentNode) {
+      var navHome = document.createElement('a');
+      navHome.href = 'accueil.html';
+      navHome.textContent = 'Accueil';
+      navHome.setAttribute('data-svp', 'home');
+      navHome.setAttribute('style', sample.getAttribute('style') || 'color:#4A4D66;text-decoration:none');
+      sample.parentNode.insertBefore(navHome, sample.parentNode.firstChild);
+      return;
+    }
+
+    // 2b) Otherwise drop a small "← Accueil" pill next to the logo.
+    if (logoLink) {
+      var pill = document.createElement('a');
+      pill.href = 'accueil.html';
+      pill.textContent = '← Accueil';
+      pill.setAttribute('data-svp', 'home');
+      pill.setAttribute('style', "display:inline-flex;align-items:center;gap:6px;background:#EEF0FD;color:#3347CA;font:700 13px 'Instrument Sans',sans-serif;padding:9px 16px;border-radius:100px;text-decoration:none;margin-left:14px;white-space:nowrap");
+      if (logoLink.nextSibling) logoLink.parentNode.insertBefore(pill, logoLink.nextSibling);
+      else logoLink.parentNode.appendChild(pill);
+    }
   }
 
   // ---- prettify "Retour au site" / "Se déconnecter" links as pill buttons ----

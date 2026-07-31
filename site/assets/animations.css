@@ -12,13 +12,28 @@
 
   html { scroll-behavior: smooth; }
 
-  /* ---- Incoming page: fade in (opacity only — no transform, so no "jump") ----
+  /* ---- Incoming page reveal ----
      ONLY when arriving via a click navigation (html.svp-nav, set before first
      paint by the per-page nav-gate script). On a fresh load / reload / the
-     accueil intro there's no svp-nav, so the page is untouched — the transition
-     is strictly a click-to-switch-page effect. */
-  html.svp-nav body { animation: svp-page-in .2s ease both; }
-  @keyframes svp-page-in { from { opacity: 0; } to { opacity: 1; } }
+     accueil intro there's no svp-nav, so the page is untouched.
+
+     We fade out a solid cream cover (a fixed ::after box) OVER a static page,
+     instead of animating <body>'s opacity. That matters for performance: pages
+     like premium have many backdrop-filter blurs + a running marquee, and
+     animating body opacity forces the browser to re-composite all of them every
+     frame → visible stutter on large desktop viewports. A solid cover fading
+     out only composites one box; the page beneath stays static → smooth. */
+  html.svp-nav body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 2147483200;
+    background: #FFFEF5;
+    pointer-events: none;
+    will-change: opacity;
+    animation: svp-cover-out .2s ease forwards;
+  }
+  @keyframes svp-cover-out { from { opacity: 1; } to { opacity: 0; } }
 
   /* Outgoing page: the fade-OUT is driven in JS (wirePageTransitions in app.js).
      It must release the entrance animation with an explicit reflow before
