@@ -1,6 +1,17 @@
 /* Mobile responsiveness overrides for the flattened (desktop-fixed) design.
    Uses !important inside media queries to override the design's inline styles. */
 
+/* ---- Loading skeletons (shown while real data loads, all viewports) ---- */
+.svp-skel { position: relative; overflow: hidden; background: #E9ECF5; border-radius: 8px; }
+.svp-skel::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .svp-skel::after { animation: svp-shimmer 1.25s ease-in-out infinite; }
+}
+@keyframes svp-shimmer { to { transform: translateX(100%); } }
+
 /* ---- Global fixes (all viewports) ---- */
 /* Logo was cropped by a negative margin inside a fixed-height clip box.
    Give it a proper fixed width, natural height, no crop. */

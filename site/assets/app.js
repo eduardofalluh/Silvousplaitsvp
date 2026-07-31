@@ -277,6 +277,11 @@
     if (!document.querySelector('[data-svp="compte"]')) return;
     var session = getSession();
     if (!session) { window.location.href = 'connexion.html'; return; }
+    // Show a skeleton for the name + badge immediately (never the fake "Alex").
+    var greet0 = document.querySelector('[data-svp="compte"] h1');
+    if (greet0) greet0.innerHTML = 'Bonjour, <span class="svp-skel" style="display:inline-block;width:140px;height:24px;border-radius:8px;vertical-align:-3px"></span>';
+    var badge0 = [].slice.call(document.querySelectorAll('span')).filter(function (s) { return (s.textContent || '').trim() === 'Membre Premium'; })[0];
+    if (badge0) { badge0.setAttribute('data-svp-badge', '1'); badge0.textContent = ''; badge0.classList.add('svp-skel'); badge0.style.minWidth = '120px'; badge0.style.minHeight = '24px'; badge0.style.background = '#E9ECF5'; }
     fetch(FN + 'get-account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: session }) })
       .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
       .then(function (res) {
@@ -284,14 +289,13 @@
         var a = res.d; setEmail(a.email);
         var greet = document.querySelector('[data-svp="compte"] h1');
         if (greet) greet.textContent = 'Bonjour, ' + (a.firstName || a.email.split('@')[0]);
+        var badgeR = document.querySelector('[data-svp-badge]');
+        if (badgeR) { badgeR.classList.remove('svp-skel'); badgeR.style.minWidth = ''; badgeR.style.minHeight = ''; badgeR.style.background = a.isPremium ? '#F5E642' : '#EEF0FD'; badgeR.style.color = a.isPremium ? '#16182B' : '#3347CA'; badgeR.textContent = a.isPremium ? 'Membre Premium' : 'Membre gratuit'; }
         var ln = document.querySelector('input[placeholder="Nom"]'); if (ln) ln.value = a.lastName || '';
         var fn = document.querySelector('input[placeholder="Prénom"]'); if (fn) fn.value = a.firstName || '';
         var ph = document.querySelector('input[type="tel"]'); if (ph) ph.value = a.phone || '';
-        // badge: find element whose text is exactly "Membre Premium"
-        var badge = [].slice.call(document.querySelectorAll('span')).filter(function (s) { return (s.textContent || '').trim() === 'Membre Premium'; })[0];
-        if (badge && !a.isPremium) { badge.textContent = 'Membre gratuit'; badge.style.background = '#EEF0FD'; badge.style.color = '#3347CA'; }
       })
-      .catch(function () { /* leave placeholders on network error */ });
+      .catch(function () { /* leave skeletons on network error */ });
   }
 
   // ---- compte: newsletter unsubscribe (désinscription) ----
@@ -311,6 +315,28 @@
           if (d && d.ok) say('Tu es désinscrit·e. Tu peux te réinscrire quand tu veux.');
           else say("La désinscription a échoué. Réessaie.", true);
         }).catch(function () { say('Erreur. Réessaie plus tard.', true); });
+    });
+  }
+
+  // ---- compte: Stripe billing portal (invoices + cancel subscription) ----
+  function wireBilling() {
+    var links = document.querySelectorAll('[data-svp="billing"]');
+    if (!links.length) return;
+    var msg = document.querySelector('[data-svp="billing-msg"]');
+    function say(t, err) { if (msg) { msg.textContent = t || ''; msg.style.color = err ? '#b00020' : '#3347CA'; } }
+    [].forEach.call(links, function (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        var session = getSession();
+        if (!session) { window.location.href = 'connexion.html'; return; }
+        say('Ouverture…');
+        fetch(FN + 'create-billing-portal-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: session }) })
+          .then(function (r) { return r.json(); }).then(function (d) {
+            if (d && d.ok && d.url) { window.location.href = d.url; }
+            else if (d && d.reason === 'no-subscription') { say('Aucun abonnement Premium actif sur ce compte.', true); }
+            else { say("Impossible d'ouvrir la facturation pour le moment.", true); }
+          }).catch(function () { say('Erreur. Réessaie plus tard.', true); });
+      });
     });
   }
 
@@ -604,29 +630,50 @@
     setTimeout(update, 2200);
   }
 
+  function skeletonGridCard() {
+    return '<div style="background:#fff;border:1.5px solid #ECEAE0;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">'
+      + '<div class="svp-skel" style="height:110px;border-radius:0"></div>'
+      + '<div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:9px">'
+      + '<div class="svp-skel" style="height:15px;width:78%"></div>'
+      + '<div class="svp-skel" style="height:12px;width:52%"></div>'
+      + '<div class="svp-skel" style="height:38px;border-radius:100px;margin-top:6px"></div>'
+      + '</div></div>';
+  }
+  function skeletonCarouselCard() {
+    return '<div class="svp-skel" style="flex:0 0 auto;width:290px;max-width:86vw;height:400px;border-radius:20px"></div>';
+  }
+  function rep(html, n) { var s = ''; for (var i = 0; i < n; i++) s += html; return s; }
+
   function wireLiveOffers() {
     var carousel = document.querySelector('[data-scroller="offres"]');
     var grid = document.querySelector('[data-svp="offers-grid"]');
     if (!carousel && !grid) return;
+    // Replace the design's sample cards with skeletons immediately so users never
+    // see fake placeholder offers while the real ones load.
+    if (carousel) carousel.innerHTML = rep(skeletonCarouselCard(), 4);
+    if (grid) grid.innerHTML = rep(skeletonGridCard(), 6);
+    // add the "offres passées" link once (independent of load result)
+    var anchor = carousel || grid;
+    if (anchor && !document.querySelector('[data-svp="archive-link"]')) {
+      var a = document.createElement('a');
+      a.setAttribute('data-svp', 'archive-link');
+      a.href = 'archive.html';
+      a.textContent = 'Voir les offres passées →';
+      a.setAttribute('style', "display:inline-block;margin:16px 0 0;color:#3347CA;font:700 13.5px 'Instrument Sans',sans-serif;text-decoration:none");
+      anchor.parentNode.insertBefore(a, anchor.nextSibling);
+    }
     fetch(FN + 'list-public-premium-offers').then(function (r) { return r.json(); }).then(function (d) {
       var offers = (d && d.offers) || [];
-      if (!offers.length) return;
-      if (carousel) { carousel.innerHTML = offers.map(premiumCard).join(''); }
-      if (grid) { grid.innerHTML = offers.map(compteCard).join(''); }
+      if (carousel) carousel.innerHTML = offers.length ? offers.map(premiumCard).join('') : '';
+      if (grid) grid.innerHTML = offers.length ? offers.map(compteCard).join('')
+        : '<p style="grid-column:1/-1;color:#8B8DA0;font:500 14px \'Instrument Sans\',sans-serif;padding:8px 2px">Aucune offre pour le moment — reviens lundi pour la nouvelle sélection.</p>';
       document.querySelectorAll('[data-svp="offer"]').forEach(observeOffer);
       wirePremiumCtas();
       if (typeof window.__svpApplyFilters === 'function') window.__svpApplyFilters();
-      // link to the archive of past offers (once)
-      var anchor = carousel || grid;
-      if (anchor && !document.querySelector('[data-svp="archive-link"]')) {
-        var a = document.createElement('a');
-        a.setAttribute('data-svp', 'archive-link');
-        a.href = 'archive.html';
-        a.textContent = 'Voir les offres passées →';
-        a.setAttribute('style', "display:inline-block;margin:16px 0 0;color:#3347CA;font:700 13.5px 'Instrument Sans',sans-serif;text-decoration:none");
-        anchor.parentNode.insertBefore(a, anchor.nextSibling);
-      }
-    }).catch(function () {});
+    }).catch(function () {
+      if (carousel) carousel.innerHTML = '';
+      if (grid) grid.innerHTML = '<p style="grid-column:1/-1;color:#8B8DA0;font:500 14px \'Instrument Sans\',sans-serif;padding:8px 2px">Impossible de charger les offres pour le moment.</p>';
+    });
   }
 
   var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -784,7 +831,7 @@
     wireIntro();
     wireBackLinks(); wireFaq(); wireScrollTop();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
-    wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireAdmin(); wirePartenariat();
+    wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireBilling(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers(); wireOffersCarousel();
     wireArchive();
     wireReveal(); wireCountUp(); wirePageTransitions();
