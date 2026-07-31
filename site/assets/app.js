@@ -612,8 +612,15 @@
       });
     }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
     targets.forEach(function (el) { io.observe(el); });
-    // safety: reveal everything after 1.2s in case observer misses (e.g., 0-height parents)
-    setTimeout(function () { targets.forEach(function (el) { el.classList.add('svp-in'); }); }, 1200);
+    // safety: only force-reveal elements already at/above the fold (in case the
+    // observer missed them). Below-the-fold elements stay hidden so they still
+    // animate when you scroll to them.
+    setTimeout(function () {
+      targets.forEach(function (el) {
+        var r = el.getBoundingClientRect();
+        if (r.top < (window.innerHeight || document.documentElement.clientHeight)) el.classList.add('svp-in');
+      });
+    }, 1200);
   }
 
   // ---- Count-up animation for stat numbers (data-svp="countup") ----
