@@ -21,6 +21,7 @@
   .partner-header__inner{max-width:1160px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 32px}
   .partner-logo{display:flex;align-items:center;height:34px;width:145px;overflow:hidden;flex:0 0 auto}
   .partner-logo img{width:145px;flex:none;margin-top:-7px}
+  .partner-menu-toggle{display:none}
   .partner-nav{display:flex;align-items:center;justify-content:flex-end;gap:20px;font:600 14px 'Instrument Sans',sans-serif;min-width:0}
   .partner-nav a{color:#4A4D66;text-decoration:none;white-space:nowrap}
   .partner-nav a[aria-current="page"]{color:#3347CA}
@@ -67,10 +68,21 @@
   footer{background:#16182B;padding:28px 32px;display:flex;align-items:center;justify-content:center;gap:28px;font:500 13px 'Instrument Sans',sans-serif;flex-wrap:wrap}
   footer a{color:#A7A9BC;text-decoration:none}
   @media(max-width:760px){
-    .partner-header__inner{padding:16px;align-items:flex-start;flex-direction:column;gap:14px}
-    .partner-nav{width:100%;justify-content:flex-start;gap:10px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
-    .partner-nav a{font-size:13px}
-    .partner-nav .partner-pill{padding:9px 15px}
+    .partner-header{position:sticky;top:0;z-index:30}
+    .partner-header__inner{padding:12px 16px;align-items:center;justify-content:flex-end;gap:0;position:relative;min-height:48px}
+    .partner-logo{display:none !important}
+    .partner-menu-toggle{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:1.5px solid #E1E0D4;border-radius:100px;background:#fff;color:#16182B;cursor:pointer;padding:0;box-shadow:0 8px 24px rgba(22,24,43,.06)}
+    .partner-menu-toggle span{display:block;width:18px;height:2px;border-radius:4px;background:currentColor;transition:transform .2s ease,opacity .2s ease}
+    .partner-menu-toggle span+span{margin-top:4px}
+    .partner-menu-toggle[aria-expanded="true"] span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+    .partner-menu-toggle[aria-expanded="true"] span:nth-child(2){opacity:0}
+    .partner-menu-toggle[aria-expanded="true"] span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+    .partner-nav{position:absolute;top:calc(100% + 8px);left:16px;right:16px;width:auto;display:grid;grid-template-columns:1fr;gap:6px;padding:10px;background:#fff;border:1.5px solid #16182B;border-radius:16px;box-shadow:6px 6px 0 #3347CA;opacity:0;transform:translateY(-8px) scale(.98);pointer-events:none;transition:opacity .18s ease,transform .18s ease;overflow:visible}
+    .partner-nav[data-open="true"]{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+    .partner-nav a{display:flex;align-items:center;justify-content:space-between;min-height:42px;padding:0 14px;border-radius:10px;font-size:14px;color:#4A4D66;background:#FFFEF5}
+    .partner-nav a[aria-current="page"]{background:#EEF0FD;color:#3347CA;font-weight:700}
+    .partner-nav .partner-pill{justify-content:center;padding:0 14px;color:#FFFEF5;background:#3347CA}
+    .partner-nav .partner-back{justify-content:center;color:#3347CA;background:#EEF0FD;font:700 14px 'Instrument Sans',sans-serif}
     .partner-main{padding:38px 18px 64px}
     .partner-hero{text-align:left}
     .partner-hero h1{font-size:clamp(28px,8vw,34px)}
@@ -95,7 +107,10 @@
       <a class="partner-logo" href="accueil.html" aria-label="Retour à l'accueil">
         <img src="assets/logo-mot.png" alt="Silvousplait">
       </a>
-      <nav class="partner-nav" aria-label="Navigation principale">
+      <button class="partner-menu-toggle" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="partner-mobile-menu" data-svp-mobile-menu-toggle>
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="partner-nav" id="partner-mobile-menu" aria-label="Navigation principale" data-svp-mobile-menu>
         <a href="premium.html">Premium</a>
         <a href="contact.html">Contact</a>
         <a href="partenariat.html" aria-current="page">Partenariat</a>

@@ -1512,9 +1512,61 @@
   function wireBackLinks() {
     var pill = "display:inline-flex;align-items:center;gap:6px;background:#EEF0FD;color:#3347CA;font:700 13px 'Instrument Sans',sans-serif;padding:9px 16px;border-radius:100px;text-decoration:none;white-space:nowrap";
     [].slice.call(document.querySelectorAll('a')).forEach(function (a) {
+      if (a.closest('[data-svp-mobile-menu]')) return;
       var t = (a.textContent || '').trim();
       if (/Retour au site/i.test(t) || /Se d[ée]connecter/i.test(t)) a.setAttribute('style', pill);
     });
+  }
+
+  // ---- mobile-only dropdown menus ----
+  function wireMobileMenus() {
+    var toggles = [].slice.call(document.querySelectorAll('[data-svp-mobile-menu-toggle]'));
+    if (!toggles.length) return;
+    var mq = window.matchMedia ? window.matchMedia('(max-width: 760px)') : null;
+    function isMobile() { return !mq || mq.matches; }
+    function setOpen(btn, menu, open) {
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (menu) menu.setAttribute('data-open', open ? 'true' : 'false');
+    }
+    function closeAll(exceptBtn) {
+      toggles.forEach(function (btn) {
+        if (btn === exceptBtn) return;
+        var menu = document.getElementById(btn.getAttribute('aria-controls') || '');
+        setOpen(btn, menu, false);
+      });
+    }
+    toggles.forEach(function (btn) {
+      var menu = document.getElementById(btn.getAttribute('aria-controls') || '');
+      if (!menu) return;
+      setOpen(btn, menu, false);
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (!isMobile()) return;
+        var next = btn.getAttribute('aria-expanded') !== 'true';
+        closeAll(btn);
+        setOpen(btn, menu, next);
+      });
+      menu.querySelectorAll('a[href]').forEach(function (a) {
+        a.addEventListener('click', function () { setOpen(btn, menu, false); });
+      });
+    });
+    document.addEventListener('click', function (e) {
+      if (!isMobile()) return;
+      toggles.forEach(function (btn) {
+        var menu = document.getElementById(btn.getAttribute('aria-controls') || '');
+        if (!menu || btn.contains(e.target) || menu.contains(e.target)) return;
+        setOpen(btn, menu, false);
+      });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      closeAll();
+    });
+    if (mq) {
+      var onChange = function () { if (!mq.matches) closeAll(); };
+      if (mq.addEventListener) mq.addEventListener('change', onChange);
+      else if (mq.addListener) mq.addListener(onChange);
+    }
   }
 
   // ---- FAQ accordion (design's toggle JS was lost in flattening) ----
@@ -1585,7 +1637,7 @@
     if ('scrollRestoration' in history) { try { history.scrollRestoration = 'manual'; } catch (e) {} }
     if (!hashTargetEl()) { try { window.scrollTo(0, 0); } catch (e) {} }
     wireIntro();
-    wireHomeLink(); wireBackLinks(); wireFaq(); wireScrollTop(); wireAnchorScroll();
+    wireHomeLink(); wireBackLinks(); wireMobileMenus(); wireFaq(); wireScrollTop(); wireAnchorScroll();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireBilling(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers(); wireOffersCarousel();
