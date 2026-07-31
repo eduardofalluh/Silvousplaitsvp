@@ -741,8 +741,14 @@
   }
 
   // ---- smooth page-to-page transitions for internal links ----
+  function supportsViewTransitions() {
+    try { return !!(window.CSS && CSS.supports && CSS.supports('view-transition-name', 'none')); } catch (e) { return false; }
+  }
   function wirePageTransitions() {
     if (reducedMotion) return;
+    // Browsers with native cross-page View Transitions handle it via CSS — don't
+    // add a JS fade on top (that's what caused the glitchy double-transition).
+    if (supportsViewTransitions()) return;
     document.addEventListener('click', function (e) {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       var a = e.target.closest && e.target.closest('a[href]');
@@ -756,7 +762,7 @@
       if (url.pathname === window.location.pathname && url.hash) return; // same-page anchor
       e.preventDefault();
       document.documentElement.classList.add('svp-leaving');
-      setTimeout(function () { window.location.href = url.href; }, 250);
+      setTimeout(function () { window.location.href = url.href; }, 200);
     }, false);
   }
 

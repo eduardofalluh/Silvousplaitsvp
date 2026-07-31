@@ -1,6 +1,19 @@
 /* Silvousplait — motion layer. All effects are disabled for users who prefer
    reduced motion. Loaded on every page alongside responsive.css. */
 
+/* Native cross-page transitions (Chrome/Edge): a clean crossfade between pages,
+   no white flash, no glitch. Browsers without support use the JS fade fallback. */
+@view-transition { navigation: auto; }
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root), ::view-transition-new(root) {
+    animation-duration: 0.3s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
+}
+
 @media (prefers-reduced-motion: no-preference) {
 
   html { scroll-behavior: smooth; }
@@ -9,8 +22,10 @@
   body { animation: svp-page-in .5s cubic-bezier(.2,.7,.2,1) both; }
   @keyframes svp-page-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-  /* ---- Page-to-page transition (JS adds .svp-leaving before navigating) ---- */
-  html.svp-leaving body { opacity: 0; transform: translateY(-6px); transition: opacity .26s ease, transform .26s ease; }
+  /* ---- Page-to-page transition fallback (no native View Transitions) ----
+     JS adds .svp-leaving before navigating. Opacity-only fade to the cream
+     background = a clean crossfade, no white flash, no transform jump. */
+  html.svp-leaving body { opacity: 0; transition: opacity .2s ease; }
 
   /* ---- Scroll reveal (JS tags elements with .svp-reveal) ---- */
   .svp-reveal { opacity: 0; transform: translateY(20px); transition: opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1); will-change: opacity, transform; }
