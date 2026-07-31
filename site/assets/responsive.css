@@ -4,9 +4,6 @@
 /* Brand background so page-to-page navigation never flashes white. */
 html { background-color: #FFFEF5; }
 
-/* Premium offers carousel: the first card lines up with the section title
-   (a centered 1160px container), then cards bleed toward the right edge. */
-[data-scroller="offres"] { padding-left: max(32px, calc((100% - 1160px) / 2 + 32px)) !important; }
 
 /* ---- Kill backdrop-filter blur (Retina Mac stutter) ----
    backdrop-filter: blur() is a heavy compositor cost on high-DPI Macs — it has

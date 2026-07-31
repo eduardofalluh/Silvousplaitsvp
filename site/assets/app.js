@@ -602,6 +602,20 @@
     var scroller = document.querySelector('[data-scroller="offres"]');
     if (!scroller) return;
     var fill = document.querySelector('[data-svp="offers-progress"]');
+    // Align the carousel's first card exactly with the section title's content
+    // (measured live, so it's correct at every width), then cards bleed right.
+    function alignCarousel() {
+      var section = scroller.closest('#offres');
+      if (!section) return;
+      var header = [].slice.call(section.children).filter(function (c) { return c !== scroller && c.querySelector && c.querySelector('h2'); })[0];
+      if (!header) return;
+      var cs = getComputedStyle(header);
+      var left = header.getBoundingClientRect().left + parseFloat(cs.paddingLeft || 0);
+      if (left > 0) scroller.style.setProperty('padding-left', left + 'px', 'important');
+    }
+    alignCarousel();
+    window.addEventListener('resize', alignCarousel);
+    setTimeout(alignCarousel, 400);
     function update() {
       if (!fill) return;
       var track = fill.parentElement;
