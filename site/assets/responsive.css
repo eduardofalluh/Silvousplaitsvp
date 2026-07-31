@@ -51,7 +51,18 @@ img[alt="Silvousplait"] {
 [data-svp="checkout"]:active, [data-svp="funnel-submit"]:active { transform: translateY(1px); }
 
 @media (max-width: 900px) {
-  html, body { overflow-x: hidden !important; max-width: 100% !important; }
+  /* Horizontal overflow guard. IMPORTANT: `overflow-x: hidden` must NOT go on
+     <body> — a scrollable overflow on body turns BODY into the scroll container,
+     so the document/viewport stops scrolling. That silently broke everything
+     that scrolls the page on mobile: `html { scroll-behavior: smooth }` (in-page
+     links like the premium nav's "Offres"/"FAQ" jumped instead of animating),
+     window.scrollTo(), and window scroll listeners.
+     On html it propagates to the viewport, which clips the x axis while the
+     viewport keeps scrolling y. `clip` on body clips too WITHOUT creating a
+     scroll container (and is simply ignored by pre-16 Safari, where html's
+     hidden already does the clipping). */
+  html { overflow-x: hidden !important; max-width: 100% !important; }
+  body { overflow-x: clip !important; max-width: 100% !important; }
   img { max-width: 100% !important; height: auto !important; }
 }
 

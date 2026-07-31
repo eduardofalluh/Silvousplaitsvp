@@ -471,17 +471,34 @@
     });
   }
 
-  // ---- exit-intent popup (once per session) ----
+  // ---- exit-intent popup (home page only, once per session, after 45s) ----
   function wireExitIntent() {
+    // HOME PAGE ONLY. It's the newsletter pitch; showing it on premium /
+    // archive / form pages is what made it feel like it popped up at random.
+    var p = location.pathname;
+    if (!(p === '/' || /(^|\/)(accueil|index)(\.html)?$/i.test(p))) return;
     if (document.querySelector('[data-svp="funnel"]') || document.querySelector('[data-svp="compte"]')) return;
     try { if (sessionStorage.getItem('svp_exit')) return; } catch (e) {}
+    if (getEmail()) return;                     // already gave us their email
     var shown = false;
-    // Only arm the exit-intent AFTER the visitor has been on the page a while
-    // AND has scrolled a bit — otherwise it fires the instant the cursor drifts
-    // up to the tab/address bar on arrival, which reads as "pops up too fast".
-    var dwelled = false, engaged = false;
-    setTimeout(function () { dwelled = true; }, 18000);
-    window.addEventListener('scroll', function () { if (window.pageYOffset > 400) engaged = true; }, { passive: true });
+    // Arm ONLY after 45s spent ON the page. Time while the tab is hidden does
+    // not count, and there is no scroll shortcut anymore — before the 45s mark
+    // no exit signal can trigger it, so it can never feel early or random.
+    var DWELL_MS = 45000, armed = false, spent = 0, since = 0, timer = null;
+    function startDwell() {
+      if (armed || timer || document.hidden) return;
+      since = Date.now();
+      timer = setTimeout(function () { armed = true; timer = null; }, Math.max(0, DWELL_MS - spent));
+    }
+    function pauseDwell() {
+      if (!timer) return;
+      clearTimeout(timer); timer = null;
+      spent += Date.now() - since;
+    }
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) pauseDwell(); else startDwell();
+    });
+    startDwell();
     function show() {
       if (shown) return; shown = true;
       try { sessionStorage.setItem('svp_exit', '1'); } catch (e) {}
@@ -506,7 +523,7 @@
       });
     }
     document.addEventListener('mouseout', function (e) {
-      if (!dwelled && !engaged) return;                 // not yet armed — ignore
+      if (!armed) return;                               // < 45s on page — ignore
       if (e.clientY <= 0 && !e.relatedTarget) show();
     });
   }
@@ -586,16 +603,25 @@
       + '<a href="premium.html" data-svp="premium-cta" style="margin-top:10px;text-align:center;background:#3347CA;color:#FFFEF5;border-radius:100px;padding:11px;font:700 13px \'Instrument Sans\',sans-serif;text-decoration:none">Voir l\'offre</a>'
       + '</div></div>';
   }
-  // ---- Archive (past offers, from Netlify Blobs; read-only) ----
+  // ---- Archive (past offers, read-only) ----
   function wireArchive() {
     var grid = document.querySelector('[data-svp="archive-grid"]');
     if (!grid) return;
     var empty = document.querySelector('[data-svp="archive-empty"]');
+    // Loading state: shimmering placeholder cards while the offers are fetched,
+    // so the page never sits visibly blank on a slow connection.
+    grid.innerHTML = rep(skeletonGridCard(), 6);
+    function fail(text) {
+      grid.innerHTML = '';
+      if (!empty) return;
+      if (text) empty.textContent = text;
+      empty.style.display = 'block';
+    }
     fetch(FN + 'list-archived-offers').then(function (r) { return r.json(); }).then(function (d) {
       var offers = (d && d.offers) || [];
-      if (!offers.length) { if (empty) empty.style.display = 'block'; return; }
+      if (!offers.length) { fail(''); return; }
       grid.innerHTML = offers.map(compteCard).join('');
-    }).catch(function () { if (empty) empty.style.display = 'block'; });
+    }).catch(function () { fail("Impossible de charger l'archive pour le moment. Réessaie plus tard."); });
   }
   // ---- Offers carousel: scroll-progress thumb + arrow buttons ----
   function wireOffersCarousel() {
@@ -611,7 +637,19 @@
       if (!header) return;
       var cs = getComputedStyle(header);
       var left = header.getBoundingClientRect().left + parseFloat(cs.paddingLeft || 0);
-      if (left > 0) scroller.style.setProperty('padding-left', left + 'px', 'important');
+      if (left > 0) {
+        scroller.style.setProperty('padding-left', left + 'px', 'important');
+        // `scroll-snap-type: x mandatory` snaps the first card to the SCROLLPORT
+        // edge, which ignores padding — so the padding alone did nothing: the
+        // browser just scrolled it away and the cards stayed flush with the
+        // section edge, left of the title. Inset the snapport by the same amount
+        // so "scrolled to the start" IS the aligned position.
+        scroller.style.setProperty('scroll-padding-left', left + 'px', 'important');
+      }
+      // Undo any snap offset left over from before the padding was applied — but
+      // only while the visitor is still at the start of the carousel, so we never
+      // yank them back once they've swiped through it.
+      if (scroller.scrollLeft > 0 && scroller.scrollLeft <= left + 48) scroller.scrollLeft = 0;
     }
     alignCarousel();
     window.addEventListener('resize', alignCarousel);
@@ -680,8 +718,25 @@
       a.setAttribute('data-svp', 'archive-link');
       a.href = 'archive.html';
       a.textContent = 'Voir les offres passées →';
-      a.setAttribute('style', "display:inline-block;margin:16px 0 0;color:#3347CA;font:700 13.5px 'Instrument Sans',sans-serif;text-decoration:none");
-      anchor.parentNode.insertBefore(a, anchor.nextSibling);
+      a.setAttribute('style', "display:inline-block;color:#3347CA;font:700 13.5px 'Instrument Sans',sans-serif;text-decoration:none");
+      if (carousel) {
+        // The carousel bleeds off the right edge, so a bare link dropped after
+        // it sat flush against the section edge — out of line with the cards
+        // and the title. Wrap it in the SAME 1160px content container the
+        // section title and progress bar use (identical max-width + 32px
+        // padding, so responsive.css trims it to 16px on mobile too), and put
+        // it below the progress bar: one shared left edge at every width.
+        var wrap = document.createElement('div');
+        wrap.setAttribute('data-svp', 'archive-link-wrap');
+        wrap.setAttribute('style', 'max-width:1160px;margin:18px auto 0;padding:0 32px');
+        wrap.appendChild(a);
+        var bar = document.querySelector('[data-svp="offers-progress"]');
+        var after = (bar && (bar.closest('[style*="max-width: 1160px"]') || bar.parentNode)) || carousel;
+        after.parentNode.insertBefore(wrap, after.nextSibling);
+      } else {
+        a.style.marginTop = '16px';
+        anchor.parentNode.insertBefore(a, anchor.nextSibling);
+      }
     }
     fetch(FN + 'list-public-premium-offers').then(function (r) { return r.json(); }).then(function (d) {
       var offers = (d && d.offers) || [];
@@ -826,6 +881,115 @@
     });
   }
 
+  // ---- smooth in-page scrolling for hash links (#offres, #faq-premium…) ----
+  // Desktop got its smooth scroll for free from `html{scroll-behavior:smooth}`;
+  // mobile jumped instantly because <body> was the scroll container there (see
+  // the overflow note in responsive.css, now fixed). We animate in JS anyway so
+  // the motion is identical on every viewport and browser, works whichever
+  // element scrolls, and lands the section BELOW the sticky bar instead of
+  // hidden underneath it.
+
+  // Whatever element actually scrolls the page. Normally the document element,
+  // but a page whose <body> carries a scrollable overflow scrolls on BODY
+  // instead (and then window.pageYOffset stays 0) — so read and write through
+  // the same element rather than assuming the viewport.
+  function scrollBox() {
+    var de = document.documentElement, b = document.body;
+    if (de && de.scrollHeight > de.clientHeight + 1) return de;
+    if (b && b.scrollHeight > b.clientHeight + 1) return b;
+    return de;
+  }
+  function scrollTop() {
+    var el = scrollBox();
+    if (el !== document.documentElement) return el.scrollTop || 0;
+    return window.pageYOffset != null ? window.pageYOffset : (el.scrollTop || 0);
+  }
+  function setScrollTop(v) {
+    var el = scrollBox();
+    // `html { scroll-behavior: smooth }` (animations.css) applies to PROGRAMMATIC
+    // scrolls too, so each write below would start its own smooth scroll and the
+    // queued animations would fight our easing (landing short / overshooting).
+    // Force instant for our own writes, then restore the CSS behaviour.
+    var prev = el.style.scrollBehavior;
+    el.style.scrollBehavior = 'auto';
+    if (el === document.documentElement) window.scrollTo(0, v);
+    else el.scrollTop = v;
+    el.style.scrollBehavior = prev || '';
+  }
+  function stickyTopOffset() {
+    var off = 0;
+    [].slice.call(document.querySelectorAll('[style*="position: sticky"], [style*="position:sticky"]'))
+      .forEach(function (el) {
+        var cs = getComputedStyle(el);
+        if (cs.position !== 'sticky' || parseFloat(cs.top) !== 0) return;   // skip bottom-stuck bars
+        off = Math.max(off, el.getBoundingClientRect().height);
+      });
+    return off + 12;
+  }
+  function targetForEl(el) {
+    return Math.max(0, el.getBoundingClientRect().top + scrollTop() - stickyTopOffset());
+  }
+  var scrollAnim = 0;
+  function animateScrollToEl(el) {
+    var mine = ++scrollAnim;                           // a new click cancels the previous run
+    var start = scrollTop(), goal = targetForEl(el);
+    if (reducedMotion || Math.abs(goal - start) < 2) { setScrollTop(goal); return; }
+    var dur = Math.min(900, Math.max(340, Math.abs(goal - start) * 0.45)), t0 = null;
+    function frame(ts) {
+      if (mine !== scrollAnim) return;
+      if (t0 === null) t0 = ts;
+      var p = Math.min((ts - t0) / dur, 1);
+      var eased = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;  // easeInOutCubic
+      // Re-measure the destination every frame instead of committing to the
+      // position it had at click time: long pages reflow while we travel (images
+      // settling, sticky bar changing height) and a stale target lands short.
+      goal = targetForEl(el);
+      setScrollTop(start + (goal - start) * eased);
+      if (p < 1) { requestAnimationFrame(frame); return; }
+      var fix = targetForEl(el);                       // final correction
+      if (Math.abs(fix - scrollTop()) > 2) setScrollTop(fix);
+    }
+    requestAnimationFrame(frame);
+  }
+  function hashTargetEl() {
+    var h = (location.hash || '').slice(1);
+    if (!h) return null;
+    try { return document.getElementById(h) || document.querySelector('[name="' + h + '"]'); } catch (e) { return null; }
+  }
+  // Arriving WITH a hash (e.g. archive → premium.html#offres): land on that
+  // section, offset below the sticky bar, instead of the forced top-of-page.
+  function landOnHash() {
+    if (!hashTargetEl()) return;
+    var y = null;
+    function put() {
+      var el = hashTargetEl();
+      if (!el) return;
+      y = targetForEl(el);
+      setScrollTop(y);
+    }
+    put();
+    // Late-loading images/fonts shift the layout — re-land once, but only if the
+    // visitor hasn't already scrolled away.
+    window.addEventListener('load', function () {
+      if (y != null && Math.abs(scrollTop() - y) < 4) put();
+    });
+  }
+  function wireAnchorScroll() {
+    document.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target && e.target.closest && e.target.closest('a[href]');
+      if (!a || a.target === '_blank') return;
+      var href = a.getAttribute('href') || '';
+      if (href.charAt(0) !== '#' || href.length < 2) return;
+      var id = href.slice(1);
+      var target = document.getElementById(id) || document.querySelector('[name="' + id + '"]');
+      if (!target) return;
+      e.preventDefault();
+      animateScrollToEl(target);
+      try { history.replaceState(null, '', href); } catch (err) {}   // keep the hash, no jump
+    }, false);
+  }
+
   // ---- uniform "back to main page" affordance: the header logo ----
   // On the flattened pages some logos aren't links (premium/tunnel/archive), so
   // there was no way home — especially on mobile where the text nav is hidden.
@@ -848,17 +1012,20 @@
       logoLink.appendChild(logo);
     }
 
-    // 2) Guarantee a visible home button IN THE HEADER. Skip only if one is
-    //    already up top (the sub-pages' "← Retour" pill) — NOT a footer "Accueil"
-    //    link (premium has one in the footer, but that's not reachable without
-    //    scrolling, which is exactly the complaint).
+    // 2) Guarantee a visible home button IN THE HEADER. Skipped when the header
+    //    already carries a back affordance (the sub-pages' "← Retour" pill) —
+    //    but NOT for a footer "Accueil" link (premium has one in the footer,
+    //    which isn't reachable without scrolling: exactly the complaint).
     if (document.querySelector('[data-svp="home"]')) return;
-    var hasHeaderHome = [].some.call(document.querySelectorAll('a[href*="accueil"]'), function (x) {
-      if (!(x.textContent || '').trim()) return false;     // has visible text, not just the logo image
+    // The signup funnel is deliberately a closed funnel — no way back from it.
+    if (document.querySelector('[data-svp="funnel"]')) return;
+    var hasHeaderBack = [].some.call(document.querySelectorAll('a[href]'), function (x) {
+      var t = (x.textContent || '').trim();
+      if (!t || !/accueil|retour/i.test(t)) return false;   // visible text, not just the logo image
       var r = x.getBoundingClientRect();
       return r.width > 0 && r.top < 240;                   // sits in the header area
     });
-    if (hasHeaderHome) return;
+    if (hasHeaderBack) return;
 
     // 2a) If there's a top nav (detected via an in-page hash link), add "Accueil"
     //     as the first item, styled like its siblings.
@@ -879,9 +1046,26 @@
       pill.href = 'accueil.html';
       pill.textContent = '← Accueil';
       pill.setAttribute('data-svp', 'home');
-      pill.setAttribute('style', "display:inline-flex;align-items:center;gap:6px;background:#EEF0FD;color:#3347CA;font:700 13px 'Instrument Sans',sans-serif;padding:9px 16px;border-radius:100px;text-decoration:none;margin-left:14px;white-space:nowrap");
-      if (logoLink.nextSibling) logoLink.parentNode.insertBefore(pill, logoLink.nextSibling);
-      else logoLink.parentNode.appendChild(pill);
+      pill.setAttribute('style', "display:inline-flex;align-items:center;gap:6px;background:#EEF0FD;color:#3347CA;font:700 13px 'Instrument Sans',sans-serif;padding:9px 16px;border-radius:100px;text-decoration:none;white-space:nowrap");
+      // Placement matters: dropping the pill in as a bare sibling of the logo
+      // left it floating in the MIDDLE of headers that use
+      // `justify-content: space-between` (logo | pill | nav) — it read as
+      // randomly placed. And logos often sit in a fixed-width `overflow:hidden`
+      // clip box, where a sibling pill is simply clipped away (invisible).
+      // So: climb out of any clip box, then group the logo + pill in one flex
+      // box, which stays pinned as a single unit next to the logo on the left.
+      var unit = logoLink;
+      while (unit.parentNode && unit.parentNode.nodeType === 1 && unit.parentNode !== document.body) {
+        var pcs = getComputedStyle(unit.parentNode);
+        if (pcs.overflowX === 'hidden' || pcs.overflowY === 'hidden') unit = unit.parentNode;
+        else break;
+      }
+      var group = document.createElement('div');
+      group.setAttribute('data-svp', 'home-group');
+      group.setAttribute('style', 'display:flex;align-items:center;gap:14px;flex:0 0 auto;min-width:0');
+      unit.parentNode.insertBefore(group, unit);
+      group.appendChild(unit);
+      group.appendChild(pill);
     }
   }
 
@@ -958,15 +1142,16 @@
 
   function init() {
     // Always start at the top on (re)load — don't let the browser restore scroll.
+    // Exception: a link that arrives with a hash must keep its target section.
     if ('scrollRestoration' in history) { try { history.scrollRestoration = 'manual'; } catch (e) {} }
-    try { window.scrollTo(0, 0); } catch (e) {}
+    if (!hashTargetEl()) { try { window.scrollTo(0, 0); } catch (e) {} }
     wireIntro();
-    wireHomeLink(); wireBackLinks(); wireFaq(); wireScrollTop();
+    wireHomeLink(); wireBackLinks(); wireFaq(); wireScrollTop(); wireAnchorScroll();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireBilling(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers(); wireOffersCarousel();
     wireArchive();
-    wireReveal(); wireCountUp(); wirePageTransitions();
+    wireReveal(); wireCountUp(); wirePageTransitions(); landOnHash();
     // Reveal the incoming-page cover (see animations.css html.svp-nav ::after)
     // only now — after all wiring ran and one more frame has painted — so the
     // fade never competes with this heavy init work. No-op unless we arrived via
