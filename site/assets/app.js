@@ -594,13 +594,18 @@
   // ---- scroll-reveal for headings & cards ----
   function wireReveal() {
     if (reducedMotion || !('IntersectionObserver' in window)) return;
-    var targets = [].slice.call(document.querySelectorAll('h1, h2, h3, [data-svp="offer"], [data-card]'));
+    var targets = [].slice.call(document.querySelectorAll('h1, h2, h3, [data-svp="offer"], [data-card], [data-svp="step"]'));
     // skip anything inside a sticky header/urgency bar (should be instantly visible)
     targets = targets.filter(function (el) {
       return !el.closest('[style*="position: sticky"]') && !el.closest('[data-svp="funnel-card"]');
     });
     if (!targets.length) return;
-    targets.forEach(function (el) { el.classList.add('svp-reveal'); });
+    var stepIndex = 0;
+    targets.forEach(function (el) {
+      el.classList.add('svp-reveal');
+      // stagger the "Comment ça marche" steps as they scroll in
+      if (el.getAttribute('data-svp') === 'step') { el.style.transitionDelay = (stepIndex * 0.12) + 's'; stepIndex++; }
+    });
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
         if (en.isIntersecting) { en.target.classList.add('svp-in'); io.unobserve(en.target); }
@@ -609,6 +614,36 @@
     targets.forEach(function (el) { io.observe(el); });
     // safety: reveal everything after 1.2s in case observer misses (e.g., 0-height parents)
     setTimeout(function () { targets.forEach(function (el) { el.classList.add('svp-in'); }); }, 1200);
+  }
+
+  // ---- Count-up animation for stat numbers (data-svp="countup") ----
+  function wireCountUp() {
+    if (reducedMotion || !('IntersectionObserver' in window)) return;
+    var els = document.querySelectorAll('[data-svp="countup"]');
+    if (!els.length) return;
+    function animate(el) {
+      var full = (el.textContent || '').trim();
+      var m = full.match(/^(\D*)(\d+(?:[.,]\d+)?)(.*)$/);
+      if (!m) return;
+      var prefix = m[1], numStr = m[2], suffix = m[3];
+      var decimals = /[.,]/.test(numStr) ? numStr.split(/[.,]/)[1].length : 0;
+      var target = parseFloat(numStr.replace(',', '.'));
+      var dur = 1200, start = null;
+      function fmt(v) { var s = v.toFixed(decimals); if (decimals) s = s.replace('.', ','); return prefix + s + suffix; }
+      function frame(ts) {
+        if (start === null) start = ts;
+        var p = Math.min((ts - start) / dur, 1);
+        var eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = fmt(target * eased);
+        if (p < 1) requestAnimationFrame(frame); else el.textContent = full;
+      }
+      el.textContent = fmt(0);
+      requestAnimationFrame(frame);
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { io.unobserve(en.target); animate(en.target); } });
+    }, { threshold: 0.5 });
+    [].forEach.call(els, function (el) { io.observe(el); });
   }
 
   // ---- smooth page-to-page transitions for internal links ----
@@ -705,7 +740,7 @@
     wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers();
     wireArchive();
-    wireReveal(); wirePageTransitions();
+    wireReveal(); wireCountUp(); wirePageTransitions();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

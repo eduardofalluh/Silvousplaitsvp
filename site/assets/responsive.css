@@ -70,6 +70,21 @@ img[alt="Silvousplait"] {
     animation: none !important;
   }
 
+  /* Horizontal-scroll carousels (e.g. premium offers) must NOT wrap/stack on
+     mobile — keep them a swipeable carousel with a peek of the next card. */
+  [data-scroller] {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  [data-scroller] > * {
+    flex: 0 0 auto !important;
+    width: 80vw !important;
+    max-width: 300px !important;
+    scroll-snap-align: start !important;
+  }
+
   /* Tame oversized display type */
   h1 { font-size: clamp(28px, 8vw, 44px) !important; line-height: 1.12 !important; }
   h2 { font-size: clamp(22px, 6vw, 34px) !important; }
