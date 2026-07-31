@@ -741,14 +741,14 @@
   }
 
   // ---- smooth page-to-page transitions for internal links ----
-  function supportsViewTransitions() {
-    try { return !!(window.CSS && CSS.supports && CSS.supports('view-transition-name', 'none')); } catch (e) { return false; }
-  }
+  // One consistent crossfade for EVERY browser: intercept same-origin link
+  // clicks, fade the current page out to the cream background, then navigate.
+  // The next page fades itself back in via the svp-page-in entrance animation
+  // (animations.css). We intentionally do NOT rely on native cross-document
+  // View Transitions — they get "skipped" unpredictably and leave a hard cut.
   function wirePageTransitions() {
     if (reducedMotion) return;
-    // Browsers with native cross-page View Transitions handle it via CSS — don't
-    // add a JS fade on top (that's what caused the glitchy double-transition).
-    if (supportsViewTransitions()) return;
+    var leaving = false;
     document.addEventListener('click', function (e) {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       var a = e.target.closest && e.target.closest('a[href]');
@@ -759,11 +759,33 @@
       var url;
       try { url = new URL(href, window.location.href); } catch (e2) { return; }
       if (url.origin !== window.location.origin) return;          // external link
-      if (url.pathname === window.location.pathname && url.hash) return; // same-page anchor
+      if (url.pathname === window.location.pathname && (url.hash || url.href === window.location.href)) return; // same page
       e.preventDefault();
+      if (leaving) return;                                        // ignore double-clicks
+      leaving = true;
+      // Fade the current page out to the cream <html> background, then navigate.
+      // We release the entrance animation and force a reflow BEFORE setting the
+      // target opacity so the transition actually interpolates 1 -> 0 (a running
+      // animation would otherwise make it snap instantly). Opacity only = a
+      // clean crossfade: no white flash, no layout jump.
+      var b = document.body;
+      b.style.animation = 'none';
+      b.style.transition = 'opacity .22s ease';
+      void b.offsetWidth;                                         // flush current opacity(=1)
+      b.style.opacity = '0';
       document.documentElement.classList.add('svp-leaving');
-      setTimeout(function () { window.location.href = url.href; }, 200);
+      setTimeout(function () { window.location.href = url.href; }, 220);
     }, false);
+    // If the page is restored from the bfcache (Safari/Firefox back-forward), it
+    // may still carry the faded-out inline styles from when we navigated away —
+    // undo them so the restored page isn't stuck invisible.
+    window.addEventListener('pageshow', function (ev) {
+      if (!ev.persisted) return;
+      leaving = false;
+      document.documentElement.classList.remove('svp-leaving');
+      var b = document.body;
+      b.style.opacity = ''; b.style.transition = ''; b.style.animation = '';
+    });
   }
 
   // ---- prettify "Retour au site" / "Se déconnecter" links as pill buttons ----

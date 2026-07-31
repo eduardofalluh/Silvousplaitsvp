@@ -1,31 +1,25 @@
 /* Silvousplait — motion layer. All effects are disabled for users who prefer
    reduced motion. Loaded on every page alongside responsive.css. */
 
-/* Native cross-page transitions (Chrome/Edge): a clean crossfade between pages,
-   no white flash, no glitch. Browsers without support use the JS fade fallback. */
-@view-transition { navigation: auto; }
-@media (prefers-reduced-motion: no-preference) {
-  ::view-transition-old(root), ::view-transition-new(root) {
-    animation-duration: 0.3s;
-    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
-}
-
+/* Smooth page-to-page transitions — one consistent crossfade in every browser.
+   We deliberately do NOT use native cross-document View Transitions
+   (@view-transition): in practice they get "skipped" unpredictably across
+   browser versions, leaving a hard cut. Instead app.js fades the outgoing page
+   to the cream page background, then the incoming page fades itself back in.
+   Opacity only (never transform) = a clean crossfade with no white flash and no
+   layout jump. Both halves are gated on prefers-reduced-motion below. */
 @media (prefers-reduced-motion: no-preference) {
 
   html { scroll-behavior: smooth; }
 
-  /* ---- Page load fade-in ---- */
-  body { animation: svp-page-in .5s cubic-bezier(.2,.7,.2,1) both; }
-  @keyframes svp-page-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  /* ---- Incoming page: fade in (opacity only — no transform, so no "jump") ---- */
+  body { animation: svp-page-in .34s ease both; }
+  @keyframes svp-page-in { from { opacity: 0; } to { opacity: 1; } }
 
-  /* ---- Page-to-page transition fallback (no native View Transitions) ----
-     JS adds .svp-leaving before navigating. Opacity-only fade to the cream
-     background = a clean crossfade, no white flash, no transform jump. */
-  html.svp-leaving body { opacity: 0; transition: opacity .2s ease; }
+  /* Outgoing page: the fade-OUT is driven in JS (wirePageTransitions in app.js).
+     It must release the entrance animation with an explicit reflow before
+     transitioning opacity, otherwise the still-"filling" animation makes the
+     fade snap instantly instead of interpolating — which CSS alone can't do. */
 
   /* ---- Scroll reveal (JS tags elements with .svp-reveal) ---- */
   .svp-reveal { opacity: 0; transform: translateY(20px); transition: opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1); will-change: opacity, transform; }
