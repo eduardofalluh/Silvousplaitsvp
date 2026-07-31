@@ -564,6 +564,39 @@
       grid.innerHTML = offers.map(compteCard).join('');
     }).catch(function () { if (empty) empty.style.display = 'block'; });
   }
+  // ---- Offers carousel: scroll-progress thumb + arrow buttons ----
+  function wireOffersCarousel() {
+    var scroller = document.querySelector('[data-scroller="offres"]');
+    if (!scroller) return;
+    var fill = document.querySelector('[data-svp="offers-progress"]');
+    function update() {
+      if (!fill) return;
+      var thumb = scroller.scrollWidth > 0 ? Math.max(8, Math.min(100, (scroller.clientWidth / scroller.scrollWidth) * 100)) : 100;
+      var max = scroller.scrollWidth - scroller.clientWidth;
+      var progress = max > 0 ? scroller.scrollLeft / max : 0;
+      fill.style.width = thumb + '%';
+      fill.style.marginLeft = (progress * (100 - thumb)) + '%';
+    }
+    scroller.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    // arrow buttons (← / →) sit in the offers section header
+    var section = scroller.closest('#offres') || document;
+    var btns = [].slice.call(section.querySelectorAll('button')).filter(function (b) {
+      var t = (b.textContent || '').trim(); return t === '←' || t === '→';
+    });
+    function step(dir) {
+      var card = scroller.querySelector('[data-svp="offer"], [data-card]');
+      var dx = card ? card.getBoundingClientRect().width + 20 : scroller.clientWidth * 0.8;
+      scroller.scrollBy({ left: dir * dx, behavior: reducedMotion ? 'auto' : 'smooth' });
+    }
+    if (btns[0]) btns[0].addEventListener('click', function () { step(-1); });
+    if (btns[1]) btns[1].addEventListener('click', function () { step(1); });
+    // re-measure after live offers render (scrollWidth changes)
+    update();
+    setTimeout(update, 900);
+    setTimeout(update, 2200);
+  }
+
   function wireLiveOffers() {
     var carousel = document.querySelector('[data-scroller="offres"]');
     var grid = document.querySelector('[data-svp="offers-grid"]');
@@ -745,7 +778,7 @@
     wireBackLinks(); wireFaq(); wireScrollTop();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireAdmin(); wirePartenariat();
-    wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers();
+    wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers(); wireOffersCarousel();
     wireArchive();
     wireReveal(); wireCountUp(); wirePageTransitions();
   }
