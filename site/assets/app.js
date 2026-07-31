@@ -571,9 +571,16 @@
     var fill = document.querySelector('[data-svp="offers-progress"]');
     function update() {
       if (!fill) return;
-      var thumb = scroller.scrollWidth > 0 ? Math.max(8, Math.min(100, (scroller.clientWidth / scroller.scrollWidth) * 100)) : 100;
+      var track = fill.parentElement;
+      var container = track && track.parentElement;
       var max = scroller.scrollWidth - scroller.clientWidth;
-      var progress = max > 0 ? scroller.scrollLeft / max : 0;
+      if (max <= 4) { // nothing to scroll — hide the bar (keep layout)
+        if (container) container.style.visibility = 'hidden';
+        return;
+      }
+      if (container) container.style.visibility = 'visible';
+      var thumb = Math.max(8, Math.min(100, (scroller.clientWidth / scroller.scrollWidth) * 100));
+      var progress = scroller.scrollLeft / max;
       fill.style.width = thumb + '%';
       fill.style.marginLeft = (progress * (100 - thumb)) + '%';
     }
