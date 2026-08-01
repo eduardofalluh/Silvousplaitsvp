@@ -15,6 +15,14 @@ html { background-color: #FFFEF5; }
 }
 
 @media (max-width: 760px) {
+  body [data-svp-mobile-hide="header"],
+  body .partner-header,
+  #dc-root [style*="position: sticky"][style*="top: 0px"],
+  #dc-root [style*="position:sticky"][style*="top:0px"],
+  #dc-root > div > div > div:first-child[style*="border-bottom"][style*="background: rgb(255, 254, 245)"] {
+    display: none !important;
+  }
+
   body.svp-mobile-header-ready [data-svp-mobile-hide="header"] {
     display: none !important;
   }

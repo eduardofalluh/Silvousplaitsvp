@@ -701,6 +701,10 @@ footer {
 }
 
 @media (max-width: 768px) {
+  .nav {
+    display: none !important;
+  }
+
   body.svp-mobile-header-ready [data-svp-mobile-hide="header"] {
     display: none !important;
   }
