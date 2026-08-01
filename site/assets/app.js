@@ -1484,7 +1484,7 @@
     [].slice.call(document.querySelectorAll('.svp-mobile-header, [style*="position: sticky"], [style*="position:sticky"]'))
       .forEach(function (el) {
         var cs = getComputedStyle(el);
-        if (cs.position !== 'sticky' || parseFloat(cs.top) !== 0) return;   // skip bottom-stuck bars
+        if ((cs.position !== 'sticky' && cs.position !== 'fixed') || parseFloat(cs.top) !== 0) return;   // skip bottom-stuck bars
         off = Math.max(off, el.getBoundingClientRect().height);
       });
     return off + 12;
@@ -1762,6 +1762,9 @@
     var headerEl = document.createElement('header');
     headerEl.className = 'svp-mobile-header';
     headerEl.setAttribute('data-open', 'false');
+    if (document.getElementById('page-intro')) {
+      headerEl.setAttribute('data-wait-for-intro', 'true');
+    }
     var menuId = 'svp-mobile-menu';
     var bar = document.createElement('div');
     bar.className = 'svp-mobile-header__bar';
@@ -1806,6 +1809,11 @@
     })[0] || null;
     if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(headerEl, anchor);
     else document.body.insertBefore(headerEl, document.body.firstChild);
+
+    var spacer = document.createElement('div');
+    spacer.className = 'svp-mobile-header-spacer';
+    spacer.setAttribute('aria-hidden', 'true');
+    if (headerEl.parentNode) headerEl.parentNode.insertBefore(spacer, headerEl.nextSibling);
     document.body.classList.add('svp-mobile-header-ready');
 
     function updateHeaderState() {

@@ -295,6 +295,13 @@ function wireRootUniversalMobileHeader() {
   if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(headerEl, anchor);
   else document.body.insertBefore(headerEl, document.body.firstChild);
 
+  const spacer = document.createElement('div');
+  spacer.className = 'svp-mobile-header-spacer';
+  spacer.setAttribute('aria-hidden', 'true');
+  if (headerEl.parentNode) {
+    headerEl.parentNode.insertBefore(spacer, headerEl.nextSibling);
+  }
+
   document.body.classList.add('svp-mobile-header-ready');
 
   function updateScrolledState() {

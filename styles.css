@@ -700,6 +700,10 @@ footer {
   -webkit-backface-visibility: visible !important;
 }
 
+.svp-mobile-header-spacer {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .nav {
     display: none !important;
@@ -709,8 +713,13 @@ footer {
     display: none !important;
   }
 
-  body.svp-mobile-header-ready {
-    padding-top: 67px;
+  .svp-mobile-header-spacer {
+    display: block;
+    height: 67px;
+    min-height: 67px;
+    flex: 0 0 67px;
+    pointer-events: none;
+    visibility: hidden;
   }
 
   .svp-mobile-header {
