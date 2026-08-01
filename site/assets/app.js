@@ -1357,7 +1357,7 @@
   }
   function stickyTopOffset() {
     var off = 0;
-    [].slice.call(document.querySelectorAll('[style*="position: sticky"], [style*="position:sticky"]'))
+    [].slice.call(document.querySelectorAll('.svp-mobile-header, [style*="position: sticky"], [style*="position:sticky"]'))
       .forEach(function (el) {
         var cs = getComputedStyle(el);
         if (cs.position !== 'sticky' || parseFloat(cs.top) !== 0) return;   // skip bottom-stuck bars
@@ -1414,18 +1414,27 @@
     });
   }
   function wireAnchorScroll() {
+    function pagePath(path) {
+      var p = String(path || '/').replace(/\/+$/, '');
+      if (!p || p === '' || p === '/index.html' || p === '/index') return '/accueil.html';
+      if (/\/index(\.html)?$/i.test(p)) return p.replace(/\/index(\.html)?$/i, '/accueil.html');
+      return p;
+    }
     document.addEventListener('click', function (e) {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       var a = e.target && e.target.closest && e.target.closest('a[href]');
       if (!a || a.target === '_blank') return;
       var href = a.getAttribute('href') || '';
-      if (href.charAt(0) !== '#' || href.length < 2) return;
-      var id = href.slice(1);
-      var target = document.getElementById(id) || document.querySelector('[name="' + id + '"]');
+      var link;
+      try { link = new URL(href, location.href); } catch (err) { return; }
+      if (!link.hash || link.hash.length < 2) return;
+      if (link.origin !== location.origin || pagePath(link.pathname) !== pagePath(location.pathname)) return;
+      var id = decodeURIComponent(link.hash.slice(1));
+      var target = document.getElementById(id) || document.querySelector('[name="' + id.replace(/"/g, '\\"') + '"]');
       if (!target) return;
       e.preventDefault();
       animateScrollToEl(target);
-      try { history.replaceState(null, '', href); } catch (err) {}   // keep the hash, no jump
+      try { history.replaceState(null, '', link.hash); } catch (err2) {}   // keep the hash, no jump
     }, false);
   }
 
@@ -1543,7 +1552,7 @@
     addItem('Contact', 'contact.html', false);
     addItem('Partenariat', 'partenariat.html', false);
     addItem('Connexion', 'connexion.html', false);
-    addItem("S'inscrire", 'accueil.html#inscription', true);
+    addItem("S'inscrire", currentPage === 'accueil.html' ? '#inscription' : 'accueil.html#inscription', true);
 
     var headerEl = document.createElement('header');
     headerEl.className = 'svp-mobile-header';
@@ -1573,10 +1582,11 @@
     nav.setAttribute('aria-label', 'Navigation principale');
     nav.setAttribute('data-svp-mobile-menu', '');
     nav.setAttribute('data-open', 'false');
-    items.forEach(function (item) {
+    items.forEach(function (item, i) {
       var a = document.createElement('a');
       a.href = item.href;
       a.textContent = item.label;
+      a.style.setProperty('--svp-i', i);
       if (item.primary) a.setAttribute('data-primary', 'true');
       if (isCurrent(item.href)) a.setAttribute('aria-current', 'page');
       nav.appendChild(a);
@@ -1591,6 +1601,12 @@
     if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(headerEl, anchor);
     else document.body.insertBefore(headerEl, document.body.firstChild);
     document.body.classList.add('svp-mobile-header-ready');
+
+    function updateHeaderState() {
+      headerEl.setAttribute('data-scrolled', scrollTop() > 8 ? 'true' : 'false');
+    }
+    updateHeaderState();
+    window.addEventListener('scroll', updateHeaderState, { passive: true });
   }
 
   // ---- uniform "back to main page" affordance: the header logo ----
@@ -1690,6 +1706,7 @@
     function isMobile() { return !mq || mq.matches; }
     function setOpen(btn, menu, open) {
       btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.setAttribute('aria-label', open ? 'Fermer le menu' : 'Ouvrir le menu');
       if (menu) menu.setAttribute('data-open', open ? 'true' : 'false');
       var owner = btn.closest && btn.closest('.svp-mobile-header');
       if (owner) owner.setAttribute('data-open', open ? 'true' : 'false');
