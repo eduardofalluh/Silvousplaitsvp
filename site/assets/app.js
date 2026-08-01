@@ -1930,6 +1930,60 @@
     window.addEventListener('scroll', updateHeaderState, { passive: true });
   }
 
+  function wirePremiumMobileFooter() {
+    if (currentPageName() !== 'premium.html') return;
+    if (document.querySelector('.svp-mobile-premium-footer')) return;
+    var target = premiumOfferTarget();
+    if (!target) return;
+
+    var legacy = document.querySelector('.svp-premium-footer-legacy') ||
+      document.querySelector('[style*="position: sticky"][style*="bottom: 0px"]');
+    if (legacy) legacy.setAttribute('data-svp-mobile-hide', 'premium-footer');
+
+    var footer = document.createElement('div');
+    footer.className = 'svp-mobile-premium-footer';
+    footer.setAttribute('data-scrolled', 'false');
+    footer.innerHTML = ''
+      + '<div class="svp-mobile-premium-footer__inner">'
+      + '<div class="svp-mobile-premium-footer__copy" aria-hidden="true">'
+      + '<div class="svp-mobile-premium-footer__price">Premium 5$/mois</div>'
+      + '<div class="svp-mobile-premium-footer__note">Annule en tout temps</div>'
+      + '</div>'
+      + '<a class="svp-mobile-premium-footer__cta" href="#premium-offer" data-svp="premium-cta">Je veux économiser</a>'
+      + '</div>';
+
+    var spacer = document.createElement('div');
+    spacer.className = 'svp-mobile-premium-footer-spacer';
+    spacer.setAttribute('aria-hidden', 'true');
+
+    if (legacy && legacy.parentNode) {
+      legacy.parentNode.insertBefore(footer, legacy.nextSibling);
+      legacy.parentNode.insertBefore(spacer, footer.nextSibling);
+    } else {
+      document.body.appendChild(footer);
+      document.body.appendChild(spacer);
+    }
+    document.body.classList.add('svp-mobile-premium-footer-ready');
+
+    var cta = footer.querySelector('a[href]');
+    if (cta) {
+      cta.addEventListener('click', function (e) {
+        var freshTarget = premiumOfferTarget();
+        if (!freshTarget) return;
+        e.preventDefault();
+        tagPremiumClick();
+        animateScrollToEl(freshTarget);
+        try { history.replaceState(null, '', '#premium-offer'); } catch (err) {}
+      });
+    }
+
+    function updateFooterState() {
+      footer.setAttribute('data-scrolled', scrollTop() > 8 ? 'true' : 'false');
+    }
+    updateFooterState();
+    window.addEventListener('scroll', updateFooterState, { passive: true });
+  }
+
   // ---- uniform "back to main page" affordance: the header logo ----
   // On the flattened pages some logos aren't links (premium/tunnel/archive), so
   // there was no way home — especially on mobile where the text nav is hidden.
@@ -2142,7 +2196,7 @@
     wireMobileReloadTop();
     if (!hashTargetEl()) setScrollTop(0);
     wireIntro();
-    wireUniversalMobileHeader(); wireHomeLink(); wireBackLinks(); wireMobileMenus(); wireFaq(); wireScrollTop(); wireAnchorScroll(); wirePremiumSignupIntent();
+    wireUniversalMobileHeader(); wirePremiumMobileFooter(); wireHomeLink(); wireBackLinks(); wireMobileMenus(); wireFaq(); wireScrollTop(); wireAnchorScroll(); wirePremiumSignupIntent();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireAccountSave(); wireCompteFilters(); wireUnsubscribe(); wireBilling(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireFunnelArchivedOffers(); wireLiveOffers(); wireOffersCarousel();
