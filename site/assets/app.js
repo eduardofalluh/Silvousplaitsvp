@@ -5,11 +5,25 @@
   'use strict';
   var FN = '/.netlify/functions/';
   var EMAIL_KEY = 'svp_email';
+  var STRIPE_BILLING_LOGIN_URL = 'https://billing.stripe.com/p/login/14AaEZ2PRgeD4Hogmkb7y00';
 
   function getEmail() { try { return localStorage.getItem(EMAIL_KEY) || ''; } catch (e) { return ''; } }
   function setEmail(v) { try { localStorage.setItem(EMAIL_KEY, v); } catch (e) {} }
   function validEmail(e) { return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e); }
   function pixel(kind, name) { if (typeof window.fbq === 'function') { try { window.fbq(kind, name); } catch (e) {} } }
+  function tagPremiumClick(email) {
+    var knownEmail = String(email || getEmail() || '').trim().toLowerCase();
+    pixel('trackCustom', 'PremiumClick');
+    if (!validEmail(knownEmail)) return;
+    try {
+      fetch(FN + 'tag-contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: knownEmail, tag: 'a-cliqué-premium-siteweb' }),
+        keepalive: true,
+      });
+    } catch (e) {}
+  }
 
   var SEL = { borderColor: '#3347CA', background: '#EEF0FD', color: '#3347CA', fontWeight: '700' };
   var UNSEL = { borderColor: '#E1E0D4', background: '#FFFFFF', color: '#16182B', fontWeight: '500' };
@@ -66,17 +80,7 @@
   function wirePremiumCtas() {
     document.querySelectorAll('[data-svp="premium-cta"]').forEach(function (el) {
       el.addEventListener('click', function () {
-        var email = getEmail();
-        pixel('trackCustom', 'PremiumClick');
-        if (!email) return; // anonymous click: nothing to tag
-        try {
-          fetch(FN + 'tag-contact', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email, tag: 'a-cliqué-premium-siteweb' }),
-            keepalive: true,
-          });
-        } catch (e) {}
+        tagPremiumClick();
       });
     });
   }
@@ -228,14 +232,36 @@
     funnel.querySelectorAll('[data-premium-choice]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         state.premium = btn.getAttribute('data-premium-choice') || '';
+        if (state.premium === 'yes') {
+          if (!validateStep1()) return;
+          var email = ((emailInput && emailInput.value) || '').trim().toLowerCase();
+          setEmail(email);
+          startPremiumCheckout(btn, { email: email, plan: btn.getAttribute('data-plan') || 'yearly', returnPath: '/tunnel.html' });
+          return;
+        }
         showStep(3);
       });
     });
     var copy = funnel.querySelector('[data-funnel-copy]');
     if (copy) copy.addEventListener('click', function () {
-      try { navigator.clipboard.writeText(inviteUrl()); } catch (e) {}
-      copy.textContent = 'Copié ✓';
-      setTimeout(function () { copy.textContent = 'Copier le lien'; }, 1800);
+      var url = inviteUrl();
+      function copied() {
+        try { navigator.clipboard.writeText(url); } catch (e) {}
+        copy.textContent = 'Copié ✓';
+        setTimeout(function () { copy.textContent = 'Copier le lien'; }, 1800);
+      }
+      if (navigator.share) {
+        navigator.share({
+          title: 'Silvousplait',
+          text: "Je t'invite à rejoindre Silvousplait.",
+          url: url,
+        }).then(function () {
+          copy.textContent = 'Invitation prête ✓';
+          setTimeout(function () { copy.textContent = 'Copier le lien'; }, 1800);
+        }).catch(copied);
+        return;
+      }
+      copied();
     });
     funnel.querySelectorAll('[data-faq-item]').forEach(function (item) {
       item.addEventListener('click', function () {
@@ -250,8 +276,16 @@
     function openExit() { if (exitModal) { updateCopy(); exitModal.hidden = false; } }
     function closeExit() { if (exitModal) exitModal.hidden = true; }
     var openExitBtn = funnel.querySelector('[data-funnel-open-exit]');
-    if (openExitBtn) openExitBtn.addEventListener('click', openExit);
+    if (openExitBtn) openExitBtn.addEventListener('click', function (e) { e.preventDefault(); openExit(); });
     funnel.querySelectorAll('[data-funnel-close-exit]').forEach(function (btn) { btn.addEventListener('click', closeExit); });
+    funnel.querySelectorAll('a[href="accueil.html"]').forEach(function (link) {
+      if (link.hasAttribute('data-funnel-confirm-exit')) return;
+      link.addEventListener('click', function (e) {
+        if (submitted || current === 4 || current === 'already') return;
+        e.preventDefault();
+        openExit();
+      });
+    });
     if (exitModal) {
       exitModal.addEventListener('click', function (e) { if (e.target === exitModal) closeExit(); });
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeExit(); });
@@ -516,11 +550,58 @@
         if (greet) greet.textContent = 'Bonjour, ' + (a.firstName || a.email.split('@')[0]);
         var badgeR = document.querySelector('[data-svp-badge]');
         if (badgeR) { badgeR.classList.remove('svp-skel'); badgeR.style.minWidth = ''; badgeR.style.minHeight = ''; badgeR.style.background = a.isPremium ? '#F5E642' : '#EEF0FD'; badgeR.style.color = a.isPremium ? '#16182B' : '#3347CA'; badgeR.textContent = a.isPremium ? 'Membre Premium' : 'Membre gratuit'; }
-        var ln = document.querySelector('input[placeholder="Nom"]'); if (ln) ln.value = a.lastName || '';
-        var fn = document.querySelector('input[placeholder="Prénom"]'); if (fn) fn.value = a.firstName || '';
-        var ph = document.querySelector('input[type="tel"]'); if (ph) ph.value = a.phone || '';
+        var ln = document.querySelector('[data-svp-account-field="lastName"]') || document.querySelector('input[placeholder="Nom"]'); if (ln) ln.value = a.lastName || '';
+        var fn = document.querySelector('[data-svp-account-field="firstName"]') || document.querySelector('input[placeholder="Prénom"]'); if (fn) fn.value = a.firstName || '';
+        var ph = document.querySelector('[data-svp-account-field="phone"]') || document.querySelector('input[type="tel"]'); if (ph) ph.value = a.phone || '';
+        var ville = document.querySelector('[data-svp-account-field="ville"]'); if (ville && a.ville) ville.value = a.ville;
       })
       .catch(function () { /* leave skeletons on network error */ });
+  }
+
+  function wireAccountSave() {
+    var btn = document.querySelector('[data-svp="account-save"]');
+    if (!btn) return;
+    var msg = document.querySelector('[data-svp="account-msg"]');
+    function field(name) {
+      var el = document.querySelector('[data-svp-account-field="' + name + '"]');
+      return el ? String(el.value || '').trim() : '';
+    }
+    function say(t, err) { if (msg) { msg.textContent = t || ''; msg.style.color = err ? '#b00020' : '#3347CA'; } }
+    btn.addEventListener('click', function () {
+      var session = getSession();
+      if (!session) { window.location.href = 'connexion.html'; return; }
+      btn.disabled = true;
+      var original = btn.textContent;
+      btn.textContent = 'Enregistrement…';
+      say('');
+      fetch(FN + 'update-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session: session,
+          firstName: field('firstName'),
+          lastName: field('lastName'),
+          phone: field('phone'),
+          ville: field('ville'),
+        }),
+      }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }).catch(function () { return { ok: r.ok, d: {} }; }); })
+        .then(function (res) {
+          btn.disabled = false;
+          btn.textContent = original;
+          if (res.ok && res.d && res.d.ok) {
+            say('Informations enregistrées.');
+            var greet = document.querySelector('[data-svp="compte"] h1');
+            var first = field('firstName');
+            if (greet && first) greet.textContent = 'Bonjour, ' + first;
+            return;
+          }
+          say((res.d && res.d.error) || "Impossible d'enregistrer pour le moment.", true);
+        }).catch(function () {
+          btn.disabled = false;
+          btn.textContent = original;
+          say('Erreur. Réessaie plus tard.', true);
+        });
+    });
   }
 
   // ---- compte: newsletter unsubscribe (désinscription) ----
@@ -550,17 +631,13 @@
     var msg = document.querySelector('[data-svp="billing-msg"]');
     function say(t, err) { if (msg) { msg.textContent = t || ''; msg.style.color = err ? '#b00020' : '#3347CA'; } }
     [].forEach.call(links, function (link) {
+      link.href = STRIPE_BILLING_LOGIN_URL;
       link.addEventListener('click', function (e) {
         e.preventDefault();
         var session = getSession();
         if (!session) { window.location.href = 'connexion.html'; return; }
         say('Ouverture…');
-        fetch(FN + 'create-billing-portal-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: session }) })
-          .then(function (r) { return r.json(); }).then(function (d) {
-            if (d && d.ok && d.url) { window.location.href = d.url; }
-            else if (d && d.reason === 'no-subscription') { say('Aucun abonnement Premium actif sur ce compte.', true); }
-            else { say("Impossible d'ouvrir la facturation pour le moment.", true); }
-          }).catch(function () { say('Erreur. Réessaie plus tard.', true); });
+        window.location.href = STRIPE_BILLING_LOGIN_URL;
       });
     });
   }
@@ -617,37 +694,57 @@
   }
 
   // ---- premium Stripe checkout ----
+  function resetCheckoutButton(btn) {
+    var o = btn && btn.getAttribute && btn.getAttribute('data-orig-label');
+    if (btn && o != null) btn.textContent = o;
+    if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
+  }
+
+  function startPremiumCheckout(btn, options) {
+    options = options || {};
+    if (!btn) return;
+    if (btn.getAttribute('aria-busy') === 'true') return;
+    if (btn.getAttribute('data-orig-label') == null) btn.setAttribute('data-orig-label', btn.textContent);
+    var plan = options.plan || btn.getAttribute('data-plan') || 'yearly';
+    var email = String(options.email || getEmail() || '').trim().toLowerCase();
+    if (email) setEmail(email);
+    tagPremiumClick(email);
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+    btn.textContent = 'Redirection…';
+    fetch(FN + 'create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        planKey: plan,
+        returnPath: options.returnPath || '/premium.html',
+        email: validEmail(email) ? email : undefined,
+      }),
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }).catch(function () { return { ok: r.ok, d: {} }; }); })
+      .then(function (res) {
+        var d = res.d || {};
+        if (d && d.url) { pixel('track', 'InitiateCheckout'); window.location.href = d.url; }
+        else {
+          resetCheckoutButton(btn);
+          if (d.code === 'already_premium') alert('Tu as déjà un abonnement Premium actif avec cette adresse.');
+          else alert("Le paiement n'a pas pu démarrer. Réessaie.");
+        }
+      }).catch(function () { resetCheckoutButton(btn); alert('Erreur. Réessaie plus tard.'); });
+  }
+
   function wirePremiumCheckout() {
     var btns = document.querySelectorAll('[data-svp="checkout"]');
     if (!btns.length) return;
-    function resetBtn(btn) { var o = btn.getAttribute('data-orig-label'); if (o != null) btn.textContent = o; btn.disabled = false; }
     btns.forEach(function (btn) {
       if (btn.getAttribute('data-orig-label') == null) btn.setAttribute('data-orig-label', btn.textContent);
       btn.addEventListener('click', function (e) {
         e.preventDefault();
-        var plan = btn.getAttribute('data-plan') || 'yearly';
-        var email = getEmail();
-        if (email) { try { fetch(FN + 'tag-contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, tag: 'a-cliqué-premium-siteweb' }), keepalive: true }); } catch (er) {} }
-        btn.textContent = 'Redirection…';
-        fetch(FN + 'create-checkout-session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ planKey: plan, returnPath: '/premium.html', email: email || undefined }),
-        })
-          .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }).catch(function () { return { ok: r.ok, d: {} }; }); })
-          .then(function (res) {
-            var d = res.d || {};
-            if (d && d.url) { pixel('track', 'InitiateCheckout'); window.location.href = d.url; }
-            else {
-              resetBtn(btn);
-              if (d.code === 'already_premium') alert('Tu as déjà un abonnement Premium actif avec cette adresse.');
-              else alert("Le paiement n'a pas pu démarrer. Réessaie.");
-            }
-          }).catch(function () { resetBtn(btn); alert('Erreur. Réessaie plus tard.'); });
+        startPremiumCheckout(btn);
       });
     });
     // Returning to the page (e.g. Back from Stripe, incl. bfcache) restores the button.
-    window.addEventListener('pageshow', function () { btns.forEach(resetBtn); });
+    window.addEventListener('pageshow', function () { btns.forEach(resetCheckoutButton); });
   }
 
   // ---- P5: admin gate ----
@@ -967,7 +1064,7 @@
     });
   }
 
-  // ---- P2b/B: render LIVE premium offers from the backend ----
+  // ---- P2b/B: render live + archived premium offers from the backend ----
   var FR_MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
   function frDate(iso) {
     if (!iso) return '';
@@ -1018,7 +1115,7 @@
     return o.image_url ? '<div style="height:110px;background:#EEF0FD center/cover no-repeat;background-image:url(' + esc(o.image_url) + ')"></div>'
       : '<div style="height:110px;background:#EEF0FD;display:flex;align-items:center;justify-content:center"><div style="width:70px;height:70px;background:url(assets/icon-mic-circle.png) center/contain no-repeat;mix-blend-mode:multiply"></div></div>';
   }
-  function premiumCard(o) {
+  function premiumCard(o, archived) {
     var img = o.image_url ? 'background:#0b1030 url(' + esc(o.image_url) + ') center/cover no-repeat;' : 'background:repeating-linear-gradient(135deg,#4155DE,#4155DE 14px,#3347CA 14px,#3347CA 28px);';
     return '<div data-svp="offer" data-offer-id="' + esc(o.id) + '" style="position:relative;flex:0 0 auto;width:290px;max-width:86vw;height:400px;scroll-snap-align:start;border-radius:20px;overflow:hidden;box-shadow:rgba(142,160,245,.3) 5px 6px 0;' + img + 'display:flex;flex-direction:column;justify-content:space-between;padding:18px">'
       + premiumMedia(o)
@@ -1027,10 +1124,12 @@
       + '<div style="position:relative;z-index:2">'
       + '<div style="font:700 16.5px/1.3 \'Bricolage Grotesque\',sans-serif;color:#FFFEF5;margin-bottom:4px">' + esc(o.title) + '</div>'
       + '<div style="font:400 13px \'Instrument Sans\',sans-serif;color:#C3C8E4;margin-bottom:12px">' + esc(o.venue || '') + (o.event_date ? ' · ' + esc(frDate(o.event_date)) : '') + '</div>'
-      + '<a href="#pricing" data-svp="premium-cta" style="display:inline-block;font:700 12.5px \'Instrument Sans\',sans-serif;color:#16182B;background:#F5E642;padding:9px 17px;border-radius:100px;text-decoration:none">Réserver</a>'
+      + (archived
+        ? '<span style="display:inline-block;font:700 12.5px \'Instrument Sans\',sans-serif;color:#C3C8E4;background:rgba(255,254,245,.1);padding:9px 17px;border-radius:100px">Offre passée</span>'
+        : '<a href="#pricing" data-svp="premium-cta" style="display:inline-block;font:700 12.5px \'Instrument Sans\',sans-serif;color:#16182B;background:#F5E642;padding:9px 17px;border-radius:100px;text-decoration:none">Réserver</a>')
       + '</div></div>';
   }
-  function compteCard(o) {
+  function compteCard(o, archived) {
     var img = compteMedia(o);
     return '<div data-svp="offer" data-offer-id="' + esc(o.id) + '" data-offer-type="' + esc(o.offer_type || '') + '" data-offer-region="' + esc(o.region || '') + '" data-offer-search="' + esc((o.title || '') + ' ' + (o.venue || '')) + '" style="background:#fff;border:1.5px solid #ECEAE0;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">'
       + '<div style="position:relative">' + img
@@ -1039,7 +1138,9 @@
       + '<div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px;flex:1">'
       + '<div style="font:700 15px/1.25 \'Bricolage Grotesque\',sans-serif">' + esc(o.title) + '</div>'
       + '<div style="font:500 12.5px \'Instrument Sans\',sans-serif;color:#8B8DA0;flex:1">' + esc(o.venue || '') + (o.event_date ? ' · ' + esc(frDate(o.event_date)) : '') + '</div>'
-      + '<a href="premium.html" data-svp="premium-cta" style="margin-top:10px;text-align:center;background:#3347CA;color:#FFFEF5;border-radius:100px;padding:11px;font:700 13px \'Instrument Sans\',sans-serif;text-decoration:none">Voir l\'offre</a>'
+      + (archived
+        ? '<span style="margin-top:10px;text-align:center;background:#EEF0FD;color:#8B8DA0;border-radius:100px;padding:11px;font:700 13px \'Instrument Sans\',sans-serif">Offre passée</span>'
+        : '<a href="premium.html" data-svp="premium-cta" style="margin-top:10px;text-align:center;background:#3347CA;color:#FFFEF5;border-radius:100px;padding:11px;font:700 13px \'Instrument Sans\',sans-serif;text-decoration:none">Voir l\'offre</a>')
       + '</div></div>';
   }
   // ---- Archive (past offers, read-only) ----
@@ -1059,7 +1160,7 @@
     fetch(FN + 'list-archived-offers').then(function (r) { return r.json(); }).then(function (d) {
       var offers = (d && d.offers) || [];
       if (!offers.length) { fail(''); return; }
-      grid.innerHTML = offers.map(compteCard).join('');
+      grid.innerHTML = offers.map(function (offer) { return compteCard(offer, true); }).join('');
     }).catch(function () { fail("Impossible de charger l'archive pour le moment. Réessaie plus tard."); });
   }
   // ---- Offers carousel: scroll-progress thumb + arrow buttons ----
@@ -1150,38 +1251,17 @@
     // see fake placeholder offers while the real ones load.
     if (carousel) carousel.innerHTML = rep(skeletonCarouselCard(), 4);
     if (grid) grid.innerHTML = rep(skeletonGridCard(), 6);
-    // add the "offres passées" link once (independent of load result)
-    var anchor = carousel || grid;
-    if (anchor && !document.querySelector('[data-svp="archive-link"]')) {
-      var a = document.createElement('a');
-      a.setAttribute('data-svp', 'archive-link');
-      a.href = 'archive.html';
-      a.textContent = 'Voir les offres passées →';
-      a.setAttribute('style', "display:inline-block;color:#3347CA;font:700 13.5px 'Instrument Sans',sans-serif;text-decoration:none");
-      if (carousel) {
-        // The carousel bleeds off the right edge, so a bare link dropped after
-        // it sat flush against the section edge — out of line with the cards
-        // and the title. Wrap it in the SAME 1160px content container the
-        // section title and progress bar use (identical max-width + 32px
-        // padding, so responsive.css trims it to 16px on mobile too), and put
-        // it below the progress bar: one shared left edge at every width.
-        var wrap = document.createElement('div');
-        wrap.setAttribute('data-svp', 'archive-link-wrap');
-        wrap.setAttribute('style', 'max-width:1160px;margin:18px auto 0;padding:0 32px');
-        wrap.appendChild(a);
-        var bar = document.querySelector('[data-svp="offers-progress"]');
-        var after = (bar && (bar.closest('[style*="max-width: 1160px"]') || bar.parentNode)) || carousel;
-        after.parentNode.insertBefore(wrap, after.nextSibling);
-      } else {
-        a.style.marginTop = '16px';
-        anchor.parentNode.insertBefore(a, anchor.nextSibling);
-      }
-    }
-    fetch(FN + 'list-public-premium-offers').then(function (r) { return r.json(); }).then(function (d) {
-      var offers = (d && d.offers) || [];
-      if (carousel) carousel.innerHTML = offers.length ? offers.map(premiumCard).join('') : '';
-      if (grid) grid.innerHTML = offers.length ? offers.map(compteCard).join('')
-        : '<p style="grid-column:1/-1;color:#8B8DA0;font:500 14px \'Instrument Sans\',sans-serif;padding:8px 2px">Aucune offre pour le moment — reviens lundi pour la nouvelle sélection.</p>';
+    var liveRequest = fetch(FN + 'list-public-premium-offers').then(function (r) { return r.json(); }).catch(function () { return { offers: [] }; });
+    var archivedRequest = fetch(FN + 'list-archived-offers').then(function (r) { return r.json(); }).catch(function () { return { offers: [] }; });
+    Promise.all([liveRequest, archivedRequest]).then(function (results) {
+      var offers = (results[0] && results[0].offers) || [];
+      var archivedOffers = (results[1] && results[1].offers) || [];
+      var carouselHtml = offers.map(function (offer) { return premiumCard(offer, false); })
+        .concat(archivedOffers.map(function (offer) { return premiumCard(offer, true); })).join('');
+      var gridHtml = offers.map(function (offer) { return compteCard(offer, false); })
+        .concat(archivedOffers.map(function (offer) { return compteCard(offer, true); })).join('');
+      if (carousel) carousel.innerHTML = carouselHtml;
+      if (grid) grid.innerHTML = gridHtml || '<p style="grid-column:1/-1;color:#8B8DA0;font:500 14px \'Instrument Sans\',sans-serif;padding:8px 2px">Aucune offre pour le moment — reviens lundi pour la nouvelle sélection.</p>';
       document.querySelectorAll('[data-svp="offer"]').forEach(observeOffer);
       wirePremiumCtas();
       if (typeof window.__svpApplyFilters === 'function') window.__svpApplyFilters();
@@ -1949,7 +2029,7 @@
     wireIntro();
     wireUniversalMobileHeader(); wireHomeLink(); wireBackLinks(); wireMobileMenus(); wireFaq(); wireScrollTop(); wireAnchorScroll(); wirePremiumSignupIntent();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
-    wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireBilling(); wireAdmin(); wirePartenariat();
+    wireConnexion(); wireAccount(); wireAccountSave(); wireCompteFilters(); wireUnsubscribe(); wireBilling(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers(); wireOffersCarousel();
     wireArchive();
     runPendingPremiumScroll();

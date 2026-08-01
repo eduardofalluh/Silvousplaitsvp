@@ -98,7 +98,7 @@ function normalizeReturnPath(inputPath) {
     return '/index.html';
   }
 
-  if (normalizedPath === '/premium.html') {
+  if (['/premium.html', '/tunnel.html', '/accueil.html'].includes(normalizedPath)) {
     return normalizedPath;
   }
 

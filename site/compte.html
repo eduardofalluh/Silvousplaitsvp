@@ -182,21 +182,23 @@
     <div style="background: rgb(255, 255, 255); border: 1.5px solid rgb(236, 234, 224); border-radius: 16px; padding: 22px;">
       <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">Informations</h3>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-        <input placeholder="Nom" value="Tremblay" style="box-sizing: border-box; width: 100%; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 12px 14px; font: 500 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245);">
-        <input placeholder="Prénom" value="Alex" style="box-sizing: border-box; width: 100%; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 12px 14px; font: 500 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245);">
+        <input placeholder="Nom" data-svp-account-field="lastName" value="Tremblay" style="box-sizing: border-box; width: 100%; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 12px 14px; font: 500 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245);">
+        <input placeholder="Prénom" data-svp-account-field="firstName" value="Alex" style="box-sizing: border-box; width: 100%; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 12px 14px; font: 500 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245);">
       </div>
-      <input type="tel" placeholder="Numéro de téléphone" style="box-sizing: border-box; width: 100%; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 12px 14px; font: 500 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245); margin-bottom: 12px;">
+      <input type="tel" placeholder="Numéro de téléphone" data-svp-account-field="phone" style="box-sizing: border-box; width: 100%; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 12px 14px; font: 500 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245); margin-bottom: 12px;">
       <div style="font: 600 12.5px &quot;Instrument Sans&quot;, sans-serif; color: rgb(74, 77, 102); margin-bottom: 8px;">Ville de réception de l'infolettre</div>
-      <select style="width: 100%; box-sizing: border-box; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 12px 14px; font: 600 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245); cursor: pointer;">
-        <option>Montréal</option><option>Québec</option><option>Sherbrooke</option><option>Trois-Rivières</option>
+      <select data-svp-account-field="ville" style="width: 100%; box-sizing: border-box; border: 1.5px solid rgb(225, 224, 212); border-radius: 10px; padding: 12px 14px; font: 600 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 254, 245); cursor: pointer;">
+        <option value="montreal">Montréal</option><option value="quebec">Québec</option><option value="sherbrooke">Sherbrooke</option><option value="trois-rivieres">Trois-Rivières</option>
       </select>
+      <button type="button" data-svp="account-save" style="display:block;width:100%;margin-top:14px;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:13px 16px;font:700 13.5px 'Instrument Sans',sans-serif;cursor:pointer">Enregistrer les informations</button>
+      <p data-svp="account-msg" role="status" aria-live="polite" style="min-height:16px;margin:9px 0 0;font-weight:600;font-size:12.5px;color:#3347CA"></p>
     </div>
     <div style="background: rgb(255, 255, 255); border: 1.5px solid rgb(236, 234, 224); border-radius: 16px; padding: 22px;">
       <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">Compte</h3>
       
         <div style="display: flex; flex-direction: column; gap: 9px; font: 500 13.5px &quot;Instrument Sans&quot;, sans-serif;">
-          <a href="#" data-svp="billing" style="text-decoration: none; font-weight: 600;">Historique de facturation</a>
-          <a href="#" data-svp="billing" class="scp5" style="color: rgb(139, 141, 160); text-decoration: underline;">Annuler mon abonnement</a>
+          <a href="https://billing.stripe.com/p/login/14AaEZ2PRgeD4Hogmkb7y00" data-svp="billing" style="text-decoration: none; font-weight: 600;">Historique de facturation</a>
+          <a href="https://billing.stripe.com/p/login/14AaEZ2PRgeD4Hogmkb7y00" data-svp="billing" class="scp5" style="color: rgb(139, 141, 160); text-decoration: underline;">Annuler mon abonnement</a>
           <p data-svp="billing-msg" role="status" aria-live="polite" style="min-height:14px;margin:2px 0 0;font-weight:600;font-size:12.5px;color:#3347CA"></p>
 <a href="#" data-svp="unsubscribe" style="display:block;margin-top:10px;color:rgb(139,141,160);text-decoration:underline;font:500 13px 'Instrument Sans',sans-serif">Me désinscrire de l'infolettre</a>
 <p data-svp="unsubscribe-msg" role="status" aria-live="polite" style="min-height:16px;margin:8px 0 0;font-weight:600;font-size:12.5px;color:#3347CA"></p>
