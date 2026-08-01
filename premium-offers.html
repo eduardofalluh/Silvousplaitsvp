@@ -138,6 +138,9 @@
       display: grid;
       gap: 12px;
     }
+    .offers-form-grid[hidden] {
+      display: none !important;
+    }
     .offers-form-grid input,
     .offers-filters input,
     .offers-filters select {
@@ -569,6 +572,7 @@
 
   <a class="offers-admin-trigger" href="premium-offers-admin.html" aria-label="Accès admin">A</a>
 
+  <script src="script.js"></script>
   <script>
     (function () {
       const authPanel = document.getElementById('auth-panel');

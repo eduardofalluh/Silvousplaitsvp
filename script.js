@@ -77,66 +77,326 @@ setTimeout(styleACEmbedForms, 1500);
 })();
 
 // =====================================================
+// UNIVERSAL MOBILE HEADER
+// =====================================================
+const SVP_ROOT_SIGNUP_SCROLL_KEY = 'svp_root_scroll_to_signup';
+
+function svpRootPageName(pathname = window.location.pathname) {
+  let file = String(pathname || '').split('/').pop() || 'index.html';
+  if (!file || file === '/') file = 'index.html';
+  if (file.indexOf('.') < 0) file += '.html';
+  return file;
+}
+
+function svpRootReducedMotion() {
+  return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function svpRootStickyOffset() {
+  const header = document.querySelector('.svp-mobile-header');
+  if (!header) return 16;
+  const style = window.getComputedStyle ? getComputedStyle(header) : null;
+  if (style && style.display === 'none') return 16;
+  return Math.ceil(header.getBoundingClientRect().height) + 14;
+}
+
+function svpRootTargetTop(target) {
+  return Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - svpRootStickyOffset());
+}
+
+function svpRootScrollToElement(target) {
+  if (!target) return;
+  window.scrollTo({
+    top: svpRootTargetTop(target),
+    behavior: svpRootReducedMotion() ? 'auto' : 'smooth',
+  });
+}
+
+function svpRootSignupTarget() {
+  return document.getElementById('ac-signup-bottom') ||
+    document.querySelector('form[data-ac-signup="true"]') ||
+    document.querySelector('form[data-free-signup-form="true"]');
+}
+
+function svpRootStoreSignupIntent() {
+  try { sessionStorage.setItem(SVP_ROOT_SIGNUP_SCROLL_KEY, '1'); } catch (_) {}
+}
+
+function svpRootConsumeSignupIntent() {
+  try {
+    if (sessionStorage.getItem(SVP_ROOT_SIGNUP_SCROLL_KEY) !== '1') return false;
+    sessionStorage.removeItem(SVP_ROOT_SIGNUP_SCROLL_KEY);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function svpRootWaitThenScrollToSignup() {
+  let tries = 0;
+  window.scrollTo(0, 0);
+
+  function go() {
+    const intro = document.getElementById('page-intro');
+    if (intro && !document.body.classList.contains('intro-complete') && tries++ < 70) {
+      window.scrollTo(0, 0);
+      setTimeout(go, 100);
+      return;
+    }
+
+    const target = svpRootSignupTarget();
+    if (!target && tries++ < 70) {
+      setTimeout(go, 100);
+      return;
+    }
+    if (!target) return;
+
+    requestAnimationFrame(() => svpRootScrollToElement(target));
+  }
+
+  if (document.readyState === 'complete') setTimeout(go, 80);
+  else window.addEventListener('load', () => setTimeout(go, 120), { once: true });
+  setTimeout(go, 4600);
+}
+
+function svpRootRunPendingSignupScroll() {
+  if (!svpRootConsumeSignupIntent()) return;
+  const page = svpRootPageName();
+  if (page !== 'index.html') return;
+  svpRootWaitThenScrollToSignup();
+}
+
+function svpRootSetMobileHeaderOpen(header, open) {
+  if (!header) return;
+  const toggle = header.querySelector('[data-svp-mobile-menu-toggle]');
+  const menu = header.querySelector('[data-svp-mobile-menu]');
+  header.setAttribute('data-open', open ? 'true' : 'false');
+  if (toggle) {
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    toggle.setAttribute('aria-label', open ? 'Fermer le menu' : 'Ouvrir le menu');
+  }
+  if (menu) menu.setAttribute('data-open', open ? 'true' : 'false');
+}
+
+function wireRootUniversalMobileHeader() {
+  if (document.querySelector('.svp-mobile-header')) return;
+
+  const currentPage = svpRootPageName();
+  if (/^(admin|premium-offers-admin)\.html$/i.test(currentPage)) return;
+
+  const legacyHeaders = Array.from(document.querySelectorAll('header.nav'));
+  const items = [];
+  const seen = new Set();
+
+  function normalizeHref(href) {
+    if (!href) return '';
+    let url;
+    try { url = new URL(href, window.location.href); } catch (_) { return href; }
+    if (url.origin !== window.location.origin) return href;
+    return svpRootPageName(url.pathname) + (url.hash || '');
+  }
+
+  function addItem(label, href, primary = false, kind = '') {
+    label = String(label || '').replace(/\s+/g, ' ').trim();
+    if (!label || !href) return;
+
+    let key = normalizeHref(href);
+    if (/s['’]?inscrire|inscription/i.test(label)) {
+      key = 'signup';
+      kind = 'signup';
+    }
+    if (/connexion/i.test(label)) key = 'premium-offers.html';
+    if (seen.has(key)) return;
+    seen.add(key);
+    items.push({ label, href, primary: !!primary, kind });
+  }
+
+  function isCurrent(href) {
+    let url;
+    try { url = new URL(href, window.location.href); } catch (_) { return false; }
+    return url.origin === window.location.origin && svpRootPageName(url.pathname) === currentPage && !url.hash;
+  }
+
+  addItem('Accueil', 'index.html');
+  legacyHeaders.forEach((header) => {
+    header.querySelectorAll('a[href]').forEach((link) => {
+      if (link.querySelector('img') && !link.textContent.trim()) return;
+      const label = link.textContent.replace(/\s+/g, ' ').trim();
+      if (!label) return;
+      addItem(label, link.getAttribute('href'), /s['’]?inscrire|inscription|commencer|choisir/i.test(label));
+    });
+  });
+  addItem('Premium', 'premium.html');
+  addItem('Connexion Premium', 'premium-offers.html');
+  addItem('Contact', 'contact.html');
+  addItem("S'inscrire", currentPage === 'index.html' ? '#ac-signup-bottom' : 'index.html', true, 'signup');
+
+  const headerEl = document.createElement('header');
+  headerEl.className = 'svp-mobile-header';
+  headerEl.setAttribute('data-open', 'false');
+  headerEl.setAttribute('data-scrolled', 'false');
+  if (document.getElementById('page-intro')) {
+    headerEl.setAttribute('data-wait-for-intro', 'true');
+  }
+
+  const menuId = 'svp-mobile-menu';
+  const bar = document.createElement('div');
+  bar.className = 'svp-mobile-header__bar';
+
+  const logo = document.createElement('a');
+  logo.className = 'svp-mobile-header__logo';
+  logo.href = 'index.html';
+  logo.setAttribute('aria-label', "Retour a l'accueil");
+  logo.innerHTML = '<img src="assets/logo.webp" alt="Silvousplait">';
+
+  const toggle = document.createElement('button');
+  toggle.className = 'svp-mobile-header__toggle';
+  toggle.type = 'button';
+  toggle.setAttribute('aria-label', 'Ouvrir le menu');
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.setAttribute('aria-controls', menuId);
+  toggle.setAttribute('data-svp-mobile-menu-toggle', '');
+  toggle.innerHTML = '<span class="svp-mobile-header__icon" aria-hidden="true"><span></span><span></span><span></span></span>';
+
+  bar.appendChild(logo);
+  bar.appendChild(toggle);
+
+  const nav = document.createElement('nav');
+  nav.className = 'svp-mobile-header__panel';
+  nav.id = menuId;
+  nav.setAttribute('aria-label', 'Navigation principale');
+  nav.setAttribute('data-svp-mobile-menu', '');
+  nav.setAttribute('data-open', 'false');
+
+  items.forEach((item, index) => {
+    const link = document.createElement('a');
+    link.href = item.href;
+    link.textContent = item.label;
+    link.style.setProperty('--svp-i', index);
+    if (item.primary) link.setAttribute('data-primary', 'true');
+    if (item.kind === 'signup') link.setAttribute('data-svp-nav-signup', 'true');
+    if (isCurrent(item.href)) link.setAttribute('aria-current', 'page');
+    nav.appendChild(link);
+  });
+
+  headerEl.appendChild(bar);
+  headerEl.appendChild(nav);
+
+  legacyHeaders.forEach((header) => header.setAttribute('data-svp-mobile-hide', 'header'));
+
+  const mainContent = document.querySelector('.main-content');
+  const legacyInsideIntroShell = mainContent && legacyHeaders.some((header) => mainContent.contains(header));
+  const anchor = legacyInsideIntroShell
+    ? mainContent
+    : (legacyHeaders[0] ||
+      document.querySelector('.premium-confirmation, .premium-access-wrap, .offers-shell, main, section') ||
+      Array.from(document.body.children).find((el) => !/^(script|noscript)$/i.test(el.tagName || '')));
+
+  if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(headerEl, anchor);
+  else document.body.insertBefore(headerEl, document.body.firstChild);
+
+  document.body.classList.add('svp-mobile-header-ready');
+
+  function updateScrolledState() {
+    headerEl.setAttribute('data-scrolled', window.pageYOffset > 8 ? 'true' : 'false');
+  }
+
+  updateScrolledState();
+  window.addEventListener('scroll', updateScrolledState, { passive: true });
+
+  toggle.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const nextOpen = headerEl.getAttribute('data-open') !== 'true';
+    svpRootSetMobileHeaderOpen(headerEl, nextOpen);
+  });
+
+  nav.querySelectorAll('a[href]').forEach((link) => {
+    link.addEventListener('click', (event) => {
+      const isSignup = link.getAttribute('data-svp-nav-signup') === 'true';
+      svpRootSetMobileHeaderOpen(headerEl, false);
+
+      if (!isSignup) return;
+
+      event.preventDefault();
+      if (currentPage === 'index.html') {
+        svpRootScrollToElement(svpRootSignupTarget());
+        try { history.replaceState(null, '', '#ac-signup-bottom'); } catch (_) {}
+        return;
+      }
+
+      svpRootStoreSignupIntent();
+      window.location.href = 'index.html';
+    });
+  });
+
+  document.addEventListener('click', (event) => {
+    if (headerEl.getAttribute('data-open') !== 'true') return;
+    if (headerEl.contains(event.target)) return;
+    svpRootSetMobileHeaderOpen(headerEl, false);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') svpRootSetMobileHeaderOpen(headerEl, false);
+  });
+}
+
+// =====================================================
 // PAGE TRANSITIONS - Smooth slide and fade
 // =====================================================
 function initPageTransitions() {
-  // Get all internal links
-  const links = document.querySelectorAll('a[href]');
   const overlay = document.querySelector('.page-transition-overlay');
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  
-  links.forEach(link => {
-    link.addEventListener('click', function(e) {
-      const href = this.getAttribute('href');
-      
-      // Skip if it's an anchor link, external link, mailto, or same page
-      if (href.includes('#') || 
-          href.startsWith('http') || 
-          href.startsWith('mailto:') || 
-          href === '#' ||
-          href === '' ||
-          !href.endsWith('.html')) {
-        return;
-      }
-      
-      // Only handle internal HTML page links
-      const isInternalPage = href.includes('index.html') || 
-                            href.includes('premium.html') ||
-                            href.includes('faq.html') || 
-                            href.includes('politique.html') || 
-                            href.includes('termes.html') || 
-                            href.includes('contact.html');
-      
-      if (!isInternalPage) {
-        return;
-      }
-      
-      e.preventDefault();
 
-      if (prefersReducedMotion) {
+  document.addEventListener('click', function (e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const link = e.target.closest && e.target.closest('a[href]');
+    if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
+    const href = link.getAttribute('href') || '';
+
+    // Skip anchors, external links, mailto/tel links, and non-page actions.
+    if (href.includes('#') ||
+        href.startsWith('http') ||
+        href.startsWith('mailto:') ||
+        href.startsWith('tel:') ||
+        href === '#' ||
+        href === '' ||
+        !href.endsWith('.html')) {
+      return;
+    }
+
+    const isInternalPage = href.includes('index.html') ||
+                          href.includes('premium.html') ||
+                          href.includes('premium-offers.html') ||
+                          href.includes('premium-access.html') ||
+                          href.includes('premium-confirmation.html') ||
+                          href.includes('faq.html') ||
+                          href.includes('politique.html') ||
+                          href.includes('termes.html') ||
+                          href.includes('contact.html');
+
+    if (!isInternalPage) return;
+
+    e.preventDefault();
+
+    if (prefersReducedMotion) {
+      window.location.href = href;
+      return;
+    }
+
+    document.body.classList.add('page-exiting');
+
+    if (overlay) {
+      overlay.classList.remove('exit');
+      overlay.classList.add('active');
+    }
+
+    sessionStorage.setItem('pageTransition', '1');
+
+    requestAnimationFrame(() => {
+      setTimeout(() => {
         window.location.href = href;
-        return;
-      }
-      
-      // Add exiting class to current page - slide left
-      document.body.classList.add('page-exiting');
-      
-      // Show overlay sliding in from right
-      if (overlay) {
-        overlay.classList.remove('exit');
-        overlay.classList.add('active');
-      }
-      
-      // Store flag so next page can animate overlay out
-      sessionStorage.setItem('pageTransition', '1');
-
-      // Navigate quickly so the next page starts immediately
-      // Use requestAnimationFrame for better performance
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          window.location.href = href;
-        }, 200);
-      });
+      }, 200);
     });
   });
   
@@ -189,6 +449,9 @@ function initPageTransitions() {
 initPageTransitions();
 
 document.addEventListener('DOMContentLoaded', () => {
+  wireRootUniversalMobileHeader();
+  svpRootRunPendingSignupScroll();
+
   // =====================================================
   // COMING SOON LINKS
   // =====================================================

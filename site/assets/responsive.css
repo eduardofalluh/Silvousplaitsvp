@@ -7,6 +7,11 @@ html { background-color: #FFFEF5; }
 /* ---- Universal mobile header ---- */
 .svp-mobile-header {
   display: none;
+  opacity: 1 !important;
+  animation: none !important;
+  transform: none !important;
+  backface-visibility: visible !important;
+  -webkit-backface-visibility: visible !important;
 }
 
 @media (max-width: 760px) {
