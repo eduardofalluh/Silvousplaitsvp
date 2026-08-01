@@ -42,13 +42,27 @@
   .funnel-field{width:100%;box-sizing:border-box;border:1.5px solid #E1E0D4;border-radius:10px;padding:12px 14px;font-size:14.5px;font-weight:500;color:#16182B;background:#FFFEF5}
   .funnel-primary{display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:16px;font:700 15.5px 'Instrument Sans',sans-serif;cursor:pointer;text-decoration:none;text-align:center}
   .funnel-link-button{display:block;width:100%;background:none;border:none;margin-top:14px;font:500 13px 'Instrument Sans',sans-serif;color:#8B8DA0;text-decoration:underline;cursor:pointer}
-  .funnel-offers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:26px}
-  .funnel-offer{border:1.5px solid #ECEAE0;border-radius:14px;padding:12px;background:#FFFEF5}
-  .funnel-offer-visual{height:80px;border-radius:9px;background:#EEF0FD;margin-bottom:10px;display:flex;align-items:center;justify-content:center}
-  .funnel-offer-visual img{max-height:60px;max-width:70%;mix-blend-mode:multiply}
-  .funnel-offer-title{font:700 13px/1.25 'Bricolage Grotesque',sans-serif;margin-bottom:2px}
-  .funnel-offer-meta{font:500 11px 'Instrument Sans',sans-serif;color:#8B8DA0;margin-bottom:6px}
-  .funnel-offer-price{font:700 12px 'Instrument Sans',sans-serif;color:#3347CA}
+  .funnel-archive{margin:0 0 22px}
+  .funnel-archive-head{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:8px}
+  .funnel-archive-kicker{font:800 10.5px 'Instrument Sans',sans-serif;color:#3347CA;text-transform:uppercase;letter-spacing:.12em;margin-bottom:2px}
+  .funnel-archive-title{font:800 15px/1.2 'Bricolage Grotesque',sans-serif;color:#16182B}
+  .funnel-archive-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+  .funnel-archive-actions button{width:28px;height:28px;border:1.5px solid #E1E0D4;border-radius:100px;background:#fff;color:#16182B;font:800 14px 'Instrument Sans',sans-serif;cursor:pointer;box-shadow:0 6px 14px rgba(22,24,43,.06)}
+  .funnel-archive-actions button:disabled{opacity:.36;cursor:default}
+  .funnel-archive-viewport{overflow:hidden;margin:0 -4px;padding:0 4px}
+  .funnel-archive-track{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px 0 7px}
+  .funnel-archive-track::-webkit-scrollbar{display:none}
+  .funnel-archive-card{flex:0 0 calc((100% - 20px)/3);min-width:0;min-height:154px;border:1.5px solid #ECEAE0;border-radius:14px;background:#FFFEF5;overflow:hidden;scroll-snap-align:start}
+  .funnel-archive-media{height:64px;background:#EEF0FD center/cover no-repeat;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .funnel-archive-media img{max-height:47px;max-width:60%;mix-blend-mode:multiply}
+  .funnel-archive-media img.funnel-archive-photo{width:100%;height:100% !important;max-width:none !important;max-height:none !important;object-fit:cover;mix-blend-mode:normal;display:block}
+  .funnel-archive-body{padding:9px 10px 10px}
+  .funnel-archive-card-title{font:800 12.5px/1.18 'Bricolage Grotesque',sans-serif;margin-bottom:3px;color:#16182B}
+  .funnel-archive-meta{font:600 10px/1.3 'Instrument Sans',sans-serif;color:#8B8DA0;min-height:24px}
+  .funnel-archive-badge{display:inline-block;margin-top:5px;background:#EEF0FD;color:#3347CA;border-radius:100px;padding:4px 8px;font:800 9.5px 'Instrument Sans',sans-serif}
+  .funnel-archive-progress{height:4px;background:#EEF0FD;border-radius:100px;overflow:hidden;margin-top:4px}
+  .funnel-archive-progress span{display:block;height:100%;width:34%;background:#3347CA;border-radius:100px;transition:width .18s ease,margin-left .18s ease}
+  .funnel-archive-empty{display:none;border:1.5px dashed #E1E0D4;border-radius:14px;padding:14px 16px;background:#FFFEF5;color:#8B8DA0;font:600 12px/1.45 'Instrument Sans',sans-serif;text-align:center}
   .funnel-invite-link{flex:1;border:1.5px solid #E1E0D4;border-radius:100px;padding:12px 16px;font:500 13px 'Instrument Sans',sans-serif;color:#4A4D66;overflow:hidden;white-space:nowrap;background:#FFFEF5}
   .funnel-secondary{background:#16182B;color:#FFFEF5;border:none;padding:12px 20px;border-radius:100px;font:700 13px 'Instrument Sans',sans-serif;white-space:nowrap;cursor:pointer}
   .funnel-success-logo{width:110px;margin-bottom:10px}
@@ -63,7 +77,8 @@
     .funnel-card{padding:24px 20px}
     .funnel-tabs{display:none}
     .funnel-grid-4{grid-template-columns:repeat(2,1fr)}
-    .funnel-offers{grid-template-columns:1fr}
+    .funnel-archive-card{flex-basis:78%;max-width:260px}
+    .funnel-archive-head{align-items:center}
     .funnel-invite-row{flex-direction:column;align-items:stretch !important}
     .funnel-invite-link{width:100%;border-radius:12px}
     .funnel-secondary{width:100%}
@@ -148,26 +163,27 @@
       <h1 class="funnel-title" style="text-align:center;font-size:25px"><span data-funnel-name>Alex</span>, les membres Premium ont économisé <span>361&nbsp;$</span> en juin</h1>
       <p class="funnel-copy" style="text-align:center">Toi, as-tu payé plein prix&nbsp;? Voici ce que des membres qui aiment <b style="color:#16182B" data-funnel-interests>le théâtre et la musique</b> ont reçu à <span data-funnel-city>Montréal</span>.</p>
 
-      <div class="funnel-offers">
-        <article class="funnel-offer">
-          <div class="funnel-offer-visual"><img src="assets/icon-mic-circle.png" alt=""></div>
-          <div class="funnel-offer-title">Lou-Adriane Cassidy</div>
-          <div class="funnel-offer-meta">Musique · Francos</div>
-          <div class="funnel-offer-price">Billet gratuit <span style="font-weight:400;color:#B3B1A4;text-decoration:line-through">55&nbsp;$</span></div>
-        </article>
-        <article class="funnel-offer">
-          <div class="funnel-offer-visual"><img src="assets/icon-mic-dance.png" alt=""></div>
-          <div class="funnel-offer-title">Waahli</div>
-          <div class="funnel-offer-meta">Musique · Montréal</div>
-          <div class="funnel-offer-price">Billet gratuit <span style="font-weight:400;color:#B3B1A4;text-decoration:line-through">21&nbsp;$</span></div>
-        </article>
-        <article class="funnel-offer">
-          <div class="funnel-offer-visual"><img src="assets/icon-curtain.png" alt=""></div>
-          <div class="funnel-offer-title">Jeudi Comédie Club</div>
-          <div class="funnel-offer-meta">Humour · Longueuil</div>
-          <div class="funnel-offer-price">Entrée gratuite <span style="font-weight:400;color:#B3B1A4;text-decoration:line-through">27&nbsp;$</span></div>
-        </article>
-      </div>
+      <section class="funnel-archive" aria-label="Offres Premium passées">
+        <div class="funnel-archive-head">
+          <div>
+            <div class="funnel-archive-kicker">Offres Premium passées</div>
+            <div class="funnel-archive-title">Des exemples réels déjà envoyés</div>
+          </div>
+          <div class="funnel-archive-actions" aria-label="Navigation des offres passées">
+            <button type="button" data-funnel-archive-prev aria-label="Offre précédente">←</button>
+            <button type="button" data-funnel-archive-next aria-label="Offre suivante">→</button>
+          </div>
+        </div>
+        <div class="funnel-archive-viewport">
+          <div class="funnel-archive-track" data-svp="funnel-archived-offers" tabindex="0">
+            <article class="funnel-archive-card svp-skel" aria-hidden="true"></article>
+            <article class="funnel-archive-card svp-skel" aria-hidden="true"></article>
+            <article class="funnel-archive-card svp-skel" aria-hidden="true"></article>
+          </div>
+        </div>
+        <div class="funnel-archive-progress" aria-hidden="true"><span data-funnel-archive-progress></span></div>
+        <div class="funnel-archive-empty" data-funnel-archive-empty>Les offres passées se chargent.</div>
+      </section>
 
       <button class="funnel-primary" type="button" data-premium-choice="yes" data-plan="yearly">Je veux économiser sur mes shows</button>
       <div style="text-align:center;font:500 11.5px 'Instrument Sans',sans-serif;color:#8B8DA0;margin-top:9px">Annule en tout temps · Garantie 30 jours</div>

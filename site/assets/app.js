@@ -168,6 +168,9 @@
       say('');
       updateCopy();
       window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
+      if (String(n) === '2' && typeof window.__svpFunnelArchiveUpdate === 'function') {
+        requestAnimationFrame(function () { window.__svpFunnelArchiveUpdate(); });
+      }
     }
     function validateStep1() {
       var email = ((emailInput && emailInput.value) || '').trim();
@@ -1243,6 +1246,110 @@
   }
   function rep(html, n) { var s = ''; for (var i = 0; i < n; i++) s += html; return s; }
 
+  function skeletonFunnelArchiveCard() {
+    return '<article class="funnel-archive-card svp-skel" aria-hidden="true"></article>';
+  }
+  function regionLabel(value) {
+    var raw = String(value || '').trim();
+    var labels = {
+      Montreal: 'Montréal',
+      Quebec: 'Québec',
+      Sherbrooke: 'Sherbrooke',
+      'Trois-Rivieres': 'Trois-Rivières',
+    };
+    return labels[raw] || raw;
+  }
+  function funnelOfferIcon(o) {
+    var label = norm((o && (o.offer_type || o.filtre_offre || o.title)) || '');
+    if (/humour|comedie|comedy/.test(label)) return 'assets/icon-curtain.png';
+    if (/theatre|scene|spectacle|danse/.test(label)) return 'assets/icon-stage.png';
+    if (/rabais|promo|2 pour|reduction/.test(label)) return 'assets/icon-tickets.png';
+    if (/musique|concert|chanson/.test(label)) return 'assets/icon-mic-dance.png';
+    return 'assets/icon-mic-circle.png';
+  }
+  function offerMediaUrl(url) {
+    url = String(url || '').trim();
+    if (/^assets\//i.test(url) && /\/site\//.test(location.pathname)) return '../' + url;
+    return url;
+  }
+  function funnelArchiveCard(o) {
+    var meta = [o.offer_type || '', o.venue || '', regionLabel(o.region || ''), frDate(o.event_date)].filter(Boolean).join(' · ');
+    var media = o.image_url
+      ? '<img class="funnel-archive-photo" src="' + esc(offerMediaUrl(o.image_url)) + '" alt="">'
+      : '<img src="' + esc(funnelOfferIcon(o)) + '" alt="">';
+    return '<article class="funnel-archive-card" data-funnel-archive-card data-offer-id="' + esc(o.id || '') + '">'
+      + '<div class="funnel-archive-media">' + media + '</div>'
+      + '<div class="funnel-archive-body">'
+      + '<div class="funnel-archive-card-title">' + esc(o.title || 'Offre Premium') + '</div>'
+      + '<div class="funnel-archive-meta">' + esc(meta || 'Offre Premium passée') + '</div>'
+      + '<span class="funnel-archive-badge">Offre passée</span>'
+      + '</div></article>';
+  }
+  function wireFunnelArchivedOffers() {
+    var track = document.querySelector('[data-svp="funnel-archived-offers"]');
+    if (!track) return;
+    var shell = track.closest('.funnel-archive') || document;
+    var empty = shell.querySelector('[data-funnel-archive-empty]');
+    var progress = shell.querySelector('[data-funnel-archive-progress]');
+    var prev = shell.querySelector('[data-funnel-archive-prev]');
+    var next = shell.querySelector('[data-funnel-archive-next]');
+
+    track.innerHTML = rep(skeletonFunnelArchiveCard(), 3);
+    function update() {
+      if (!progress) return;
+      var max = track.scrollWidth - track.clientWidth;
+      if (prev) prev.disabled = max <= 4 || track.scrollLeft <= 2;
+      if (next) next.disabled = max <= 4 || track.scrollLeft >= max - 2;
+      if (max <= 4) {
+        progress.style.width = '100%';
+        progress.style.marginLeft = '0%';
+        return;
+      }
+      var thumb = Math.max(22, Math.min(100, (track.clientWidth / track.scrollWidth) * 100));
+      var pct = track.scrollLeft / max;
+      progress.style.width = thumb + '%';
+      progress.style.marginLeft = (pct * (100 - thumb)) + '%';
+    }
+    function step(dir) {
+      var card = track.querySelector('[data-funnel-archive-card], .funnel-archive-card');
+      var dx = card ? card.getBoundingClientRect().width + 10 : track.clientWidth * 0.8;
+      track.scrollBy({ left: dir * dx, behavior: reducedMotion ? 'auto' : 'smooth' });
+    }
+    if (prev) prev.addEventListener('click', function () { step(-1); });
+    if (next) next.addEventListener('click', function () { step(1); });
+    track.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    window.__svpFunnelArchiveUpdate = update;
+
+    fetch(FN + 'list-archived-offers').then(function (r) {
+      return r.json();
+    }).then(function (d) {
+      var offers = ((d && d.offers) || []).filter(function (offer) { return offer && offer.title; }).slice(0, 12);
+      if (!offers.length) {
+        track.innerHTML = '';
+        if (empty) {
+          empty.textContent = 'Les offres Premium passées apparaîtront ici dès que l’archive sera disponible.';
+          empty.style.display = 'block';
+        }
+        update();
+        return;
+      }
+      if (empty) empty.style.display = 'none';
+      track.innerHTML = offers.map(funnelArchiveCard).join('');
+      update();
+      setTimeout(update, 250);
+    }).catch(function () {
+      track.innerHTML = '';
+      if (empty) {
+        empty.textContent = "Impossible de charger les offres passées pour le moment.";
+        empty.style.display = 'block';
+      }
+      update();
+    });
+    update();
+    setTimeout(update, 400);
+  }
+
   function wireLiveOffers() {
     var carousel = document.querySelector('[data-scroller="offres"]');
     var grid = document.querySelector('[data-svp="offers-grid"]');
@@ -2038,7 +2145,7 @@
     wireUniversalMobileHeader(); wireHomeLink(); wireBackLinks(); wireMobileMenus(); wireFaq(); wireScrollTop(); wireAnchorScroll(); wirePremiumSignupIntent();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireAccountSave(); wireCompteFilters(); wireUnsubscribe(); wireBilling(); wireAdmin(); wirePartenariat();
-    wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers(); wireOffersCarousel();
+    wireContact(); wirePremiumCheckout(); wireExitIntent(); wireFunnelArchivedOffers(); wireLiveOffers(); wireOffersCarousel();
     wireArchive();
     runPendingPremiumScroll();
     wireReveal(); wireCountUp(); wirePageTransitions(); landOnHash();
