@@ -1482,6 +1482,87 @@
     }, false);
   }
 
+  // ---- S'inscrire: always send people to the 5$/mois Premium offer ----
+  var PREMIUM_SCROLL_KEY = 'svp_scroll_to_premium_offer';
+  function currentPageName() {
+    var file = String(location.pathname || '').split('/').pop() || 'accueil.html';
+    if (!file || /^index(\.html)?$/i.test(file)) return 'accueil.html';
+    if (file.indexOf('.') < 0) file += '.html';
+    return file;
+  }
+  function premiumOfferTarget() {
+    return document.getElementById('premium-offer') ||
+      (currentPageName() === 'premium.html' ? document.getElementById('pricing') : document.getElementById('premium'));
+  }
+  function storePremiumScrollIntent() {
+    try { sessionStorage.setItem(PREMIUM_SCROLL_KEY, '1'); } catch (e) {}
+  }
+  function consumePremiumScrollIntent() {
+    try {
+      if (sessionStorage.getItem(PREMIUM_SCROLL_KEY) !== '1') return false;
+      sessionStorage.removeItem(PREMIUM_SCROLL_KEY);
+      return true;
+    } catch (e) { return false; }
+  }
+  function waitThenScrollToPremiumOffer() {
+    var tries = 0;
+    setScrollTop(0);
+    function go() {
+      var intro = document.getElementById('page-intro');
+      if (intro && !document.body.classList.contains('intro-complete') && tries++ < 70) {
+        setScrollTop(0);
+        setTimeout(go, 100);
+        return;
+      }
+      var target = premiumOfferTarget();
+      if (!target && tries++ < 70) { setTimeout(go, 100); return; }
+      if (!target) return;
+      requestAnimationFrame(function () { animateScrollToEl(target); });
+    }
+    if (document.readyState === 'complete') setTimeout(go, 80);
+    else window.addEventListener('load', function () { setTimeout(go, 120); }, { once: true });
+    setTimeout(go, 4600);
+  }
+  function runPendingPremiumScroll() {
+    if (!consumePremiumScrollIntent()) return;
+    if (!/^(accueil|premium)\.html$/i.test(currentPageName())) return;
+    waitThenScrollToPremiumOffer();
+  }
+  function wirePremiumSignupIntent() {
+    document.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target && e.target.closest && e.target.closest('a[href]');
+      if (!a || a.target === '_blank' || a.hasAttribute('download')) return;
+      var label = String(a.textContent || '').replace(/\s+/g, ' ').trim();
+      if (a.matches('[data-svp="checkout"]')) return;
+      if (a.matches('[data-svp="hero-submit"]') && !/^S['’]inscrire$/i.test(label)) return;
+      var isSignup = a.getAttribute('data-svp-nav-signup') === 'true' || /^S['’]inscrire$/i.test(label);
+      if (!isSignup) return;
+
+      var page = currentPageName();
+      if (page === 'premium.html' || page === 'accueil.html') {
+        e.preventDefault();
+        e.stopPropagation();
+        var header = a.closest && a.closest('.svp-mobile-header');
+        if (header) {
+          header.setAttribute('data-open', 'false');
+          var toggle = header.querySelector('[data-svp-mobile-menu-toggle]');
+          var menu = header.querySelector('[data-svp-mobile-menu]');
+          if (toggle) { toggle.setAttribute('aria-expanded', 'false'); toggle.setAttribute('aria-label', 'Ouvrir le menu'); }
+          if (menu) menu.setAttribute('data-open', 'false');
+        }
+        var target = premiumOfferTarget();
+        if (!target) return;
+        animateScrollToEl(target);
+        try { history.replaceState(null, '', page === 'premium.html' ? '#premium-offer' : '#premium-offer'); } catch (err) {}
+        return;
+      }
+
+      storePremiumScrollIntent();
+      a.setAttribute('href', 'accueil.html');
+    }, true);
+  }
+
   // ---- universal public mobile header ----
   function wireUniversalMobileHeader() {
     if (document.querySelector('.svp-mobile-header')) return;
@@ -1570,16 +1651,16 @@
 
     var items = [];
     var seen = {};
-    function addItem(label, href, primary) {
+    function addItem(label, href, primary, kind) {
       label = String(label || '').replace(/\s+/g, ' ').trim();
       if (!label || !href) return;
       var key = normalizedHref(href);
-      if (/s'?inscrire|inscription/i.test(label)) key = 'signup';
+      if (/s'?inscrire|inscription/i.test(label)) { key = 'signup'; kind = 'signup'; }
       if (/^connexion$/i.test(label)) key = 'connexion';
       if (key === 'accueil.html' && /retour|accueil/i.test(label)) key = 'home';
       if (seen[key]) return;
       seen[key] = true;
-      items.push({ label: label, href: href, primary: !!primary });
+      items.push({ label: label, href: href, primary: !!primary, kind: kind || '' });
     }
 
     addItem('Accueil', 'accueil.html', false);
@@ -1596,7 +1677,7 @@
     addItem('Contact', 'contact.html', false);
     addItem('Partenariat', 'partenariat.html', false);
     addItem('Connexion', 'connexion.html', false);
-    addItem("S'inscrire", currentPage === 'accueil.html' ? '#inscription' : 'accueil.html#inscription', true);
+    addItem("S'inscrire", currentPage === 'premium.html' ? '#premium-offer' : (currentPage === 'accueil.html' ? '#premium-offer' : 'accueil.html'), true, 'signup');
 
     var headerEl = document.createElement('header');
     headerEl.className = 'svp-mobile-header';
@@ -1632,6 +1713,7 @@
       a.textContent = item.label;
       a.style.setProperty('--svp-i', i);
       if (item.primary) a.setAttribute('data-primary', 'true');
+      if (item.kind === 'signup') a.setAttribute('data-svp-nav-signup', 'true');
       if (isCurrent(item.href)) a.setAttribute('aria-current', 'page');
       nav.appendChild(a);
     });
@@ -1865,11 +1947,12 @@
     wireMobileReloadTop();
     if (!hashTargetEl()) setScrollTop(0);
     wireIntro();
-    wireUniversalMobileHeader(); wireHomeLink(); wireBackLinks(); wireMobileMenus(); wireFaq(); wireScrollTop(); wireAnchorScroll();
+    wireUniversalMobileHeader(); wireHomeLink(); wireBackLinks(); wireMobileMenus(); wireFaq(); wireScrollTop(); wireAnchorScroll(); wirePremiumSignupIntent();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireCompteFilters(); wireUnsubscribe(); wireBilling(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireLiveOffers(); wireOffersCarousel();
     wireArchive();
+    runPendingPremiumScroll();
     wireReveal(); wireCountUp(); wirePageTransitions(); landOnHash();
     // Reveal the incoming-page cover (see animations.css html.svp-nav ::after)
     // only now — after all wiring ran and one more frame has painted — so the
