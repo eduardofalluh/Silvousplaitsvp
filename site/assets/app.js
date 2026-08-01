@@ -1353,7 +1353,51 @@
     el.style.scrollBehavior = 'auto';
     if (el === document.documentElement) window.scrollTo(0, v);
     else el.scrollTop = v;
+    try { document.documentElement.scrollTop = v; } catch (e) {}
+    try { if (document.body) document.body.scrollTop = v; } catch (e2) {}
     el.style.scrollBehavior = prev || '';
+  }
+  function isMobileViewport() {
+    return !window.matchMedia || window.matchMedia('(max-width: 760px)').matches;
+  }
+  function isReloadNavigation() {
+    try {
+      var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+      if (nav && nav.type) return nav.type === 'reload';
+    } catch (e) {}
+    try { return performance.navigation && performance.navigation.type === 1; } catch (e2) {}
+    return false;
+  }
+  function wireMobileReloadTop() {
+    if (!isMobileViewport()) return;
+    var isReload = isReloadNavigation();
+    if (!isReload) return;
+    if (isReload && location.hash) {
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    }
+    if (hashTargetEl()) return;
+    var stopped = false;
+    function stop() { stopped = true; }
+    ['touchstart', 'wheel', 'keydown', 'mousedown'].forEach(function (name) {
+      window.addEventListener(name, stop, { passive: true, once: true });
+    });
+    function put() {
+      if (stopped || hashTargetEl()) return;
+      setScrollTop(0);
+    }
+    put();
+    requestAnimationFrame(put);
+    [40, 120, 260, 520, 900].forEach(function (ms) { setTimeout(put, ms); });
+    window.addEventListener('load', function () {
+      put();
+      setTimeout(put, 80);
+      setTimeout(put, 260);
+    });
+    window.addEventListener('pageshow', function (ev) {
+      if (ev.persisted) return;
+      put();
+      setTimeout(put, 80);
+    });
   }
   function stickyTopOffset() {
     var off = 0;
@@ -1818,7 +1862,8 @@
     // Always start at the top on (re)load — don't let the browser restore scroll.
     // Exception: a link that arrives with a hash must keep its target section.
     if ('scrollRestoration' in history) { try { history.scrollRestoration = 'manual'; } catch (e) {} }
-    if (!hashTargetEl()) { try { window.scrollTo(0, 0); } catch (e) {} }
+    wireMobileReloadTop();
+    if (!hashTargetEl()) setScrollTop(0);
     wireIntro();
     wireUniversalMobileHeader(); wireHomeLink(); wireBackLinks(); wireMobileMenus(); wireFaq(); wireScrollTop(); wireAnchorScroll();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
