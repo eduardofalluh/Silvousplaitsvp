@@ -643,6 +643,11 @@
         window.location.href = STRIPE_BILLING_LOGIN_URL;
       });
     });
+    // Coming back from the Stripe portal (Back button, incl. bfcache restore)
+    // left "Ouverture…" sitting under the links forever — the page was never
+    // re-initialised, so nothing ever cleared it. Same fix as the checkout
+    // buttons above: reset the status line every time the page is shown.
+    window.addEventListener('pageshow', function () { say(''); });
   }
 
   // ---- compte: client-side offer filters ----
