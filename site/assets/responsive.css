@@ -848,22 +848,28 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
   h2 { font-size: clamp(22px, 6vw, 34px) !important; }
 
   [data-svp-home-hero-art] {
+    --svp-home-logo-size: clamp(260px, 82vw, 330px);
+    --svp-home-logo-window: clamp(172px, 54vw, 218px);
     order: -1;
     width: 100% !important;
-    height: 112px !important;
-    margin: -4px auto 8px !important;
+    height: var(--svp-home-logo-window) !important;
+    min-height: var(--svp-home-logo-window) !important;
+    margin: 0 auto 14px !important;
     overflow: hidden !important;
     display: flex !important;
     align-items: center !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
     gap: 0 !important;
   }
 
   [data-svp-home-hero-art] img {
-    width: min(64vw, 250px) !important;
-    max-width: 250px !important;
+    display: block !important;
+    width: var(--svp-home-logo-size) !important;
+    max-width: none !important;
     height: auto !important;
-    margin: 0 !important;
+    object-fit: contain !important;
+    margin: 0 auto !important;
+    transform: translateY(-20%) !important;
   }
 
   .svp-offer-modal {
