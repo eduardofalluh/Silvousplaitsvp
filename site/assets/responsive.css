@@ -542,6 +542,24 @@ img[alt="Silvousplait"] {
     scroll-snap-align: start !important;
   }
 
+  /* ---- Stop iOS Safari zooming in when a field is focused ----
+     Mobile Safari auto-zooms the viewport whenever you tap a text control whose
+     font-size is under 16px, and every field in the flattened design sits at
+     11–15px. The zoom then leaves the page scaled and off-centre, which is the
+     "it zooms in when I click a field" complaint.
+     The fix is the font-size itself, NOT `user-scalable=no` / `maximum-scale=1`
+     in the viewport meta: that would kill pinch-to-zoom for everyone, which is
+     an accessibility regression (and newer iOS ignores it anyway).
+     16px exactly is the threshold — anything >= 16px never triggers the zoom.
+     Scoped to text-entry controls; checkboxes, radios, ranges and buttons never
+     trigger it and are left alone so nothing reflows. !important is required
+     because the design carries these sizes as inline styles. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
   /* Tame oversized display type */
   h1 { font-size: clamp(28px, 8vw, 44px) !important; line-height: 1.12 !important; }
   h2 { font-size: clamp(22px, 6vw, 34px) !important; }
