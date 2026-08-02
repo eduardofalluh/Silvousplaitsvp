@@ -171,6 +171,8 @@
       if (String(n) === '2' && typeof window.__svpFunnelArchiveUpdate === 'function') {
         requestAnimationFrame(function () { window.__svpFunnelArchiveUpdate(); });
       }
+      var activeStep = steps.filter(function (step) { return !step.hidden; })[0];
+      applyRevealTargets(activeStep);
     }
     function validateStep1() {
       var email = ((emailInput && emailInput.value) || '').trim();
@@ -936,6 +938,7 @@
             if (sent) sent.hidden = false;
             if (actions) actions.hidden = true;
             if (progress) progress.style.width = '100%';
+            applyRevealTargets(sent);
             say('');
             window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
           } else {
@@ -1247,6 +1250,7 @@
       var offers = (d && d.offers) || [];
       if (!offers.length) { fail(''); return; }
       grid.innerHTML = offers.map(function (offer) { return compteCard(offer, true); }).join('');
+      applyRevealTargets(grid);
     }).catch(function () { fail("Impossible de charger l'archive pour le moment. Réessaie plus tard."); });
   }
   // ---- Testimonial sections become swipeable carousels on small screens ----
@@ -1461,6 +1465,7 @@
       }
       if (empty) empty.style.display = 'none';
       track.innerHTML = offers.map(funnelArchiveCard).join('');
+      applyRevealTargets(track);
       update();
       setTimeout(update, 250);
     }).catch(function () {
@@ -1500,6 +1505,8 @@
       document.querySelectorAll('[data-svp="offer"]').forEach(observeOffer);
       wirePremiumCtas();
       wireOfferDetailButtons();
+      if (carousel) applyRevealTargets(carousel);
+      if (grid) applyRevealTargets(grid);
       if (typeof window.__svpApplyFilters === 'function') window.__svpApplyFilters();
     }).catch(function () {
       if (carousel) carousel.innerHTML = '';
@@ -1509,36 +1516,100 @@
 
   var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // ---- scroll-reveal for headings & cards ----
-  function wireReveal() {
-    if (reducedMotion || !('IntersectionObserver' in window)) return;
-    var targets = [].slice.call(document.querySelectorAll('h1, h2, h3, [data-svp="offer"], [data-card], [data-svp="step"]'));
-    // skip anything inside a sticky header/urgency bar (should be instantly visible)
-    targets = targets.filter(function (el) {
-      return !el.closest('[style*="position: sticky"]') && !el.closest('[data-svp="funnel-card"]');
-    });
-    if (!targets.length) return;
-    var stepIndex = 0;
+  // ---- scroll-reveal for headings, cards, forms, and loaded content ----
+  var revealObserver = null;
+  var revealSelector = [
+    'h1',
+    'h2',
+    'h3',
+    '#inscription',
+    '#premium-offer',
+    '[data-svp="offer"]',
+    '[data-card]',
+    '[data-svp="step"]',
+    '[data-partner-card]',
+    '[data-partner-sent]',
+    '[data-svp="funnel-card"]',
+    '.partner-hero',
+    '.partner-option',
+    '.partner-note',
+    '.funnel-archive',
+    '.funnel-archive-card',
+    '[data-svp="archive-grid"] > *',
+    '[data-svp="offers-grid"] > *',
+    '[data-scroller="temoignages"] > *',
+    '[style*="border: 1.5px solid rgb(236, 234, 224)"][style*="border-radius"]',
+    '[style*="border: 1.5px solid rgb(22, 24, 43)"][style*="border-radius"]',
+    '[style*="box-shadow: rgb(51, 71, 202)"]',
+    '[style*="box-shadow: rgba(142, 160, 245"]'
+  ].join(',');
+  function shouldReveal(el) {
+    if (!el || el.nodeType !== 1) return false;
+    if (el.classList.contains('svp-reveal') || el.classList.contains('svp-in')) return false;
+    if (el.hidden || el.getAttribute('aria-hidden') === 'true') return false;
+    if (!el.getClientRects().length) return false;
+    if (el.matches && el.matches('input, textarea, select, button, a, nav, header, footer')) return false;
+    if (el.closest('[style*="position: sticky"], [style*="position: fixed"], .svp-mobile-header, .svp-mobile-premium-footer, .page-intro, .svp-offer-modal, .funnel-modal, [data-funnel-exit]')) return false;
+    var funnelCard = el.closest('[data-svp="funnel-card"]');
+    if (funnelCard && funnelCard !== el && !el.matches('.funnel-archive, .funnel-archive-card')) return false;
+    return true;
+  }
+  function isStaggeredReveal(el) {
+    return !!(el && el.matches && el.matches('[data-svp="offer"], [data-card], [data-svp="step"], .partner-option, .funnel-archive-card, [data-svp="archive-grid"] > *, [data-svp="offers-grid"] > *, [data-scroller="temoignages"] > *'));
+  }
+  function revealNow(el) {
+    if (!el || el.classList.contains('svp-in')) return;
+    el.classList.add('svp-in');
+    if (revealObserver) revealObserver.unobserve(el);
+    var delay = parseFloat(el.style.transitionDelay || '0') || 0;
+    setTimeout(function () {
+      var previous = el.getAttribute('data-svp-reveal-transition');
+      if (previous !== null) {
+        el.style.transition = previous;
+        el.removeAttribute('data-svp-reveal-transition');
+      } else {
+        el.style.transition = '';
+      }
+      el.style.transitionDelay = '';
+    }, 760 + (delay * 1000));
+  }
+  function applyRevealTargets(root) {
+    if (reducedMotion || !('IntersectionObserver' in window) || !revealObserver) return;
+    var scope = root && root.querySelectorAll ? root : document;
+    var targets = [];
+    if (scope.matches && scope.matches(revealSelector)) targets.push(scope);
+    targets = targets.concat([].slice.call(scope.querySelectorAll(revealSelector)));
+    var staggerIndex = 0;
+    targets = targets.filter(shouldReveal);
     targets.forEach(function (el) {
+      var currentTransition = el.style.transition || '';
+      if (currentTransition) el.setAttribute('data-svp-reveal-transition', currentTransition);
+      el.style.transition = 'opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1)';
+      if (isStaggeredReveal(el)) {
+        el.style.transitionDelay = (Math.min(staggerIndex, 6) * 0.06) + 's';
+        staggerIndex++;
+      }
       el.classList.add('svp-reveal');
-      // stagger the "Comment ça marche" steps as they scroll in
-      if (el.getAttribute('data-svp') === 'step') { el.style.transitionDelay = (stepIndex * 0.12) + 's'; stepIndex++; }
+      revealObserver.observe(el);
     });
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) {
-        if (en.isIntersecting) { en.target.classList.add('svp-in'); io.unobserve(en.target); }
-      });
-    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
-    targets.forEach(function (el) { io.observe(el); });
     // safety: only force-reveal elements already at/above the fold (in case the
     // observer missed them). Below-the-fold elements stay hidden so they still
     // animate when you scroll to them.
     setTimeout(function () {
       targets.forEach(function (el) {
         var r = el.getBoundingClientRect();
-        if (r.top < (window.innerHeight || document.documentElement.clientHeight)) el.classList.add('svp-in');
+        if (r.top < (window.innerHeight || document.documentElement.clientHeight)) revealNow(el);
       });
     }, 1200);
+  }
+  function wireReveal() {
+    if (reducedMotion || !('IntersectionObserver' in window)) return;
+    revealObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) revealNow(en.target);
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    applyRevealTargets(document);
   }
 
   // ---- Count-up animation for stat numbers (data-svp="countup") ----
