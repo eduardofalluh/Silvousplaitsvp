@@ -14,6 +14,9 @@ function sanitizePublicOffer(offer) {
     event_date: offer.event_date,
     image_url: offer.image_url,
     video_url: offer.video_url,
+    description: offer.description,
+    promo_code: offer.promo_code,
+    ticket_url: offer.ticket_url,
   };
 }
 

@@ -137,9 +137,9 @@
     }
     function cityName() { return state.cityLabel || 'Montréal'; }
     function interestsPhrase() {
-      var arts = { 'Théâtre': 'le théâtre', 'Musique': 'la musique', 'Humour': "l'humour", 'Cinéma': 'le cinéma', 'Arts visuels': 'les arts visuels', 'Festivals': 'les festivals', 'Sport': 'le sport' };
-      var picked = state.interests.slice(0, 2).map(function (x) { return arts[x] || x; });
-      return picked.length ? picked.join(' et ') : 'sortir';
+      var arts = { 'Théâtre': 'le théâtre', 'Musique': 'la musique', 'Humour': "l'humour", 'Cinéma': 'le cinéma', 'Arts visuels': 'les arts visuels', 'Festivals': 'les festivals' };
+      var picked = state.interests.filter(function (x) { return x !== 'Sport'; }).slice(0, 2).map(function (x) { return arts[x] || x; });
+      return picked.length ? picked.join(' et ') : 'les sorties culturelles';
     }
     function inviteUrl() {
       return 'https://silvousplaitsvp.com/i/' + slugify(firstName());
@@ -455,27 +455,31 @@
     });
   }
 
-  // ---- Live countdown to the next Monday 9:00 (newsletter send) ----
-  function nextMondayNine() {
+  // ---- Live countdowns to weekly send times ----
+  function nextWeeklyTarget(dayOfWeek, hour, minute) {
     var now = new Date();
     var t = new Date(now);
-    t.setHours(9, 0, 0, 0);
-    var add = (1 - t.getDay() + 7) % 7; // days until Monday (getDay: 0=Sun..6=Sat)
-    if (add === 0 && now.getTime() >= t.getTime()) add = 7; // Monday after 9h -> next week
+    t.setHours(hour, minute || 0, 0, 0);
+    var add = (dayOfWeek - t.getDay() + 7) % 7; // getDay: 0=Sun..6=Sat
+    if (add === 0 && now.getTime() >= t.getTime()) add = 7;
     t.setDate(t.getDate() + add);
     return t;
+  }
+  function countdownTargetFor(el) {
+    if (el && el.getAttribute('data-countdown-target') === 'sunday-noon') return nextWeeklyTarget(0, 12, 0);
+    return nextWeeklyTarget(1, 9, 0);
   }
   function wireCountdown() {
     var els = Array.prototype.slice.call(document.querySelectorAll('[data-svp="countdown"]'));
     if (!els.length) return;
     function tick() {
-      var target = nextMondayNine().getTime();
-      var diff = Math.max(0, target - Date.now());
-      var d = Math.floor(diff / 86400000);
-      var h = Math.floor((diff % 86400000) / 3600000);
-      var m = Math.floor((diff % 3600000) / 60000);
-      var s = Math.floor((diff % 60000) / 1000);
       els.forEach(function (el) {
+        var target = countdownTargetFor(el).getTime();
+        var diff = Math.max(0, target - Date.now());
+        var d = Math.floor(diff / 86400000);
+        var h = Math.floor((diff % 86400000) / 3600000);
+        var m = Math.floor((diff % 3600000) / 60000);
+        var s = Math.floor((diff % 60000) / 1000);
         var txt = d + 'j ' + h + 'h ' + m + 'min';
         if (el.getAttribute('data-countdown-seconds') === '1') txt += ' ' + s + 's';
         el.textContent = txt;
@@ -539,6 +543,7 @@
     if (!document.querySelector('[data-svp="compte"]')) return;
     var session = getSession();
     if (!session) { window.location.href = 'connexion.html'; return; }
+    setPremiumOnlyVisible(false);
     // Show a skeleton for the name + badge immediately (never the fake "Alex").
     var greet0 = document.querySelector('[data-svp="compte"] h1');
     if (greet0) greet0.innerHTML = 'Bonjour, <span class="svp-skel" style="display:inline-block;width:140px;height:24px;border-radius:8px;vertical-align:-3px"></span>';
@@ -553,12 +558,19 @@
         if (greet) greet.textContent = 'Bonjour, ' + (a.firstName || a.email.split('@')[0]);
         var badgeR = document.querySelector('[data-svp-badge]');
         if (badgeR) { badgeR.classList.remove('svp-skel'); badgeR.style.minWidth = ''; badgeR.style.minHeight = ''; badgeR.style.background = a.isPremium ? '#F5E642' : '#EEF0FD'; badgeR.style.color = a.isPremium ? '#16182B' : '#3347CA'; badgeR.textContent = a.isPremium ? 'Membre Premium' : 'Membre gratuit'; }
+        setPremiumOnlyVisible(Boolean(a.isPremium));
         var ln = document.querySelector('[data-svp-account-field="lastName"]') || document.querySelector('input[placeholder="Nom"]'); if (ln) ln.value = a.lastName || '';
         var fn = document.querySelector('[data-svp-account-field="firstName"]') || document.querySelector('input[placeholder="Prénom"]'); if (fn) fn.value = a.firstName || '';
         var ph = document.querySelector('[data-svp-account-field="phone"]') || document.querySelector('input[type="tel"]'); if (ph) ph.value = a.phone || '';
         var ville = document.querySelector('[data-svp-account-field="ville"]'); if (ville && a.ville) ville.value = a.ville;
       })
       .catch(function () { /* leave skeletons on network error */ });
+  }
+
+  function setPremiumOnlyVisible(isPremium) {
+    [].slice.call(document.querySelectorAll('[data-svp-premium-only]')).forEach(function (el) {
+      el.style.display = isPremium ? '' : 'none';
+    });
   }
 
   function wireAccountSave() {
@@ -1120,11 +1132,77 @@
       if (emb) return '<div style="height:110px;position:relative;overflow:hidden"><iframe src="' + esc(emb) + '" allow="autoplay;encrypted-media" tabindex="-1" style="position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none"></iframe></div>';
       if (isVideoFile(v)) return '<div style="height:110px;position:relative;overflow:hidden"><video src="' + esc(v) + '" autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></video></div>';
     }
-    return o.image_url ? '<div style="height:110px;background:#EEF0FD center/cover no-repeat;background-image:url(' + esc(o.image_url) + ')"></div>'
+    return o.image_url ? '<div style="height:110px;background:#EEF0FD center/cover no-repeat;background-image:url(' + esc(offerMediaUrl(o.image_url)) + ')"></div>'
       : '<div style="height:110px;background:#EEF0FD;display:flex;align-items:center;justify-content:center"><div style="width:70px;height:70px;background:url(assets/icon-mic-circle.png) center/contain no-repeat;mix-blend-mode:multiply"></div></div>';
   }
+  var offerDetailById = {};
+  function rememberOffer(offer, archived) {
+    if (!offer || !offer.id) return;
+    offerDetailById[String(offer.id)] = Object.assign({}, offer, { archived: !!archived });
+  }
+  function offerDetailMedia(o) {
+    var v = o.video_url && String(o.video_url).trim();
+    if (v) {
+      var emb = videoEmbed(v);
+      if (emb) return '<iframe class="svp-offer-modal__media-frame" src="' + esc(emb) + '" allow="autoplay;encrypted-media" title="' + esc(o.title || 'Offre Premium') + '"></iframe>';
+      if (isVideoFile(v)) return '<video class="svp-offer-modal__media-frame" src="' + esc(v) + '" autoplay muted loop playsinline></video>';
+    }
+    if (o.image_url) return '<img class="svp-offer-modal__media-img" src="' + esc(offerMediaUrl(o.image_url)) + '" alt="">';
+    return '<div class="svp-offer-modal__media-fallback"><img src="' + esc(funnelOfferIcon(o)) + '" alt=""></div>';
+  }
+  function safeHttpUrl(url) {
+    try {
+      var u = new URL(String(url || '').trim(), location.href);
+      return /^https?:$/i.test(u.protocol) ? u.href : '';
+    } catch (e) {
+      return '';
+    }
+  }
+  function showOfferDetail(id) {
+    var offer = offerDetailById[String(id || '')];
+    if (!offer) return;
+    var ticketUrl = safeHttpUrl(offer.ticket_url);
+    var meta = [offer.venue || '', regionLabel(offer.region || ''), frDate(offer.event_date)].filter(Boolean).join(' · ');
+    var modal = document.createElement('div');
+    modal.className = 'svp-offer-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', offer.title || 'Offre Premium');
+    modal.innerHTML = '<div class="svp-offer-modal__card">'
+      + '<button type="button" class="svp-offer-modal__close" aria-label="Fermer">×</button>'
+      + '<div class="svp-offer-modal__media">' + offerDetailMedia(offer) + '</div>'
+      + '<div class="svp-offer-modal__body">'
+      + '<div class="svp-offer-modal__badges"><span>' + esc(offer.offer_type || 'Offre Premium') + '</span>' + (offer.archived ? '<span>Offre passée</span>' : '') + '</div>'
+      + '<h2>' + esc(offer.title || 'Offre Premium') + '</h2>'
+      + (meta ? '<p class="svp-offer-modal__meta">' + esc(meta) + '</p>' : '')
+      + (offer.description ? '<p class="svp-offer-modal__description">' + esc(offer.description) + '</p>' : '<p class="svp-offer-modal__description">Tous les détails de cette offre sont envoyés aux membres Premium.</p>')
+      + (offer.promo_code ? '<div class="svp-offer-modal__code"><span>Code promo</span><strong>' + esc(offer.promo_code) + '</strong></div>' : '')
+      + (ticketUrl && !offer.archived ? '<a class="svp-offer-modal__cta" href="' + esc(ticketUrl) + '" target="_blank" rel="noopener">Ouvrir la billetterie</a>' : '')
+      + '</div></div>';
+    function close() {
+      document.removeEventListener('keydown', onKey);
+      modal.remove();
+    }
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+    modal.querySelector('.svp-offer-modal__close').addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(modal);
+    var closeBtn = modal.querySelector('.svp-offer-modal__close');
+    if (closeBtn) closeBtn.focus();
+  }
+  function wireOfferDetailButtons() {
+    [].slice.call(document.querySelectorAll('[data-svp-offer-detail]')).forEach(function (btn) {
+      if (btn.getAttribute('data-offer-detail-wired') === '1') return;
+      btn.setAttribute('data-offer-detail-wired', '1');
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        showOfferDetail(btn.getAttribute('data-offer-id'));
+      });
+    });
+  }
   function premiumCard(o, archived) {
-    var img = o.image_url ? 'background:#0b1030 url(' + esc(o.image_url) + ') center/cover no-repeat;' : 'background:repeating-linear-gradient(135deg,#4155DE,#4155DE 14px,#3347CA 14px,#3347CA 28px);';
+    var img = o.image_url ? 'background:#0b1030 url(' + esc(offerMediaUrl(o.image_url)) + ') center/cover no-repeat;' : 'background:repeating-linear-gradient(135deg,#4155DE,#4155DE 14px,#3347CA 14px,#3347CA 28px);';
     return '<div data-svp="offer" data-offer-id="' + esc(o.id) + '" style="position:relative;flex:0 0 auto;width:290px;max-width:86vw;height:400px;scroll-snap-align:start;border-radius:20px;overflow:hidden;box-shadow:rgba(142,160,245,.3) 5px 6px 0;' + img + 'display:flex;flex-direction:column;justify-content:space-between;padding:18px">'
       + premiumMedia(o)
       + '<div style="position:absolute;inset:0;z-index:1;background:linear-gradient(rgba(8,10,26,0) 42%,rgba(8,10,26,.85) 74%)"></div>'
@@ -1148,7 +1226,7 @@
       + '<div style="font:500 12.5px \'Instrument Sans\',sans-serif;color:#8B8DA0;flex:1">' + esc(o.venue || '') + (o.event_date ? ' · ' + esc(frDate(o.event_date)) : '') + '</div>'
       + (archived
         ? '<span style="margin-top:10px;text-align:center;background:#EEF0FD;color:#8B8DA0;border-radius:100px;padding:11px;font:700 13px \'Instrument Sans\',sans-serif">Offre passée</span>'
-        : '<a href="premium.html" data-svp="premium-cta" style="margin-top:10px;text-align:center;background:#3347CA;color:#FFFEF5;border-radius:100px;padding:11px;font:700 13px \'Instrument Sans\',sans-serif;text-decoration:none">Voir l\'offre</a>')
+        : '<button type="button" data-svp-offer-detail data-offer-id="' + esc(o.id) + '" style="margin-top:10px;text-align:center;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:11px;font:700 13px \'Instrument Sans\',sans-serif;text-decoration:none;cursor:pointer">Voir l\'offre</button>')
       + '</div></div>';
   }
   // ---- Archive (past offers, read-only) ----
@@ -1410,6 +1488,9 @@
     Promise.all([liveRequest, archivedRequest]).then(function (results) {
       var offers = (results[0] && results[0].offers) || [];
       var archivedOffers = (results[1] && results[1].offers) || [];
+      offerDetailById = {};
+      offers.forEach(function (offer) { rememberOffer(offer, false); });
+      archivedOffers.forEach(function (offer) { rememberOffer(offer, true); });
       var carouselHtml = offers.map(function (offer) { return premiumCard(offer, false); })
         .concat(archivedOffers.map(function (offer) { return premiumCard(offer, true); })).join('');
       var gridHtml = offers.map(function (offer) { return compteCard(offer, false); })
@@ -1418,6 +1499,7 @@
       if (grid) grid.innerHTML = gridHtml || '<p style="grid-column:1/-1;color:#8B8DA0;font:500 14px \'Instrument Sans\',sans-serif;padding:8px 2px">Aucune offre pour le moment — reviens lundi pour la nouvelle sélection.</p>';
       document.querySelectorAll('[data-svp="offer"]').forEach(observeOffer);
       wirePremiumCtas();
+      wireOfferDetailButtons();
       if (typeof window.__svpApplyFilters === 'function') window.__svpApplyFilters();
     }).catch(function () {
       if (carousel) carousel.innerHTML = '';
@@ -2210,6 +2292,15 @@
     document.querySelectorAll('[data-svp="scroll-top"]').forEach(function (el) {
       el.addEventListener('click', function (e) {
         e.preventDefault();
+        if (el.closest && el.closest('#comment')) {
+          var premiumTarget = premiumOfferTarget();
+          if (premiumTarget) {
+            tagPremiumClick();
+            animateScrollToEl(premiumTarget);
+            try { history.replaceState(null, '', '#premium-offer'); } catch (err) {}
+            return;
+          }
+        }
         window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
         var em = document.querySelector('[data-svp="hero-email"]');
         if (em) setTimeout(function () { try { em.focus({ preventScroll: true }); } catch (er) {} }, reducedMotion ? 0 : 420);

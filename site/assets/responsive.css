@@ -442,6 +442,156 @@ html { background-color: #FFFEF5; }
 }
 @keyframes svp-shimmer { to { transform: translateX(100%); } }
 
+/* ---- Premium offer detail modal ---- */
+.svp-offer-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background: rgba(22, 24, 43, .54);
+}
+
+.svp-offer-modal__card {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: min(84vh, 720px);
+  overflow: auto;
+  border: 1.5px solid #16182B;
+  border-radius: 18px;
+  background: #FFFEF5;
+  box-shadow: 6px 6px 0 #3347CA, 0 28px 60px rgba(22, 24, 43, .24);
+}
+
+.svp-offer-modal__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border: 1.5px solid #E1E0D4;
+  border-radius: 100px;
+  background: #fff;
+  color: #16182B;
+  font: 800 22px/1 'Instrument Sans', system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(22, 24, 43, .1);
+}
+
+.svp-offer-modal__media {
+  height: 230px;
+  background: #EEF0FD;
+  overflow: hidden;
+}
+
+.svp-offer-modal__media-img,
+.svp-offer-modal__media-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  object-fit: cover;
+}
+
+.svp-offer-modal__media-fallback {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.svp-offer-modal__media-fallback img {
+  width: 96px !important;
+  max-width: 96px !important;
+  mix-blend-mode: multiply;
+}
+
+.svp-offer-modal__body {
+  padding: 22px;
+}
+
+.svp-offer-modal__badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.svp-offer-modal__badges span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 11px;
+  border-radius: 100px;
+  background: #F5E642;
+  color: #16182B;
+  font: 800 11px 'Instrument Sans', system-ui, sans-serif;
+}
+
+.svp-offer-modal__badges span + span {
+  background: #EEF0FD;
+  color: #3347CA;
+}
+
+.svp-offer-modal__body h2 {
+  margin: 0 0 6px;
+  color: #16182B;
+  font: 800 28px/1.05 'Bricolage Grotesque', system-ui, sans-serif;
+}
+
+.svp-offer-modal__meta,
+.svp-offer-modal__description {
+  color: #4A4D66;
+  font: 500 14.5px/1.55 'Instrument Sans', system-ui, sans-serif;
+}
+
+.svp-offer-modal__meta {
+  margin: 0 0 14px;
+}
+
+.svp-offer-modal__description {
+  margin: 0;
+}
+
+.svp-offer-modal__code {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 15px;
+  border: 1.5px dashed #D8DEFA;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.svp-offer-modal__code span {
+  color: #8B8DA0;
+  font: 700 12px 'Instrument Sans', system-ui, sans-serif;
+}
+
+.svp-offer-modal__code strong {
+  color: #3347CA;
+  font: 800 15px 'Instrument Sans', system-ui, sans-serif;
+  word-break: break-word;
+}
+
+.svp-offer-modal__cta {
+  margin-top: 18px;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 100px;
+  background: #3347CA;
+  color: #FFFEF5;
+  text-decoration: none;
+  font: 800 14.5px 'Instrument Sans', system-ui, sans-serif;
+}
+
 /* ---- Global fixes (all viewports) ---- */
 /* Logo was cropped by a negative margin inside a fixed-height clip box.
    Give it a proper fixed width, natural height, no crop. */
@@ -573,6 +723,11 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
   [style*="padding: 64px 32px"], [style*="padding: 48px 32px"], [style*="padding: 14px 32px"],
   [style*="padding: 0px 32px"], [style*="padding:0 32px"] { padding-left: 16px !important; padding-right: 16px !important; }
 
+  [style*="grid-template-columns: 1.05fr 0.95fr"][style*="padding: 76px 32px 64px"] {
+    padding: 28px 16px 46px !important;
+    gap: 0 !important;
+  }
+
   /* Make fixed-width blocks fluid */
   [style*="width: 360px"], [style*="width:360px"],
   [style*="width: 520px"], [style*="width:520px"],
@@ -691,6 +846,47 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
   /* Tame oversized display type */
   h1 { font-size: clamp(28px, 8vw, 44px) !important; line-height: 1.12 !important; }
   h2 { font-size: clamp(22px, 6vw, 34px) !important; }
+
+  [data-svp-home-hero-art] {
+    order: -1;
+    width: 100% !important;
+    height: 112px !important;
+    margin: -4px auto 8px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+  }
+
+  [data-svp-home-hero-art] img {
+    width: min(64vw, 250px) !important;
+    max-width: 250px !important;
+    height: auto !important;
+    margin: 0 !important;
+  }
+
+  .svp-offer-modal {
+    align-items: flex-end;
+    padding: 14px;
+  }
+
+  .svp-offer-modal__card {
+    max-height: calc(88vh - env(safe-area-inset-bottom));
+    border-radius: 18px 18px 14px 14px;
+  }
+
+  .svp-offer-modal__media {
+    height: 190px;
+  }
+
+  .svp-offer-modal__body {
+    padding: 18px;
+  }
+
+  .svp-offer-modal__body h2 {
+    font-size: 24px;
+  }
 
   /* Comfortable side padding for full-bleed sections */
   body { padding-left: 0 !important; }
