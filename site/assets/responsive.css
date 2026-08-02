@@ -617,6 +617,46 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
     scroll-snap-align: start !important;
   }
 
+  /* Testimonials (app.js tags these tracks). accueil's is a max-content marquee
+     and premium's a 3-column grid, so both need to be forced into the same flex
+     row the offers carousel uses — the rules above assume a flex container and
+     the grid would otherwise ignore them. */
+  [data-scroller="temoignages"] {
+    display: flex !important;
+    width: auto !important;
+    max-width: none !important;
+    gap: 14px !important;
+    padding: 2px 4px 10px !important;
+    justify-content: flex-start !important;
+    animation: none !important;
+    transform: none !important;
+    scrollbar-width: none;
+  }
+  [data-scroller="temoignages"]::-webkit-scrollbar { display: none; }
+  /* Marquee loop duplicates — see wireTestimonialCarousels. Hidden only here, so
+     the desktop marquee keeps the repeats it needs to seam. */
+  [data-scroller="temoignages"] > [data-scroller-dupe] {
+    display: none !important;
+  }
+  /* Sized off the CONTAINER, not the viewport: premium's grid sits inside a
+     padded section, so 82vw filled it edge to edge and the next card never
+     peeked — losing the only cue that the row is swipeable. A percentage leaves
+     a consistent sliver visible whatever the section padding or screen size. */
+  [data-scroller="temoignages"] > * {
+    width: 86% !important;
+    max-width: 330px !important;
+    min-width: 0 !important;
+    height: auto !important;
+    align-self: stretch !important;
+  }
+  /* The marquee's mask fade dims whichever card you swiped to — it was tuned for
+     a strip sliding past on its own, not for a position the visitor controls. */
+  [data-scroller-shell] {
+    overflow: visible !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+  }
+
   /* The hero counter pill is an inline-flex row, so on a narrow phone its parts
      became separate squeezed columns and "5 627" broke across two lines. Let it
      flow and wrap as ordinary centred text instead, and keep the number whole. */

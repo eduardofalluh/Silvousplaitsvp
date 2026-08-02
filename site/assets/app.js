@@ -1171,6 +1171,48 @@
       grid.innerHTML = offers.map(function (offer) { return compteCard(offer, true); }).join('');
     }).catch(function () { fail("Impossible de charger l'archive pour le moment. Réessaie plus tard."); });
   }
+  // ---- Testimonial sections become swipeable carousels on small screens ----
+  // Both testimonial blocks stacked into a tall column on a phone: accueil's is
+  // a max-content marquee (responsive.css unwraps it into a wrapped stack) and
+  // premium's is a 3-column grid (collapsed to 1fr). Neither reads well, and on
+  // a narrow phone it is a lot of scrolling.
+  //
+  // Tag the track instead of restyling it here, so it reuses the SAME
+  // [data-scroller] carousel CSS the offers list already uses — one behaviour to
+  // maintain, and it stays a plain stack wherever that CSS does not apply.
+  // Matched on the heading text rather than the generated inline styles, which
+  // survive re-flattening; wireOffersCarousel only binds [data-scroller="offres"]
+  // so these are left alone by it.
+  function wireTestimonialCarousels() {
+    var WANTED = /notre motivation|ce que disent nos membres/i;
+    [].slice.call(document.querySelectorAll('h2, h3')).forEach(function (h) {
+      if (!WANTED.test((h.textContent || '').replace(/\s+/g, ' ').trim())) return;
+      var block = h.nextElementSibling;
+      if (!block) return;
+      // accueil wraps the marquee track in a mask/overflow box; premium's grid IS
+      // the track. Prefer an inner max-content flex row when there is one.
+      var track = block.querySelector('[style*="max-content"]') || block;
+      if (!track || track.hasAttribute('data-scroller')) return;
+      if (!track.children.length) return;
+      track.setAttribute('data-scroller', 'temoignages');
+      // The mask fade is tuned for a marquee sliding past; on a carousel the
+      // visitor controls the position, so it just dims the card they swiped to.
+      if (block !== track) block.setAttribute('data-scroller-shell', '');
+      // A marquee repeats its cards so the loop can seam invisibly — accueil
+      // carries 6 testimonials as 12 nodes. That is invisible while it slides,
+      // but as a carousel it means swiping past every quote twice. Flag the
+      // repeats so the mobile rule can drop them; the duplicates stay in the DOM
+      // for the desktop marquee, which still needs them to loop.
+      var seen = {};
+      [].slice.call(track.children).forEach(function (card) {
+        var key = (card.textContent || '').replace(/\s+/g, ' ').trim();
+        if (!key) return;
+        if (seen[key]) card.setAttribute('data-scroller-dupe', '');
+        else seen[key] = true;
+      });
+    });
+  }
+
   // ---- Offers carousel: scroll-progress thumb + arrow buttons ----
   function wireOffersCarousel() {
     var scroller = document.querySelector('[data-scroller="offres"]');
@@ -2211,7 +2253,7 @@
     wireUniversalMobileHeader(); wirePremiumMobileFooter(); wireHomeLink(); wireBackLinks(); wireMobileMenus(); wireFaq(); wireScrollTop(); wireAnchorScroll(); wirePremiumSignupIntent();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireAccountSave(); wireCompteFilters(); wireUnsubscribe(); wireBilling(); wireAdmin(); wirePartenariat();
-    wireContact(); wirePremiumCheckout(); wireExitIntent(); wireFunnelArchivedOffers(); wireLiveOffers(); wireOffersCarousel();
+    wireContact(); wirePremiumCheckout(); wireExitIntent(); wireFunnelArchivedOffers(); wireLiveOffers(); wireTestimonialCarousels(); wireOffersCarousel();
     wireArchive();
     runPendingPremiumScroll();
     wireReveal(); wireCountUp(); wirePageTransitions(); landOnHash();
