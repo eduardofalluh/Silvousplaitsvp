@@ -521,6 +521,12 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
   padding: 14px max(48px, calc((100% - 1600px) / 2)) !important;
 }
 
+/* The top banner underlined "lundi", which reads as a link that does nothing.
+   Unique to the accueil banner (one occurrence site-wide). */
+[style*="text-underline-offset: 3px"] {
+  text-decoration: none !important;
+}
+
 /* Nicer, consistent primary buttons/links */
 [data-svp="checkout"], [data-svp="login-submit"], [data-svp="login-verify"],
 [data-svp="funnel-submit"], [data-svp="contact-submit"], [data-svp="partner-submit"],
@@ -609,6 +615,19 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
     width: 80vw !important;
     max-width: 300px !important;
     scroll-snap-align: start !important;
+  }
+
+  /* The hero counter pill is an inline-flex row, so on a narrow phone its parts
+     became separate squeezed columns and "5 627" broke across two lines. Let it
+     flow and wrap as ordinary centred text instead, and keep the number whole. */
+  [style*="padding: 7px 16px"] {
+    display: block !important;
+    text-align: center !important;
+    line-height: 1.5 !important;
+  }
+  [style*="padding: 7px 16px"] > span {
+    white-space: nowrap !important;
+    vertical-align: middle !important;
   }
 
   /* ---- Stop iOS Safari zooming in when a field is focused ----
