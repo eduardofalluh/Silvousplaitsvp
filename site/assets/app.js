@@ -78,10 +78,10 @@
 
   // ---- Premium CTA tagging (P2): tag known contacts on click ----
   function wirePremiumCtas() {
-    document.querySelectorAll('[data-svp="premium-cta"]').forEach(function (el) {
-      el.addEventListener('click', function () {
-        tagPremiumClick();
-      });
+    document.addEventListener('click', function (e) {
+      var el = e.target && e.target.closest && e.target.closest('[data-svp="premium-cta"]');
+      if (!el) return;
+      tagPremiumClick();
     });
   }
 
@@ -1212,7 +1212,7 @@
       + '<div style="font:400 13px \'Instrument Sans\',sans-serif;color:#C3C8E4;margin-bottom:12px">' + esc(o.venue || '') + (o.event_date ? ' · ' + esc(frDate(o.event_date)) : '') + '</div>'
       + (archived
         ? '<span style="display:inline-block;font:700 12.5px \'Instrument Sans\',sans-serif;color:#C3C8E4;background:rgba(255,254,245,.1);padding:9px 17px;border-radius:100px">Offre passée</span>'
-        : '<a href="#pricing" data-svp="premium-cta" style="display:inline-block;font:700 12.5px \'Instrument Sans\',sans-serif;color:#16182B;background:#F5E642;padding:9px 17px;border-radius:100px;text-decoration:none">Réserver</a>')
+        : '<a href="#premium-offer" data-svp="premium-cta" style="display:inline-block;font:700 12.5px \'Instrument Sans\',sans-serif;color:#16182B;background:#F5E642;padding:9px 17px;border-radius:100px;text-decoration:none">Réserver</a>')
       + '</div></div>';
   }
   function compteCard(o, archived) {
@@ -1879,6 +1879,36 @@
     }, true);
   }
 
+  function wirePremiumStepCtas() {
+    if (currentPageName() !== 'premium.html') return;
+    function go() {
+      var target = premiumOfferTarget();
+      if (!target) return false;
+      tagPremiumClick();
+      animateScrollToEl(target);
+      try { history.replaceState(null, '', '#premium-offer'); } catch (err) {}
+      return true;
+    }
+    [].slice.call(document.querySelectorAll('[data-svp="step"]')).forEach(function (el) {
+      if (el.getAttribute('data-svp-step-cta') === 'true') return;
+      el.setAttribute('data-svp-step-cta', 'true');
+      el.setAttribute('role', 'button');
+      el.setAttribute('tabindex', '0');
+      el.setAttribute('aria-label', "Voir l'abonnement Premium à 5$ par mois");
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', function (e) {
+        if (e.target && e.target.closest && e.target.closest('a,button,input,select,textarea')) return;
+        e.preventDefault();
+        go();
+      });
+      el.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        go();
+      });
+    });
+  }
+
   // ---- universal public mobile header ----
   function wireUniversalMobileHeader() {
     if (document.querySelector('.svp-mobile-header')) return;
@@ -2341,7 +2371,7 @@
     wireMobileReloadTop();
     if (!hashTargetEl()) setScrollTop(0);
     wireIntro();
-    wireUniversalMobileHeader(); wirePremiumMobileFooter(); wireHomeLink(); wireBackLinks(); wireMobileMenus(); wireFaq(); wireScrollTop(); wireAnchorScroll(); wirePremiumSignupIntent();
+    wireUniversalMobileHeader(); wirePremiumMobileFooter(); wireHomeLink(); wireBackLinks(); wireMobileMenus(); wireFaq(); wireScrollTop(); wireAnchorScroll(); wirePremiumSignupIntent(); wirePremiumStepCtas();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireAccountSave(); wireCompteFilters(); wireUnsubscribe(); wireBilling(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireFunnelArchivedOffers(); wireLiveOffers(); wireTestimonialCarousels(); wireOffersCarousel();

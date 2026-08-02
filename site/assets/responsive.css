@@ -680,6 +680,11 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
 [data-svp="checkout"], [data-svp="login-submit"], [data-svp="login-verify"],
 [data-svp="funnel-submit"], [data-svp="contact-submit"], [data-svp="partner-submit"],
 [data-svp="admin-submit"] { cursor: pointer; transition: filter .15s, transform .05s; }
+[data-svp-step-cta="true"]:focus-visible {
+  outline: 3px solid rgba(51, 71, 202, .35);
+  outline-offset: 8px;
+  border-radius: 14px;
+}
 [data-svp="hero-submit"] {
   font-family: 'Instrument Sans', system-ui, sans-serif !important;
   font-weight: 700 !important;
