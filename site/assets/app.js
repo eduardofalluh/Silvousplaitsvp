@@ -2209,9 +2209,51 @@
     // a click navigation (html.svp-nav). Two rAFs = let a clean frame paint.
     if (!reducedMotion && document.documentElement.classList.contains('svp-nav')) {
       requestAnimationFrame(function () {
-        requestAnimationFrame(function () { document.documentElement.classList.add('svp-revealed'); });
+        requestAnimationFrame(function () {
+          document.documentElement.classList.add('svp-revealed');
+          dropNavCover();
+        });
       });
     }
+    // Failsafe: the per-page gate script also reveals on its own 1.6s timer if
+    // init is slow or throws, so schedule the teardown independently too.
+    dropNavCover(2200);
+  }
+
+  // ---- tear the incoming-page cover back down once it has faded ----
+  // `svp-nav` used to stay on <html> for the life of the page, which left
+  // `body::after` — a full-viewport position:fixed, will-change:opacity box —
+  // permanently in the render tree of every click-navigated page. It was
+  // invisible (opacity 0) but still a promoted compositing layer sitting above
+  // the whole document, and WebKit resolves position:sticky/fixed bars against
+  // the scrolling tree it belongs to: the sticky header and the premium sticky
+  // footer came out mis-spaced on Safari, but only when you SWITCHED pages —
+  // a reload never created the cover, so it always looked right. Removing the
+  // classes after the fade leaves a click-navigated page in exactly the same
+  // render state as a reloaded one, with no visual change (it is already
+  // transparent by then) and no extra navigation or refresh.
+  // init() arms a 2.2s failsafe first and the rAF reveal path asks for 420ms
+  // right after, so keep whichever deadline lands EARLIEST rather than letting
+  // the first caller win — otherwise the fast path would never apply.
+  var navCoverTimer = 0, navCoverDue = Infinity;
+  function dropNavCover(delay) {
+    var root = document.documentElement;
+    if (!root.classList.contains('svp-nav')) return;
+    // Wait out the .25s opacity transition in animations.css before removing,
+    // otherwise the cover would disappear in a hard cut instead of a fade.
+    var ms = delay == null ? 420 : delay;
+    var due = nowMs() + ms;
+    if (due >= navCoverDue) return;
+    navCoverDue = due;
+    if (navCoverTimer) clearTimeout(navCoverTimer);
+    navCoverTimer = setTimeout(function () {
+      navCoverTimer = 0;
+      navCoverDue = Infinity;
+      root.classList.remove('svp-nav', 'svp-revealed');
+    }, ms);
+  }
+  function nowMs() {
+    try { return performance.now(); } catch (e) { return +new Date(); }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
