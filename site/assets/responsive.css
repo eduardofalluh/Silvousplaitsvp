@@ -452,6 +452,75 @@ img[alt="Silvousplait"] {
   max-width: 44vw !important;
   display: block;
 }
+/* ---- Uniform header logo on contact + partenariat (desktop) ----
+   logo-mot.png is a SQUARE 2048x2048 file. accueil/premium/faq wrap it in a
+   fixed 40px-tall `overflow:hidden` clip box, so the rule above renders it
+   140x140 and the box crops it back to a 40px band — a compact ~68px header.
+   contact and partenariat are the only two pages whose logo link is
+   `height:auto; overflow:visible`, with nothing to clip it. There the same rule
+   produced a 140x140 logo and a ~176px-tall header, which is why those two read
+   as "not uniform" next to premium on desktop.
+   Rather than hand-tune a crop, give these two wrappers premium's exact clip
+   box — a 40px flex box with align-items:center that centres the 140px-tall
+   logo and clips the overflow — so they come out identical to premium by
+   construction instead of by arithmetic. (The artwork sits in the middle of the
+   square, rows 35%-68%, so centring is what shows the wordmark; cropping from
+   the top lands on empty transparent padding.)
+   The selectors are deliberately narrow: `a[style*="height: auto"]` was
+   verified to match exactly 1 element on contact.html and 0 on every other
+   page, and .partner-logo exists only on partenariat.html. */
+/* faq/compte/connexion/termes/politique clip the logo to a 34px x 145px box
+   instead of premium's 40px x 170px, which left their headers 63px tall next to
+   premium's 69px. Verified: one match per page, always the logo link. */
+.partner-logo,
+a[style*="height: 34px"],
+a[style*="height: auto"] {
+  height: 40px !important;
+  width: 170px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  flex: 0 0 auto !important;
+}
+
+.partner-logo > img[alt="Silvousplait"],
+a[style*="height: 34px"] > img[alt="Silvousplait"],
+a[style*="height: auto"] > img[alt="Silvousplait"] {
+  width: 140px !important;
+  height: auto !important;
+  margin-top: 0 !important;
+  flex: 0 0 auto !important;
+}
+
+/* ---- Uniform header container width (desktop) ----
+   premium/accueil/partenariat wrap their header row in an inner
+   `max-width:1160px; margin:0 auto; padding:14px 32px` box, so the logo and the
+   nav sit on a centred 1160px column. Six other pages (compte, connexion,
+   contact, faq, politique, termes) carry a single full-bleed
+   `padding:18px 32px` bar instead, so their logo hugs the window edge and the
+   header is 10px taller — the logo visibly jumps sideways as you move between
+   pages. Align them on premium.
+   The border-bottom and background must stay full-bleed (premium's rule spans
+   the whole window), and these pages have no inner wrapper to size, so the
+   sizing is done with padding on the bar itself.
+
+   A 1160px column left ~176px of dead gutter on a 1512px laptop: the logo sat
+   well inside the window and the nav crowded toward the middle. Header chrome
+   should hug the window instead, so all three variants now share one gutter
+   formula — a comfortable 48px edge gap, widening into a centred 1600px column
+   only once the window is wider than that, so the bar never stretches
+   uncomfortably far apart on an ultra-wide monitor.
+   All three selectors are scoped to the header: the max-width:1160px one is
+   qualified by `padding: 14px 32px`, which matches exactly 1 element per page
+   (accueil/premium each have 4 max-width:1160px divs; the other 3 are content
+   sections and must not move). */
+div[style*="padding: 18px 32px"][style*="border-bottom: 1.5px solid rgb(236, 234, 224)"],
+div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
+.partner-header__inner {
+  max-width: none !important;
+  padding: 14px max(48px, calc((100% - 1600px) / 2)) !important;
+}
+
 /* Nicer, consistent primary buttons/links */
 [data-svp="checkout"], [data-svp="login-submit"], [data-svp="login-verify"],
 [data-svp="funnel-submit"], [data-svp="contact-submit"], [data-svp="partner-submit"],

@@ -2072,7 +2072,14 @@
   function wireBackLinks() {
     var pill = "display:inline-flex;align-items:center;gap:6px;background:#EEF0FD;color:#3347CA;font:700 13px 'Instrument Sans',sans-serif;padding:9px 16px;border-radius:100px;text-decoration:none;white-space:nowrap";
     [].slice.call(document.querySelectorAll('a')).forEach(function (a) {
-      if (a.closest('[data-svp-mobile-menu]')) return;
+      // Skip the JS-built mobile dropdown, whose items carry their own list
+      // styling. This used to skip ANY [data-svp-mobile-menu] — but partenariat
+      // is the one page whose DESKTOP nav doubles as its mobile menu (it marks
+      // the same <nav> with data-svp-mobile-menu), so its "← Retour au site"
+      // was silently left as plain text while every other page rendered it as
+      // the blue pill. That single missing pill is what made the partenariat
+      // header look off next to the rest.
+      if (a.closest('.svp-mobile-header__panel')) return;
       var t = (a.textContent || '').trim();
       if (/Retour au site/i.test(t) || /Se d[ée]connecter/i.test(t)) a.setAttribute('style', pill);
     });
