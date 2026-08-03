@@ -1,12 +1,12 @@
 /**
  * Enriched signup (the tunnel funnel): captures prénom, ville, interests and
- * outing frequency, then writes to ActiveCampaign via the API v3:
+ * outing frequency, then writes to the contact system:
  *   - contact/sync (email + firstName)
  *   - add to the city's list (status active)
  *   - apply interest + frequency tags (resolved by name, created if missing)
  *
  * Body (JSON): { email, firstName, ville, interests: [], tranche, website }
- * `website` is a honeypot. `ville` may be "test" to route to the AC test list
+ * `website` is a honeypot. `ville` may be "test" to route to the test list
  * (used by automated tests so real lists are never touched).
  */
 const AC_API_URL = process.env.ACTIVECAMPAIGN_API_URL || '';
@@ -18,7 +18,7 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
-// City -> ActiveCampaign list id. Montréal uses the general free list (4).
+// City -> list id. Montréal uses the general free list (4).
 const CITY_LIST = (() => {
   try {
     if (process.env.AC_CITY_LIST_MAP) return JSON.parse(process.env.AC_CITY_LIST_MAP);
@@ -35,7 +35,7 @@ const SUBSCRIPTION_LIST_IDS = new Set(
     .map((id) => String(id).trim())
 );
 
-// UI label -> existing AC tag name (so we reuse tags instead of duplicating).
+// UI label -> existing tag name (so we reuse tags instead of duplicating).
 const INTEREST_TAG = {
   'théâtre': 'Théâtre', theatre: 'Théâtre',
   musique: 'Musique',
@@ -119,7 +119,7 @@ async function applyTag(contactId, tagName) {
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
   if (event.httpMethod !== 'POST') return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
-  if (!AC_API_URL || !AC_API_KEY) return { statusCode: 500, headers, body: JSON.stringify({ error: 'ActiveCampaign not configured' }) };
+  if (!AC_API_URL || !AC_API_KEY) return { statusCode: 500, headers, body: JSON.stringify({ error: 'Subscription service not configured' }) };
 
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch { return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid request' }) }; }
@@ -159,7 +159,7 @@ exports.handler = async (event) => {
   const sync = await acApi('contact/sync', { method: 'POST', body: JSON.stringify({ contact }) });
   const contactId = sync.data && sync.data.contact && sync.data.contact.id;
   if (!contactId) {
-    return { statusCode: 502, headers, body: JSON.stringify({ error: 'ActiveCampaign sync failed', subscribed: false }) };
+    return { statusCode: 502, headers, body: JSON.stringify({ error: 'Subscription sync failed', subscribed: false }) };
   }
 
   // 2) add to the city's list (active)

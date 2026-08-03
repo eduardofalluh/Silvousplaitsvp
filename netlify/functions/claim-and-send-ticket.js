@@ -195,7 +195,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'ActiveCampaign config missing for per-event claim lock' }),
+      body: JSON.stringify({ error: 'Contact system config missing for per-event claim lock' }),
     };
   }
 

@@ -1,9 +1,9 @@
 /**
- * Netlify Function: block bots via honeypot, then forward signup to ActiveCampaign.
+ * Netlify Function: block bots via honeypot, then forward signup to the contact system.
  *
  * Primary path: the classic hosted form endpoint (proc.php).
  * Safety net: if proc.php does not clearly confirm the subscription, add the
- * contact to the form's list directly through the ActiveCampaign API v3 (status
+ * contact to the form's list directly through the contact API (status
  * active). This guarantees genuine signups reach the list even if proc.php ever
  * fails or returns an ambiguous response.
  *
@@ -65,7 +65,7 @@ function isProcSuccess(data) {
   return false;
 }
 
-async function forwardToActiveCampaign(formData) {
+async function forwardToSignupProvider(formData) {
   const params = new URLSearchParams(stripForAC(formData));
   const res = await fetch(AC_URL + '?jsonp=true', {
     method: 'POST',
@@ -102,7 +102,7 @@ async function forwardToActiveCampaign(formData) {
   return { ok: res.ok, data: { ...data, alreadyRegistered }, success: isProcSuccess(data) };
 }
 
-// --- ActiveCampaign API v3 safety net -------------------------------------
+// --- Contact API safety net ------------------------------------------------
 
 async function acApi(path, options = {}) {
   const res = await fetch(`${AC_API_URL}/api/3/${path}`, {
@@ -259,7 +259,7 @@ exports.handler = async (event) => {
     }
   }
 
-  const { ok, data, success } = await forwardToActiveCampaign(body);
+  const { ok, data, success } = await forwardToSignupProvider(body);
 
   if (data.alreadyRegistered) {
     return { statusCode: 200, headers, body: JSON.stringify({ ...data, subscribed: false }) };

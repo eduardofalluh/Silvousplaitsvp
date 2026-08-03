@@ -20,7 +20,7 @@ exports.handler = async (event) => {
   }
 
   if (!AC_API_URL || !AC_API_KEY) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: 'ActiveCampaign config missing' }) };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Contact system config missing' }) };
   }
 
   if (ADMIN_KEY) {

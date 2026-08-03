@@ -118,7 +118,7 @@ function buildPartnerSummary(data) {
   ].join('\n');
 }
 
-async function syncPartnerToActiveCampaign(data) {
+async function syncPartnerToContactSystem(data) {
   if (!AC_API_URL || !AC_API_KEY) return { ok: false, reason: 'not-configured' };
   const firstName = String(data.name || '').trim().split(/\s+/)[0] || undefined;
   const sync = await acApi('contact/sync', {
@@ -216,9 +216,9 @@ exports.handler = async (event) => {
 
   let acResult = { ok: false, reason: 'not-attempted' };
   try {
-    acResult = await syncPartnerToActiveCampaign(payload);
+    acResult = await syncPartnerToContactSystem(payload);
   } catch (err) {
-    acResult = { ok: false, reason: err.message || 'activecampaign-failed' };
+    acResult = { ok: false, reason: err.message || 'contact-sync-failed' };
   }
 
   let emailSent = false;
@@ -252,13 +252,13 @@ exports.handler = async (event) => {
     return {
       statusCode: 502,
       headers,
-      body: JSON.stringify({ error: "L'envoi a échoué. Réessaie plus tard.", emailError, activeCampaign: acResult }),
+      body: JSON.stringify({ error: "L'envoi a échoué. Réessaie plus tard.", emailError, sync: acResult }),
     };
   }
 
   return {
     statusCode: 200,
     headers,
-    body: JSON.stringify({ sent: true, emailSent, activeCampaign: acResult }),
+    body: JSON.stringify({ sent: true, emailSent, sync: acResult }),
   };
 };

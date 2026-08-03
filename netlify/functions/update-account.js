@@ -1,5 +1,5 @@
 /**
- * Update the logged-in member's account details in ActiveCampaign.
+ * Update the logged-in member's account details.
  * Body (JSON): { session, firstName, lastName, phone, ville }
  */
 const { verifySignedToken } = require('../../utils/premium-access-token');
@@ -107,7 +107,7 @@ exports.handler = async (event) => {
     body: JSON.stringify({ contact: payload }),
   });
   if (!updated.ok) {
-    return { statusCode: 502, headers, body: JSON.stringify({ ok: false, error: 'ActiveCampaign update failed' }) };
+    return { statusCode: 502, headers, body: JSON.stringify({ ok: false, error: 'Account update failed' }) };
   }
 
   const ville = slugCity(body.ville);

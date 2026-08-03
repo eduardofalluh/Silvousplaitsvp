@@ -20,8 +20,8 @@ const PREMIUM_TOKEN_ADMIN_KEY = process.env.PREMIUM_TOKEN_ADMIN_KEY || '';
 
 function requireConfig() {
   const missing = [];
-  if (!AC_API_URL) missing.push('ACTIVECAMPAIGN_API_URL');
-  if (!AC_API_KEY) missing.push('ACTIVECAMPAIGN_API_KEY');
+  if (!AC_API_URL) missing.push('CONTACT_API_URL');
+  if (!AC_API_KEY) missing.push('CONTACT_API_KEY');
   if (!PREMIUM_ACCESS_SECRET) missing.push('PREMIUM_ACCESS_SECRET');
   if (!PREMIUM_ACCESS_BASE_URL) missing.push('PREMIUM_ACCESS_BASE_URL');
   if (!PREMIUM_ACCESS_URL_FIELD_ID) missing.push('PREMIUM_ACCESS_URL_FIELD_ID');

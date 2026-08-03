@@ -1215,7 +1215,7 @@ function buildFreeSignupEmbedUrlFromFormId(formId) {
   return `https://silvousplait.activehosted.com/f/embed.php?id=${encodeURIComponent(normalizedFormId)}`;
 }
 
-function extractActiveCampaignEmbedConfig(text) {
+function extractSignupEmbedConfig(text) {
   const source = String(text || '');
   const keys = ['u', 'f', 's', 'c', 'm', 'act', 'v', 'or'];
   const config = {};
@@ -1271,11 +1271,11 @@ async function resolveFreeSignupEmbedConfig(location) {
     },
   });
   if (!response.ok) {
-    throw new Error("Impossible de lire l'URL embed ActiveCampaign");
+    throw new Error("Impossible de lire l'URL embed du formulaire");
   }
 
   const text = await response.text();
-  const config = extractActiveCampaignEmbedConfig(text);
+  const config = extractSignupEmbedConfig(text);
   const requiredKeys = ['u', 'f', 'c', 'm', 'act', 'v', 'or'];
   for (const key of requiredKeys) {
     if (!normalize(config[key])) {

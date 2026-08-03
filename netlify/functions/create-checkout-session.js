@@ -190,7 +190,7 @@ exports.handler = async (event) => {
           body: JSON.stringify({
             error: 'This email already has an active Premium subscription.',
             code: 'already_premium',
-            source: stripeAlreadySubscribed ? 'stripe' : 'activecampaign',
+            source: stripeAlreadySubscribed ? 'stripe' : 'membership_record',
           }),
         };
       }

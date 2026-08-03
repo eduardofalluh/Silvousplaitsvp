@@ -59,7 +59,7 @@ exports.handler = async (event) => {
   }
 
   // Any existing contact (premium OR free subscriber) can log in to see their
-  // info. Only send a code if the email already exists in ActiveCampaign.
+  // info. Only send a code if the email already exists in the contact system.
   try {
     const look = await fetch(`${process.env.ACTIVECAMPAIGN_API_URL}/api/3/contacts?email=${encodeURIComponent(email)}`, { headers: { 'Api-Token': process.env.ACTIVECAMPAIGN_API_KEY } });
     const data = await look.json();

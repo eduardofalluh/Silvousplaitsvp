@@ -1,6 +1,6 @@
 /**
  * Return the logged-in member's real account info, verified by their session
- * token (issued by verify-login-code). Read-only against ActiveCampaign.
+ * token (issued by verify-login-code). Read-only against the contact system.
  * Body (JSON): { session }
  * Returns: { ok, email, firstName, lastName, phone, isPremium }
  */

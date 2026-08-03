@@ -3,8 +3,8 @@
  * Simulates a "dumb bot" that fills ALL form fields (including the hidden honeypot).
  * Run: node test-bot-signup.js
  *
- * Expected: Server detects honeypot is filled → does NOT add email to ActiveCampaign.
- * Check your ActiveCampaign list: bot-test-honeypot-XXXX@example.com should NOT appear.
+ * Expected: Server detects honeypot is filled and does not add the email.
+ * Check the contact list: bot-test-honeypot-XXXX@example.com should NOT appear.
  */
 
 const BOT_EMAIL = 'bot-test-honeypot-' + Date.now() + '@example.com';
@@ -47,7 +47,7 @@ async function run() {
 
   if (res.ok) {
     console.log('\n→ Server returned success (fake success for bots).');
-    console.log('→ Check ActiveCampaign: the address', BOT_EMAIL, 'should NOT be in your list.');
+    console.log('→ Check the contact list: the address', BOT_EMAIL, 'should NOT appear.');
   } else {
     console.log('\n→ Request failed. Check the response above.');
   }

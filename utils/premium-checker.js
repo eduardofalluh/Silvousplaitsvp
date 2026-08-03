@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 
 /**
- * Check if an email belongs to a premium member via ActiveCampaign
+ * Check if an email belongs to a premium member via the contact system.
  * @param {string} email - The email to check
  * @param {boolean} useMockData - Use mock data for testing (default: false)
  * @returns {Promise<Object>} - { isPremium: boolean, subscriptionStatus: string, details: object }
@@ -9,7 +9,7 @@ const fetch = require('node-fetch');
 async function isPremiumMember(email, useMockData = false) {
   const normalizedEmail = String(email || '').trim().toLowerCase();
 
-  // Mock mode for testing without AC credentials
+  // Mock mode for testing without contact-system credentials.
   if (useMockData || !process.env.ACTIVECAMPAIGN_API_KEY) {
     return getMockPremiumStatus(normalizedEmail);
   }
@@ -20,7 +20,7 @@ async function isPremiumMember(email, useMockData = false) {
   const PREMIUM_TAG = process.env.ACTIVECAMPAIGN_PREMIUM_TAG || 'premium_active';
 
   if (!AC_API_URL || !AC_API_KEY) {
-    console.warn('ActiveCampaign not configured. Using mock data.');
+    console.warn('Contact system not configured. Using mock data.');
     return getMockPremiumStatus(normalizedEmail);
   }
 
@@ -36,7 +36,7 @@ async function isPremiumMember(email, useMockData = false) {
     );
 
     if (!searchResponse.ok) {
-      throw new Error(`AC API error: ${searchResponse.status}`);
+      throw new Error(`Contact API error: ${searchResponse.status}`);
     }
 
     const searchData = await searchResponse.json();
@@ -47,7 +47,7 @@ async function isPremiumMember(email, useMockData = false) {
         isPremium: false,
         subscriptionStatus: 'not_found',
         details: {
-          message: 'Contact not found in ActiveCampaign',
+          message: 'Contact not found',
         },
       };
     }

@@ -1,5 +1,5 @@
 /* Silvousplait — front-end wiring for the flattened static site.
-   Connects the new design to the Netlify functions (ActiveCampaign).
+   Connects the new design to the Netlify functions.
    Vanilla JS, no dependencies, CSP-safe (served from 'self'). */
 (function () {
   'use strict';

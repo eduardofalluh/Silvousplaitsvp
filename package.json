@@ -1,7 +1,7 @@
 {
   "name": "silvousplaitsvp-ticket-automation",
   "version": "1.0.0",
-  "description": "Automated ticket sending via ActiveCampaign",
+  "description": "Automated ticket sending for Silvousplait",
   "main": "send-tickets.js",
   "scripts": {
     "send-tickets": "node send-tickets.js",
@@ -19,7 +19,7 @@
     "xlsx": "^0.18.5"
   },
   "keywords": [
-    "activecampaign",
+    "email",
     "tickets",
     "automation"
   ],

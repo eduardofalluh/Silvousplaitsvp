@@ -101,7 +101,7 @@ async function handleCheckoutCompleted(session) {
   const postalCode = extractPostalCodeFromSession(session);
   const subscriptionType = await resolveSubscriptionTypeForCheckoutSession(session);
 
-  // Add to ActiveCampaign premium list
+  // Add to the Premium contact list.
   if (process.env.ACTIVECAMPAIGN_API_KEY && customerEmail) {
     await addToPremiumList(customerEmail, session.customer);
     await addPremiumTag(customerEmail, PREMIUM_TAG);
@@ -123,7 +123,7 @@ async function handleSubscriptionCreated(subscription) {
   const customerEmail = await resolveCustomerEmail(subscription);
   const subscriptionType = await resolveSubscriptionType(subscription);
 
-  // Add premium tag in ActiveCampaign
+  // Add the Premium tag.
   if (process.env.ACTIVECAMPAIGN_API_KEY && customerEmail) {
     await addPremiumTag(customerEmail, PREMIUM_TAG);
     await addContactToPremiumList(customerEmail);
@@ -212,7 +212,7 @@ async function handlePaymentSucceeded(invoice) {
 async function handlePaymentFailed(invoice) {
   console.log('Payment failed:', invoice.id);
   const customerEmail = await resolveCustomerEmail(invoice);
-  // Optionally notify customer via email or AC automation
+  // Optionally notify customer via email or automation.
   console.log(`Payment failed for: ${customerEmail || 'unknown-email'}`);
 }
 
@@ -421,7 +421,7 @@ async function resolvePostalCode(source) {
 async function acFetch(path, options = {}) {
   const { apiUrl, apiKey } = getACConfig();
   if (!apiUrl || !apiKey) {
-    throw new Error('ActiveCampaign config missing');
+    throw new Error('Contact system config missing');
   }
 
   const response = await fetch(`${apiUrl}${path}`, {
@@ -516,7 +516,7 @@ async function getExistingFieldValue(contactId, fieldId) {
   return (data.fieldValues || []).find((fv) => String(fv.field) === String(fieldId)) || null;
 }
 
-async function listActiveCampaignFields() {
+async function listContactSystemFields() {
   const response = await acFetch('/api/3/fields');
   if (!response.ok) {
     const text = await response.text();
@@ -556,7 +556,7 @@ function isPostalCodeCandidate(candidate) {
 }
 
 async function resolveFieldId(kind) {
-  const fields = await listActiveCampaignFields();
+  const fields = await listContactSystemFields();
   const candidates = fields.map((field) => ({
     id: String(field.id || ''),
     title: normalizeFieldToken(field.title),
@@ -579,12 +579,12 @@ async function resolveFieldId(kind) {
     if (configuredMatchesKind) return configuredId;
     if (configuredId && configuredCandidate && !configuredMatchesKind) {
       console.warn(
-        `Configured ACTIVECAMPAIGN_SUBSCRIPTION_TYPE_FIELD_ID=${configuredId} does not look like subscription_type. Falling back to autodetect.`
+        `Configured subscription type field ${configuredId} does not look like subscription_type. Falling back to autodetect.`
       );
     }
     if (configuredId && !configuredCandidate) {
       console.warn(
-        `Configured ACTIVECAMPAIGN_SUBSCRIPTION_TYPE_FIELD_ID=${configuredId} was not found. Falling back to autodetect.`
+        `Configured subscription type field ${configuredId} was not found. Falling back to autodetect.`
       );
     }
     if (fieldIdCache.subscriptionType) return fieldIdCache.subscriptionType;
@@ -593,12 +593,12 @@ async function resolveFieldId(kind) {
     if (configuredMatchesKind) return configuredId;
     if (configuredId && configuredCandidate && !configuredMatchesKind) {
       console.warn(
-        `Configured ACTIVECAMPAIGN_POSTAL_CODE_FIELD_ID=${configuredId} does not look like postal_code. Falling back to autodetect.`
+        `Configured postal code field ${configuredId} does not look like postal_code. Falling back to autodetect.`
       );
     }
     if (configuredId && !configuredCandidate) {
       console.warn(
-        `Configured ACTIVECAMPAIGN_POSTAL_CODE_FIELD_ID=${configuredId} was not found. Falling back to autodetect.`
+        `Configured postal code field ${configuredId} was not found. Falling back to autodetect.`
       );
     }
     if (fieldIdCache.postalCode) return fieldIdCache.postalCode;
@@ -833,12 +833,12 @@ async function removeContactFromFreeList(email) {
   }
 }
 
-// Add contact to ActiveCampaign premium list
+// Add contact to the Premium list.
 async function addToPremiumList(email, stripeCustomerId) {
   const { premiumListId } = getACConfig();
 
   if (!premiumListId) {
-    console.log('ActiveCampaign not configured, skipping...');
+    console.log('Contact system not configured, skipping...');
     return;
   }
 
@@ -887,7 +887,7 @@ async function addToPremiumList(email, stripeCustomerId) {
 
     console.log(`Added ${email} to premium list`);
   } catch (error) {
-    console.error('ActiveCampaign error:', error);
+    console.error('Contact system error:', error);
   }
 }
 

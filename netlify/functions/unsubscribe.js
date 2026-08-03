@@ -1,7 +1,7 @@
 /**
  * Newsletter unsubscribe (désinscription) for the logged-in member.
  * Session-verified. Sets the contact's status to "unsubscribed" (2) on every
- * list they are currently active on. Writes to ActiveCampaign only (not the
+ * list they are currently active on. Writes to the contact system only (not the
  * offers sheet).
  * Body (JSON): { session }
  */
