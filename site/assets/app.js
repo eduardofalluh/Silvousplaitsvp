@@ -533,7 +533,7 @@
         .then(function (r) { return r.json(); }).then(function (d) {
           submit.disabled = false;
           if (d && d.sent) { challenge = d.challenge; setEmail(email); say('Code envoyé ! Vérifie ton courriel.'); showCodeStep(); }
-          else { say('Aucun compte Premium trouvé pour ce courriel.', true); }
+          else { say('Aucun compte trouvé pour ce courriel.', true); }
         }).catch(function () { submit.disabled = false; say('Erreur. Réessaie plus tard.', true); });
     });
   }
@@ -570,8 +570,11 @@
   }
 
   function setPremiumOnlyVisible(isPremium) {
+    if (document.body && document.body.getAttribute('data-svp') === 'compte') {
+      document.body.setAttribute('data-svp-account-premium', isPremium ? 'true' : 'false');
+    }
     [].slice.call(document.querySelectorAll('[data-svp-premium-only]')).forEach(function (el) {
-      el.style.display = isPremium ? '' : 'none';
+      el.style.display = isPremium ? (el.getAttribute('data-svp-display') || '') : 'none';
     });
   }
 
@@ -1164,6 +1167,10 @@
   function showOfferDetail(id) {
     var offer = offerDetailById[String(id || '')];
     if (!offer) return;
+    if (document.body && document.body.getAttribute('data-svp') === 'compte' && document.body.getAttribute('data-svp-account-premium') !== 'true') {
+      alert('Ces offres sont réservées aux membres Premium.');
+      return;
+    }
     var ticketUrl = safeHttpUrl(offer.ticket_url);
     var meta = [offer.venue || '', regionLabel(offer.region || ''), frDate(offer.event_date)].filter(Boolean).join(' · ');
     var modal = document.createElement('div');
@@ -1498,8 +1505,7 @@
       archivedOffers.forEach(function (offer) { rememberOffer(offer, true); });
       var carouselHtml = offers.map(function (offer) { return premiumCard(offer, false); })
         .concat(archivedOffers.map(function (offer) { return premiumCard(offer, true); })).join('');
-      var gridHtml = offers.map(function (offer) { return compteCard(offer, false); })
-        .concat(archivedOffers.map(function (offer) { return compteCard(offer, true); })).join('');
+      var gridHtml = offers.map(function (offer) { return compteCard(offer, false); }).join('');
       if (carousel) carousel.innerHTML = carouselHtml;
       if (grid) grid.innerHTML = gridHtml || '<p style="grid-column:1/-1;color:#8B8DA0;font:500 14px \'Instrument Sans\',sans-serif;padding:8px 2px">Aucune offre pour le moment — reviens lundi pour la nouvelle sélection.</p>';
       document.querySelectorAll('[data-svp="offer"]').forEach(observeOffer);
