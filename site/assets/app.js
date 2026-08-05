@@ -444,8 +444,7 @@
             setEmail(email);
             pixel('track', 'Lead');
             var card = funnel.querySelector('[data-svp="funnel-card"]') || funnel;
-            card.innerHTML = '<div style="text-align:center;padding:20px 8px"><div style="font:800 24px \'Bricolage Grotesque\',sans-serif;color:#3347CA;margin-bottom:10px">Merci' + (prenom ? ' ' + prenom.trim() : '') + '&nbsp;! 🎉</div><p style="font:500 15px \'Instrument Sans\',sans-serif;color:#4A4D66;line-height:1.5">Ton inscription est confirmée. Ta première infolettre arrive lundi.</p><a href="premium.html" data-svp="premium-cta" style="display:inline-block;margin-top:18px;background:#3347CA;color:#FFFEF5;text-decoration:none;border-radius:100px;padding:14px 24px;font:700 15px \'Instrument Sans\',sans-serif">Découvre Premium →</a></div>';
-            wirePremiumCtas();
+            card.innerHTML = '<div style="text-align:center;padding:20px 8px"><div style="font:800 24px \'Bricolage Grotesque\',sans-serif;color:#3347CA;margin-bottom:10px">Merci' + (prenom ? ' ' + prenom.trim() : '') + '&nbsp;! 🎉</div><p style="font:500 15px \'Instrument Sans\',sans-serif;color:#4A4D66;line-height:1.5">Ton inscription est confirmée. Ta première infolettre arrive lundi.</p><a href="accueil.html" style="display:inline-block;margin-top:18px;background:#3347CA;color:#FFFEF5;text-decoration:none;border-radius:100px;padding:14px 24px;font:700 15px \'Instrument Sans\',sans-serif">Retour au site →</a></div>';
           } else {
             submit.disabled = false; submit.textContent = original;
             say((d && d.error) || "L'inscription n'a pas fonctionné. Réessaie.", true);
@@ -1121,7 +1120,17 @@
     if (m) return 'https://player.vimeo.com/video/' + m[1] + '?autoplay=1&muted=1&loop=1&background=1';
     return null;
   }
-  function isVideoFile(url) { return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(String(url || '')); }
+  function isVideoFile(url) {
+    var raw = String(url || '');
+    if (/\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(raw)) return true;
+    try {
+      var parsed = new URL(raw, location.href);
+      var name = parsed.searchParams.get('name') || parsed.searchParams.get('filename') || '';
+      return /\.(mp4|webm|ogg|mov)$/i.test(name);
+    } catch (e) {
+      return false;
+    }
+  }
   function premiumMedia(o) {
     var v = o.video_url && String(o.video_url).trim();
     if (v) {
@@ -1416,8 +1425,8 @@
     return '<article class="funnel-archive-card" data-funnel-archive-card data-offer-id="' + esc(o.id || '') + '">'
       + '<div class="funnel-archive-media">' + media + '</div>'
       + '<div class="funnel-archive-body">'
-      + '<div class="funnel-archive-card-title">' + esc(o.title || 'Offre Premium') + '</div>'
-      + '<div class="funnel-archive-meta">' + esc(meta || 'Offre Premium passée') + '</div>'
+      + '<div class="funnel-archive-card-title">' + esc(o.title || 'Offre passée') + '</div>'
+      + '<div class="funnel-archive-meta">' + esc(meta || 'Offre passée') + '</div>'
       + '<span class="funnel-archive-badge">Offre passée</span>'
       + '</div></article>';
   }
@@ -1464,7 +1473,7 @@
       if (!offers.length) {
         track.innerHTML = '';
         if (empty) {
-          empty.textContent = 'Les offres Premium passées apparaîtront ici dès que l’archive sera disponible.';
+          empty.textContent = 'Les offres passées apparaîtront ici dès que l’archive sera disponible.';
           empty.style.display = 'block';
         }
         update();
@@ -2074,9 +2083,13 @@
 
     var items = [];
     var seen = {};
+    var suppressPremiumCallback = /^(connexion|compte|tunnel)\.html$/i.test(currentPage);
+    var suppressSignupCallback = /^(connexion|compte|tunnel)\.html$/i.test(currentPage);
     function addItem(label, href, primary, kind) {
       label = String(label || '').replace(/\s+/g, ' ').trim();
       if (!label || !href) return;
+      if (suppressPremiumCallback && /^premium$/i.test(label)) return;
+      if (suppressSignupCallback && /s'?inscrire|inscription/i.test(label)) return;
       var key = normalizedHref(href);
       if (/s'?inscrire|inscription/i.test(label)) { key = 'signup'; kind = 'signup'; }
       if (/^connexion$/i.test(label)) key = 'connexion';
@@ -2096,11 +2109,11 @@
         addItem(label, a.getAttribute('href'), /s'?inscrire|inscription|commencer|choisir|je veux/i.test(label));
       });
     });
-    addItem('Premium', 'premium.html', false);
+    if (!suppressPremiumCallback) addItem('Premium', 'premium.html', false);
     addItem('Contact', 'contact.html', false);
     addItem('Partenariat', 'partenariat.html', false);
     addItem('Connexion', 'connexion.html', false);
-    addItem("S'inscrire", currentPage === 'premium.html' ? '#premium-offer' : (currentPage === 'accueil.html' ? '#premium-offer' : 'accueil.html'), true, 'signup');
+    if (!suppressSignupCallback) addItem("S'inscrire", currentPage === 'premium.html' ? '#premium-offer' : (currentPage === 'accueil.html' ? '#premium-offer' : 'accueil.html'), true, 'signup');
 
     var headerEl = document.createElement('header');
     headerEl.className = 'svp-mobile-header';

@@ -326,12 +326,13 @@
               <label for="offer-date">Date et heure du spectacle</label>
               <input type="datetime-local" id="offer-date" />
             </div>
-            <input type="url" id="offer-image" placeholder="URL de l'image du spectacle (ou glisse un fichier ci-dessous)" />
-            <input type="url" id="offer-video" placeholder="URL de la vidéo (YouTube, Vimeo, mp4) — prioritaire sur l'image" />
+            <input type="text" id="offer-image" placeholder="URL de l'image du spectacle (ou glisse un fichier ci-dessous)" />
+            <input type="text" id="offer-video" placeholder="URL vidéo (YouTube, Vimeo, mp4 direct ou fichier téléversé)" />
             <div id="offer-drop" style="box-sizing:border-box;border:2px dashed rgba(51,71,202,.35);border-radius:12px;padding:16px 14px;text-align:center;background:#F7F8FE;cursor:pointer;font:500 13px 'Instrument Sans',system-ui,sans-serif;color:#4A4D66;margin:2px 0">
               <strong style="color:#3347CA;font-weight:700">Importer un fichier média</strong><br>Glisse-dépose une image ou une vidéo, ou clique pour parcourir.
               <input type="file" id="offer-file" accept="image/*,video/*" style="display:none" />
             </div>
+            <p style="margin:-2px 0 8px;color:#8B8DA0;font-size:12.5px;line-height:1.45">Pour une grosse vidéo, colle un lien YouTube, Vimeo ou mp4 hébergé. L'upload direct sert aux petits fichiers.</p>
             <textarea id="offer-description" placeholder="Description de l'offre premium"></textarea>
             <input type="text" id="offer-code" placeholder="Code promo" />
             <input type="url" id="offer-link" placeholder="Lien vers la billetterie / page du spectacle" />
@@ -354,7 +355,7 @@
 
         <div class="admin-card">
           <h2>Offres archivées (passées)</h2>
-          <p style="margin:0 0 12px;color:#4A4D66;font-size:13.5px">Les offres dont la date est passée. Modifie-les (via le formulaire ci-dessus) ou supprime-les.</p>
+          <p style="margin:0 0 12px;color:#4A4D66;font-size:13.5px">La page 2 du formulaire montre les offres archivées actives les plus récentes. Modifie-les avec le formulaire ci-dessus, désactive celles à cacher ou supprime-les.</p>
           <div id="archived-offer-list" class="offer-list"></div>
         </div>
       </div>
@@ -441,19 +442,64 @@
       };
       (function () {
         const drop = document.getElementById('offer-drop');
-        const file = document.getElementById('offer-file');
-        if (!drop || !file) return;
+        if (!drop) return;
+        const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+        const mediaKind = (file) => (file && file.type && file.type.indexOf('image') === 0 ? 'image' : 'video');
+        function bindFileInput() {
+          const file = document.getElementById('offer-file');
+          if (!file) return;
+          file.addEventListener('change', (e) => { handle(e.target.files && e.target.files[0]); e.target.value = ''; });
+        }
+        function setDropState(text, isError) {
+          drop.innerHTML = '<strong style="color:#3347CA;font-weight:700">Importer un fichier média</strong><br>' + text + '<input type="file" id="offer-file" accept="image/*,video/*" style="display:none" />';
+          drop.style.borderColor = isError ? 'rgba(176,0,32,.45)' : 'rgba(51,71,202,.35)';
+          bindFileInput();
+        }
         const handle = (f) => {
           if (!f) return;
+          if (!adminAccessToken) {
+            setMessage(formMessage, 'err', 'Connecte-toi comme admin avant de téléverser un média.');
+            return;
+          }
+          if (f.size > MAX_UPLOAD_BYTES) {
+            setMessage(formMessage, 'err', 'Fichier trop lourd. Pour une vidéo, colle plutôt un lien YouTube, Vimeo ou un mp4 hébergé.');
+            return;
+          }
           const r = new FileReader();
-          r.onload = () => {
-            if (f.type && f.type.indexOf('image') === 0) fieldMap.image_url.value = r.result;
-            else fieldMap.video_url.value = r.result;
+          r.onload = async () => {
+            try {
+              setMessage(formMessage, '', 'Téléversement du média...');
+              const response = await authFetch('/.netlify/functions/upload-premium-media', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  filename: f.name,
+                  contentType: f.type || 'application/octet-stream',
+                  dataUrl: r.result,
+                }),
+              });
+              const data = await response.json().catch(() => ({}));
+              if (!response.ok || !data.url) {
+                setMessage(formMessage, 'err', data.error || 'Téléversement impossible. Essaie un lien vidéo hébergé.');
+                setDropState('Glisse-dépose une image ou une vidéo, ou clique pour parcourir.', true);
+                return;
+              }
+              if (mediaKind(f) === 'image') fieldMap.image_url.value = data.url;
+              else fieldMap.video_url.value = data.url;
+              setMessage(formMessage, 'ok', 'Média téléversé. Tu peux enregistrer l’offre.');
+              setDropState('Média téléversé. Glisse un autre fichier ou clique pour remplacer.', false);
+            } catch (error) {
+              setMessage(formMessage, 'err', 'Téléversement impossible. Essaie un lien YouTube, Vimeo ou mp4 hébergé.');
+              setDropState('Glisse-dépose une image ou une vidéo, ou clique pour parcourir.', true);
+            }
           };
           r.readAsDataURL(f);
         };
-        drop.addEventListener('click', () => file.click());
-        file.addEventListener('change', (e) => { handle(e.target.files && e.target.files[0]); e.target.value = ''; });
+        drop.addEventListener('click', () => {
+          const file = document.getElementById('offer-file');
+          if (file) file.click();
+        });
+        bindFileInput();
         drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.style.background = '#EEF0FD'; });
         drop.addEventListener('dragleave', (e) => { e.preventDefault(); drop.style.background = '#F7F8FE'; });
         drop.addEventListener('drop', (e) => { e.preventDefault(); drop.style.background = '#F7F8FE'; handle(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]); });
@@ -1075,6 +1121,10 @@
         }, {});
         payload.extra_fields = readDynamicExtraFields();
         payload.event_date = toIsoDateTimeValue(payload.event_date);
+        if (/^data:/i.test(payload.image_url || '') || /^data:/i.test(payload.video_url || '')) {
+          setMessage(formMessage, 'err', 'Le média doit être téléversé ou hébergé. Un fichier base64 ne peut pas être enregistré ici.');
+          return;
+        }
 
         const saveEndpoint = editingArchived ? '/.netlify/functions/save-archived-offer' : '/.netlify/functions/save-premium-offer';
         const response = await authFetch(saveEndpoint, {

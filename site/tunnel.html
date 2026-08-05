@@ -94,7 +94,7 @@
 <main class="funnel-page" data-svp="funnel" data-svp-funnel-v2>
   <nav class="funnel-tabs" aria-label="Étapes du tunnel">
     <button class="funnel-tab" type="button" data-step-tab="1" aria-selected="true">1 · Quiz</button>
-    <button class="funnel-tab" type="button" data-step-tab="2" aria-selected="false">2 · Premium</button>
+    <button class="funnel-tab" type="button" data-step-tab="2" aria-selected="false">2 · Exemples</button>
     <button class="funnel-tab" type="button" data-step-tab="3" aria-selected="false">3 · Invitation</button>
     <button class="funnel-tab" type="button" data-step-tab="4" aria-selected="false">Bienvenue</button>
   </nav>
@@ -159,14 +159,14 @@
     </div>
 
     <div class="funnel-step" data-funnel-step="2" hidden>
-      <div style="text-align:center;margin-bottom:12px"><span style="display:inline-block;background:#16182B;color:#FFFEF5;font:800 11.5px 'Instrument Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:6px 15px;border-radius:100px">Membre Premium</span></div>
-      <h1 class="funnel-title" style="text-align:center;font-size:25px"><span data-funnel-name>Alex</span>, les membres Premium économisent à chaque semaine&nbsp;!</h1>
-      <p class="funnel-copy" style="text-align:center">Toi, as-tu payé plein prix&nbsp;? Voici ce que des membres Premium ont reçu à <span data-funnel-city>Montréal</span>.</p>
+      <div style="text-align:center;margin-bottom:12px"><span style="display:inline-block;background:#EEF0FD;color:#3347CA;font:800 11.5px 'Instrument Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:6px 15px;border-radius:100px">Aperçu</span></div>
+      <h1 class="funnel-title" style="text-align:center;font-size:25px"><span data-funnel-name>Alex</span>, voici le genre de sorties qu'on peut t'envoyer</h1>
+      <p class="funnel-copy" style="text-align:center">Quelques exemples déjà envoyés à <span data-funnel-city>Montréal</span>. L'infolettre gratuite reste gratuite.</p>
 
-      <section class="funnel-archive" aria-label="Offres Premium passées">
+      <section class="funnel-archive" aria-label="Offres passées">
         <div class="funnel-archive-head">
           <div>
-            <div class="funnel-archive-kicker">Offres Premium passées</div>
+            <div class="funnel-archive-kicker">Offres passées</div>
             <div class="funnel-archive-title">Des exemples réels déjà envoyés</div>
           </div>
           <div class="funnel-archive-actions" aria-label="Navigation des offres passées">
@@ -185,9 +185,7 @@
         <div class="funnel-archive-empty" data-funnel-archive-empty>Les offres passées se chargent.</div>
       </section>
 
-      <button class="funnel-primary" type="button" data-premium-choice="yes" data-plan="yearly">Je veux économiser sur mes shows</button>
-      <div style="text-align:center;font:500 11.5px 'Instrument Sans',sans-serif;color:#8B8DA0;margin-top:9px">Annule en tout temps · Garantie 30 jours</div>
-      <button class="funnel-link-button" type="button" data-premium-choice="no">Non merci, je reste au forfait gratuit</button>
+      <button class="funnel-primary" type="button" data-premium-choice="no">Continuer gratuitement →</button>
     </div>
 
     <div class="funnel-step" data-funnel-step="3" hidden>
@@ -223,17 +221,6 @@
         <div style="font:400 13.5px/1.55 'Instrument Sans',sans-serif;color:#25349B">On vient de t'envoyer un courriel. Ouvre-le et réponds «&nbsp;Je confirme&nbsp;» pour bien recevoir nos offres.</div>
       </div>
 
-      <div style="border:1.5px solid #16182B;border-radius:16px;padding:20px;margin-bottom:8px;background:#FFFEF5;box-shadow:4px 4px 0 rgba(142,160,245,.4)">
-        <div style="display:flex;align-items:flex-start;gap:14px">
-          <img src="assets/icon-premium.png" alt="" style="width:52px;flex:none;mix-blend-mode:multiply">
-          <div>
-            <div style="font:800 15.5px/1.25 'Bricolage Grotesque',sans-serif;margin-bottom:3px">Les membres Premium économisent à chaque semaine</div>
-            <div style="font:400 13px/1.5 'Instrument Sans',sans-serif;color:#4A4D66;margin-bottom:14px">Billets gratuits et rabais exclusifs, à partir de 5&nbsp;$/mois. Un seul billet gratuit rembourse ton année.</div>
-            <a href="#" data-svp="checkout" data-plan="yearly" style="display:inline-block;background:#3347CA;color:#FFFEF5;padding:12px 24px;border-radius:100px;font:700 14px 'Instrument Sans',sans-serif;text-decoration:none">Passer au Premium →</a>
-          </div>
-        </div>
-      </div>
-
       <div style="font:700 15px 'Bricolage Grotesque',sans-serif;margin:22px 0 12px">Questions fréquentes</div>
       <div data-funnel-faq>
         <button type="button" class="funnel-chip" style="display:block;width:100%;text-align:left;border-radius:12px;padding:13px 16px;margin-bottom:8px" data-faq-item>
@@ -244,10 +231,6 @@
           <span style="display:flex;justify-content:space-between;align-items:center;gap:12px;font:600 13.5px 'Instrument Sans',sans-serif">À quelle fréquence je reçois des offres ?<span style="color:#3347CA;font-size:16px;flex:none">⌄</span></span>
           <span hidden style="font:400 13px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin-top:8px">Une sélection par semaine, le lundi matin.</span>
         </button>
-        <button type="button" class="funnel-chip" style="display:block;width:100%;text-align:left;border-radius:12px;padding:13px 16px;margin-bottom:8px" data-faq-item>
-          <span style="display:flex;justify-content:space-between;align-items:center;gap:12px;font:600 13.5px 'Instrument Sans',sans-serif">C'est quoi la différence entre gratuit et Premium ?<span style="color:#3347CA;font-size:16px;flex:none">⌄</span></span>
-          <span hidden style="font:400 13px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin-top:8px">Gratuit&nbsp;: sélection hebdomadaire de spectacles à petit prix. Premium&nbsp;: billets gratuits et rabais chaque semaine.</span>
-        </button>
       </div>
     </div>
 
@@ -256,8 +239,8 @@
         <img src="assets/logo-yeux.png" alt="" style="width:118px;margin-bottom:14px">
         <h1 class="funnel-title" style="font-size:26px">Tu es déjà inscrit.</h1>
         <p class="funnel-copy" style="margin-bottom:18px">Cette adresse reçoit déjà Silvousplait. On évite simplement de créer un doublon.</p>
-        <a class="funnel-primary" href="premium.html" data-svp="premium-cta">Découvrir Premium →</a>
-        <a href="accueil.html" style="display:inline-block;margin-top:14px;color:#8B8DA0;font:600 13px 'Instrument Sans',sans-serif;text-decoration:underline">Retour au site</a>
+        <a class="funnel-primary" href="accueil.html">Retour au site</a>
+        <a href="connexion.html" style="display:inline-block;margin-top:14px;color:#8B8DA0;font:600 13px 'Instrument Sans',sans-serif;text-decoration:underline">Connexion à mon compte</a>
       </div>
     </div>
 
