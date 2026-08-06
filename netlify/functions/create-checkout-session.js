@@ -181,16 +181,44 @@ exports.handler = async (event) => {
     }
 
     if (normalizedEmail && validEmail(normalizedEmail)) {
-      const premiumStatus = await premiumChecker.isPremiumMember(normalizedEmail, false);
-      const stripeAlreadySubscribed = await hasActiveStripeSubscription(normalizedEmail);
-      if ((premiumStatus && premiumStatus.isPremium) || stripeAlreadySubscribed) {
+      // Stripe is the authority on whether someone is CURRENTLY subscribed: it
+      // is the system actually billing them, and it only reports
+      // active/trialing/past_due/unpaid.
+      //
+      // The ActiveCampaign record is a lagging mirror — its premium tag and list
+      // membership are not cleared when a subscription ends, so anyone who had
+      // ever subscribed was blocked from EVER resubscribing after cancelling.
+      // That silently turned churned members into permanently lost revenue.
+      //
+      // So: trust Stripe when we can reach it, and only fall back to the AC
+      // record when the Stripe lookup itself fails — losing the guard entirely
+      // on a Stripe outage would risk genuine double subscriptions.
+      let stripeAlreadySubscribed = null;   // null = lookup failed
+      try {
+        stripeAlreadySubscribed = await hasActiveStripeSubscription(normalizedEmail);
+      } catch (err) {
+        console.error('Stripe subscription lookup failed, falling back to membership record:', err.message);
+      }
+
+      let blocked = false;
+      let source = 'stripe';
+      if (stripeAlreadySubscribed === true) {
+        blocked = true;
+      } else if (stripeAlreadySubscribed === null) {
+        const premiumStatus = await premiumChecker.isPremiumMember(normalizedEmail, false);
+        blocked = Boolean(premiumStatus && premiumStatus.isPremium);
+        source = 'membership_record_fallback';
+      }
+
+      if (blocked) {
         return {
           statusCode: 409,
           headers,
           body: JSON.stringify({
             error: 'This email already has an active Premium subscription.',
             code: 'already_premium',
-            source: stripeAlreadySubscribed ? 'stripe' : 'membership_record',
+            source,
+            email: normalizedEmail,
           }),
         };
       }

@@ -38,12 +38,35 @@
     p.style.cssText = "font:500 14px/1.5 'Instrument Sans',sans-serif;color:#4A4D66;margin-bottom:18px";
     p.textContent = o.message || '';
 
+    card.appendChild(h); card.appendChild(p);
+
+    // Optional highlighted detail — used to show WHICH address is already
+    // subscribed, so the visitor can tell whether it is even their account.
+    if (o.detail) {
+      var det = document.createElement('div');
+      det.style.cssText = "display:block;background:#EEF0FD;color:#3347CA;border-radius:10px;padding:10px 12px;margin-bottom:16px;font:700 13.5px 'Instrument Sans',sans-serif;word-break:break-all";
+      det.textContent = o.detail;
+      card.appendChild(det);
+    }
+
     var ok = document.createElement('button');
     ok.type = 'button';
     ok.style.cssText = "display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:13px;font:800 14.5px 'Instrument Sans',sans-serif;cursor:pointer";
     ok.textContent = o.confirmLabel || 'Compris';
+    card.appendChild(ok);
 
-    card.appendChild(h); card.appendChild(p); card.appendChild(ok);
+    // Optional secondary action, e.g. "Utiliser une autre adresse".
+    if (o.secondaryLabel) {
+      var sec = document.createElement('button');
+      sec.type = 'button';
+      sec.style.cssText = "display:block;width:100%;background:none;border:none;margin-top:10px;font:600 13px 'Instrument Sans',sans-serif;color:#8B8DA0;text-decoration:underline;cursor:pointer";
+      sec.textContent = o.secondaryLabel;
+      sec.addEventListener('click', function () {
+        close();
+        if (typeof o.onSecondary === 'function') o.onSecondary();
+      });
+      card.appendChild(sec);
+    }
     overlay.appendChild(card);
     document.body.appendChild(overlay);
     requestAnimationFrame(function () {
@@ -56,8 +79,11 @@
       setTimeout(function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 160);
       document.removeEventListener('keydown', onKey);
     }
-    function onKey(e) { if (e.key === 'Escape' || e.key === 'Enter') close(); }
-    ok.addEventListener('click', close);
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    ok.addEventListener('click', function () {
+      close();
+      if (typeof o.onConfirm === 'function') o.onConfirm();
+    });
     overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
     document.addEventListener('keydown', onKey);
     try { ok.focus({ preventScroll: true }); } catch (e) {}
@@ -896,7 +922,15 @@
         if (d && d.url) { pixel('track', 'InitiateCheckout'); window.location.href = d.url; }
         else {
           resetCheckoutButton(btn);
-          if (d.code === 'already_premium') svpDialog({ title: 'Tu es déjà Premium', message: 'Cette adresse a déjà un abonnement Premium actif. Connecte-toi pour voir tes offres.', confirmLabel: 'Compris' });
+          if (d.code === 'already_premium') svpDialog({
+            title: 'Cette adresse est déjà Premium',
+            message: 'Un abonnement Premium actif existe déjà pour :',
+            detail: d.email || email || '',
+            confirmLabel: 'Voir mon abonnement',
+            onConfirm: function () { window.location.href = STRIPE_BILLING_LOGIN_URL; },
+            secondaryLabel: 'Utiliser une autre adresse',
+            onSecondary: function () { window.location.href = 'connexion.html'; }
+          });
           else svpDialog({ title: "Le paiement n'a pas pu démarrer", message: "Quelque chose a bloqué l'ouverture de la page de paiement. Réessaie dans un instant — si ça persiste, écris-nous à spectacles@silvousplaitsvp.com.", confirmLabel: 'Réessayer' });
         }
       }).catch(function () { resetCheckoutButton(btn); svpDialog({ title: 'Connexion interrompue', message: "On n'a pas pu joindre le service de paiement. Vérifie ta connexion et réessaie.", confirmLabel: 'Réessayer' }); });
