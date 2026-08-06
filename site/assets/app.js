@@ -625,6 +625,21 @@
         var fn = document.querySelector('[data-svp-account-field="firstName"]') || document.querySelector('input[placeholder="Prénom"]'); if (fn) fn.value = a.firstName || '';
         var ph = document.querySelector('[data-svp-account-field="phone"]') || document.querySelector('input[type="tel"]'); if (ph) ph.value = a.phone || '';
         var ville = document.querySelector('[data-svp-account-field="ville"]'); if (ville && a.ville) ville.value = a.ville;
+        // Personalise the free-member premium call-back (compte.html), which
+        // reuses the funnel's step-2 copy: "<Prénom>, les membres Premium
+        // économisent…" and "…ont reçu à <ville>". Nothing else fills these on
+        // this page — updateCopy() only runs inside the funnel.
+        var upsellName = a.firstName || (a.email || '').split('@')[0];
+        [].slice.call(document.querySelectorAll('.svp-upsell [data-funnel-name]'))
+          .forEach(function (el) { el.textContent = upsellName; });
+        var villeLabel = '';
+        if (ville && ville.options && ville.selectedIndex >= 0) {
+          villeLabel = (ville.options[ville.selectedIndex].textContent || '').trim();
+        }
+        if (villeLabel) {
+          [].slice.call(document.querySelectorAll('.svp-upsell [data-funnel-city]'))
+            .forEach(function (el) { el.textContent = villeLabel; });
+        }
       })
       .catch(function () { /* leave skeletons on network error */ });
   }

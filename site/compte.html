@@ -196,10 +196,35 @@
       <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">Compte</h3>
       
         <div style="display: flex; flex-direction: column; gap: 9px; font: 500 13.5px &quot;Instrument Sans&quot;, sans-serif;">
-          <div data-svp-free-only data-svp-display="block" style="display:none;border:1.5px solid #16182B;border-radius:14px;padding:16px;background:#FFFEF5;box-shadow:4px 4px 0 rgba(51,71,202,.28);margin-bottom:6px">
-            <div style="font:800 17px/1.15 'Bricolage Grotesque',sans-serif;color:#16182B;margin-bottom:5px">Passe Premium pour recevoir les meilleures offres</div>
-            <div style="font:500 13px/1.45 'Instrument Sans',sans-serif;color:#4A4D66;margin-bottom:12px">Billets gratuits et rabais exclusifs, à partir de 5&nbsp;$/mois.</div>
-            <a href="#" data-svp="checkout" data-plan="yearly" style="display:block;text-align:center;background:#3347CA;color:#FFFEF5;border-radius:100px;padding:12px 16px;font:800 13.5px 'Instrument Sans',sans-serif;text-decoration:none">Découvrir Premium →</a>
+          <div data-svp-free-only data-svp-display="block" class="svp-upsell" style="display:none">
+            <div class="svp-upsell__badge-row"><span class="svp-upsell__badge">Membre Premium</span></div>
+            <div class="svp-upsell__title"><span data-funnel-name>Toi</span>, les membres Premium économisent à chaque semaine&nbsp;!</div>
+            <div class="svp-upsell__copy">Toi, as-tu payé plein prix&nbsp;? Voici ce que des membres Premium ont reçu à <span data-funnel-city>Montréal</span>.</div>
+
+            <section class="funnel-archive" aria-label="Offres Premium passées">
+              <div class="funnel-archive-head">
+                <div>
+                  <div class="funnel-archive-kicker">Offres Premium passées</div>
+                  <div class="funnel-archive-title">Des exemples réels déjà envoyés</div>
+                </div>
+                <div class="funnel-archive-actions" aria-label="Navigation des offres passées">
+                  <button type="button" data-funnel-archive-prev aria-label="Offre précédente">←</button>
+                  <button type="button" data-funnel-archive-next aria-label="Offre suivante">→</button>
+                </div>
+              </div>
+              <div class="funnel-archive-viewport">
+                <div class="funnel-archive-track" data-svp="funnel-archived-offers" tabindex="0">
+                  <article class="funnel-archive-card svp-skel" aria-hidden="true"></article>
+                  <article class="funnel-archive-card svp-skel" aria-hidden="true"></article>
+                  <article class="funnel-archive-card svp-skel" aria-hidden="true"></article>
+                </div>
+              </div>
+              <div class="funnel-archive-progress" aria-hidden="true"><span data-funnel-archive-progress></span></div>
+              <div class="funnel-archive-empty" data-funnel-archive-empty>Les offres passées se chargent.</div>
+            </section>
+
+            <a href="#" data-svp="checkout" data-plan="yearly" class="svp-upsell__cta">Je veux économiser sur mes shows</a>
+            <div class="svp-upsell__note">Annule en tout temps · Garantie 30 jours</div>
           </div>
           <a href="https://billing.stripe.com/p/login/14AaEZ2PRgeD4Hogmkb7y00" data-svp="billing" data-svp-premium-only style="display:none;text-decoration: none; font-weight: 600;">Historique de facturation</a>
           <a href="https://billing.stripe.com/p/login/14AaEZ2PRgeD4Hogmkb7y00" data-svp="billing" data-svp-premium-only class="scp5" style="display:none;color: rgb(139, 141, 160); text-decoration: underline;">Annuler mon abonnement</a>

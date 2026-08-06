@@ -430,6 +430,109 @@ html { background-color: #FFFEF5; }
   background: #FBFAF0 !important;
 }
 
+/* ---- Premium call-back on the account page (free members only) ----
+   Mirrors step 2 of the signup funnel, which is the format the client asked
+   for. The funnel's own .funnel-* rules live inside tunnel.html's <style>, so
+   they are invisible to compte.html — the archive carousel markup is reused
+   here (wireFunnelArchivedOffers binds it by data-svp), so its styles have to
+   live in this shared sheet. Values match tunnel.html; keep them in step.
+   Sized for a narrow sidebar column: one card at a time with the next peeking,
+   rather than the funnel's three-up. */
+.svp-upsell {
+  border: 1.5px solid #16182B;
+  border-radius: 14px;
+  padding: 16px;
+  background: #FFFEF5;
+  box-shadow: 4px 4px 0 rgba(51, 71, 202, .28);
+  margin-bottom: 6px;
+}
+.svp-upsell__badge-row { text-align: center; margin-bottom: 10px; }
+.svp-upsell__badge {
+  display: inline-block; background: #16182B; color: #FFFEF5;
+  font: 800 11px 'Instrument Sans', sans-serif; letter-spacing: .06em;
+  text-transform: uppercase; padding: 5px 13px; border-radius: 100px;
+}
+.svp-upsell__title {
+  font: 800 17px/1.18 'Bricolage Grotesque', sans-serif;
+  color: #16182B; text-align: center; margin-bottom: 6px;
+}
+.svp-upsell__title span { color: #3347CA; }
+.svp-upsell__copy {
+  font: 500 12.5px/1.45 'Instrument Sans', sans-serif;
+  color: #4A4D66; text-align: center; margin-bottom: 14px;
+}
+.svp-upsell__cta {
+  display: block; text-align: center; background: #3347CA; color: #FFFEF5;
+  border-radius: 100px; padding: 13px 16px;
+  font: 800 13.5px 'Instrument Sans', sans-serif; text-decoration: none;
+}
+.svp-upsell__note {
+  text-align: center; font: 500 11px 'Instrument Sans', sans-serif;
+  color: #8B8DA0; margin-top: 8px;
+}
+
+.svp-upsell .funnel-archive { margin: 0 0 14px; }
+.svp-upsell .funnel-archive-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 10px; margin-bottom: 8px;
+}
+.svp-upsell .funnel-archive-kicker {
+  font: 800 9.5px 'Instrument Sans', sans-serif; color: #3347CA;
+  text-transform: uppercase; letter-spacing: .12em; margin-bottom: 2px;
+}
+.svp-upsell .funnel-archive-title {
+  font: 800 13px/1.2 'Bricolage Grotesque', sans-serif; color: #16182B;
+}
+.svp-upsell .funnel-archive-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.svp-upsell .funnel-archive-actions button {
+  width: 26px; height: 26px; border: 1.5px solid #E1E0D4; border-radius: 100px;
+  background: #fff; color: #16182B; font: 800 13px 'Instrument Sans', sans-serif;
+  cursor: pointer;
+}
+.svp-upsell .funnel-archive-actions button:disabled { opacity: .36; cursor: default; }
+.svp-upsell .funnel-archive-viewport { overflow: hidden; margin: 0 -2px; padding: 0 2px; }
+.svp-upsell .funnel-archive-track {
+  display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 2px 0 7px;
+}
+.svp-upsell .funnel-archive-track::-webkit-scrollbar { display: none; }
+.svp-upsell .funnel-archive-card {
+  flex: 0 0 82%; min-width: 0; min-height: 148px; border: 1.5px solid #ECEAE0;
+  border-radius: 12px; background: #FFFEF5; overflow: hidden; scroll-snap-align: start;
+}
+.svp-upsell .funnel-archive-media {
+  height: 62px; background: #EEF0FD center/cover no-repeat; display: flex;
+  align-items: center; justify-content: center; overflow: hidden;
+}
+.svp-upsell .funnel-archive-media img { max-height: 46px; max-width: 60%; mix-blend-mode: multiply; }
+.svp-upsell .funnel-archive-media img.funnel-archive-photo {
+  width: 100%; height: 100% !important; max-width: none !important;
+  max-height: none !important; object-fit: cover; mix-blend-mode: normal; display: block;
+}
+.svp-upsell .funnel-archive-body { padding: 9px 10px 10px; }
+.svp-upsell .funnel-archive-card-title {
+  font: 800 12px/1.18 'Bricolage Grotesque', sans-serif; margin-bottom: 3px; color: #16182B;
+}
+.svp-upsell .funnel-archive-meta {
+  font: 600 9.5px/1.3 'Instrument Sans', sans-serif; color: #8B8DA0; min-height: 22px;
+}
+.svp-upsell .funnel-archive-badge {
+  display: inline-block; margin-top: 5px; background: #EEF0FD; color: #3347CA;
+  border-radius: 100px; padding: 4px 8px; font: 800 9px 'Instrument Sans', sans-serif;
+}
+.svp-upsell .funnel-archive-progress {
+  height: 4px; background: #EEF0FD; border-radius: 100px; overflow: hidden; margin-top: 4px;
+}
+.svp-upsell .funnel-archive-progress span {
+  display: block; height: 100%; width: 34%; background: #3347CA; border-radius: 100px;
+  transition: width .18s ease, margin-left .18s ease;
+}
+.svp-upsell .funnel-archive-empty {
+  display: none; border: 1.5px dashed #E1E0D4; border-radius: 12px; padding: 12px 14px;
+  background: #FFFEF5; color: #8B8DA0; font: 600 11.5px/1.45 'Instrument Sans', sans-serif;
+  text-align: center;
+}
+
 /* ---- Loading skeletons (shown while real data loads, all viewports) ---- */
 .svp-skel { position: relative; overflow: hidden; background: #E9ECF5; border-radius: 8px; }
 .svp-skel::after {
