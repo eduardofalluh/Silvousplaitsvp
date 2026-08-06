@@ -28,6 +28,8 @@ const OFFER_HEADERS = [
   'updated_at',
   'filtre_offre',
   'video_url',
+  'show_on_premium_carousel',
+  'show_on_form_carousel',
 ];
 const LEGACY_OFFER_HEADERS = [
   'id',
@@ -152,6 +154,8 @@ const OFFER_HEADER_ALIASES = {
   updated_at: ['updated_at'],
   filtre_offre: ['filtre_offre', 'filter_tag', 'offer_filter', 'tag_offre', 'tag'],
   video_url: ['video_url', 'video', 'video_link', 'lien_video', 'video_url_link'],
+  show_on_premium_carousel: ['show_on_premium_carousel', 'premium_carousel', 'show_premium_carousel'],
+  show_on_form_carousel: ['show_on_form_carousel', 'form_carousel', 'funnel_carousel', 'show_form_carousel'],
 };
 const DEFAULT_SHOWCASE_ITEMS = [
   {
@@ -343,6 +347,8 @@ function mapOfferRowWithHeaderMap(row, rowNumber, headerMap) {
           is_active: rawValues.ticket_url,
           created_at: rawValues.is_active,
           updated_at: rawValues.created_at,
+          show_on_premium_carousel: rawValues.show_on_premium_carousel,
+          show_on_form_carousel: rawValues.show_on_form_carousel,
         }
       : rawValues;
 
@@ -366,6 +372,8 @@ function mapOfferRowWithHeaderMap(row, rowNumber, headerMap) {
     created_at: values.created_at,
     updated_at: values.updated_at,
     filtre_offre: filterLabel || offerTypeLabel,
+    show_on_premium_carousel: normalizeBoolean(values.show_on_premium_carousel, true),
+    show_on_form_carousel: normalizeBoolean(values.show_on_form_carousel, true),
     extra_fields: extractOfferExtraFields(headerRow, row),
   };
 }
@@ -635,6 +643,8 @@ async function ensurePremiumOffersSheet(sheets) {
       normalize(row[11]),
       '',
       '',
+      'true',
+      'true',
     ]);
     await safeWriteRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:${lastCol}1`, [OFFER_HEADERS], 'header migration write');
     if (migratedRows.length) {
@@ -917,6 +927,8 @@ function mapOfferRow(row, rowNumber) {
     created_at: values.created_at,
     updated_at: values.updated_at,
     filtre_offre: canonicalizeFilterLabel(normalize(row[13])) || canonicalizeOfferTypeLabel(values.offer_type),
+    show_on_premium_carousel: true,
+    show_on_form_carousel: true,
     extra_fields: {},
   };
 }
@@ -1010,6 +1022,20 @@ function createOfferRow(offer, existingOffer, headerRow) {
         return timestamp;
       case 'filtre_offre':
         return canonicalizeFilterLabel(offer.filtre_offre || current.filtre_offre || offer.offer_type || current.offer_type);
+      case 'show_on_premium_carousel':
+        return normalizeBoolean(
+          offer.show_on_premium_carousel != null ? offer.show_on_premium_carousel : current.show_on_premium_carousel,
+          true
+        )
+          ? 'true'
+          : 'false';
+      case 'show_on_form_carousel':
+        return normalizeBoolean(
+          offer.show_on_form_carousel != null ? offer.show_on_form_carousel : current.show_on_form_carousel,
+          true
+        )
+          ? 'true'
+          : 'false';
       default:
         return normalize(extraFields[headerLabel]);
     }

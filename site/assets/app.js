@@ -1421,6 +1421,17 @@
     if (/^assets\//i.test(url) && /\/site\//.test(location.pathname)) return '../' + url;
     return url;
   }
+  function offerVisibilityFlag(offer, key) {
+    var value = offer && offer[key];
+    if (value == null || value === '') return true;
+    return !/^(false|0|non|no|inactive)$/i.test(String(value).trim());
+  }
+  function showOnPremiumCarousel(offer) {
+    return offerVisibilityFlag(offer, 'show_on_premium_carousel');
+  }
+  function showOnFormCarousel(offer) {
+    return offerVisibilityFlag(offer, 'show_on_form_carousel');
+  }
   function funnelArchiveCard(o) {
     var meta = [o.offer_type || '', o.venue || '', regionLabel(o.region || ''), frDate(o.event_date)].filter(Boolean).join(' · ');
     var video = o.video_url && String(o.video_url).trim();
@@ -1482,7 +1493,7 @@
     fetch(FN + 'list-archived-offers').then(function (r) {
       return r.json();
     }).then(function (d) {
-      var offers = ((d && d.offers) || []).filter(function (offer) { return offer && offer.title; }).slice(0, 12);
+      var offers = ((d && d.offers) || []).filter(function (offer) { return offer && offer.title && showOnFormCarousel(offer); }).slice(0, 12);
       if (!offers.length) {
         track.innerHTML = '';
         if (empty) {
@@ -1521,7 +1532,7 @@
     var archivedRequest = fetch(FN + 'list-archived-offers').then(function (r) { return r.json(); }).catch(function () { return { offers: [] }; });
     Promise.all([liveRequest, archivedRequest]).then(function (results) {
       var offers = (results[0] && results[0].offers) || [];
-      var archivedOffers = (results[1] && results[1].offers) || [];
+      var archivedOffers = ((results[1] && results[1].offers) || []).filter(showOnPremiumCarousel);
       offerDetailById = {};
       offers.forEach(function (offer) { rememberOffer(offer, false); });
       archivedOffers.forEach(function (offer) { rememberOffer(offer, true); });

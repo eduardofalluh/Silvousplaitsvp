@@ -18,6 +18,8 @@ function sanitizePublicOffer(offer) {
     description: offer.description,
     promo_code: offer.promo_code,
     ticket_url: offer.ticket_url,
+    show_on_premium_carousel: offer.show_on_premium_carousel !== false,
+    show_on_form_carousel: offer.show_on_form_carousel !== false,
   };
 }
 
