@@ -675,6 +675,19 @@
     function say(t, err) { if (msg) { msg.textContent = t || ''; msg.style.color = err ? '#b00020' : '#3347CA'; } }
     var challenge = '';
 
+    // Arriving from the already-Premium dialog ("Voir mon compte") carries the
+    // address in ?email=, so the visitor only has to request and type the code
+    // rather than retype an address we already know.
+    if (!emailInput.value) {
+      var pre = '';
+      try { pre = new URLSearchParams(location.search).get('email') || ''; } catch (e) {}
+      if (!pre) pre = getEmail() || '';
+      if (validEmail(pre)) {
+        emailInput.value = pre;
+        try { submit.focus({ preventScroll: true }); } catch (e2) {}
+      }
+    }
+
     function showCodeStep() {
       if (document.querySelector('[data-svp="login-code"]')) return;
       var wrap = document.createElement('div');
@@ -929,6 +942,40 @@
     if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
   }
 
+  // Asks for the address the duplicate check will run on. Reused by the
+  // "Utiliser une autre adresse" action so changing the email happens right
+  // here instead of dumping the visitor on the login page.
+  // Send someone to their account. compte.html redirects out when there is no
+  // session, so an unauthenticated visitor has to pass the emailed-code login
+  // first — carry the address over so connexion pre-fills it and they only
+  // have to request and type the code.
+  function goToAccount(emailForLogin) {
+    if (getSession()) { window.location.href = 'compte.html'; return; }
+    var e = String(emailForLogin || '').trim().toLowerCase();
+    if (e) setEmail(e);
+    window.location.href = 'connexion.html' + (e ? '?email=' + encodeURIComponent(e) : '');
+  }
+
+  function askCheckoutEmail(btn, options, prefill) {
+    svpDialog({
+      title: 'Ton courriel',
+      message: 'On vérifie que cette adresse n’a pas déjà un abonnement Premium avant de t’envoyer au paiement.',
+      input: {
+        type: 'email',
+        placeholder: 'ton.courriel@exemple.com',
+        value: prefill || '',
+        validate: validEmail,
+        error: 'Entre une adresse courriel valide.'
+      },
+      confirmLabel: 'Continuer',
+      onConfirm: function (value) {
+        var next = String(value || '').trim().toLowerCase();
+        setEmail(next);
+        startPremiumCheckout(btn, Object.assign({}, options, { email: next }));
+      }
+    });
+  }
+
   function startPremiumCheckout(btn, options) {
     options = options || {};
     if (!btn) return;
@@ -940,23 +987,7 @@
     // be known BEFORE Stripe opens. Without it the server rejects the request
     // (code: email_required) and Stripe would otherwise show a free-text field
     // where someone could type an address that is already subscribed.
-    if (!validEmail(email)) {
-      svpDialog({
-        title: 'Ton courriel',
-        message: 'On vérifie que cette adresse n’a pas déjà un abonnement Premium avant de t’envoyer au paiement.',
-        input: {
-          type: 'email',
-          placeholder: 'ton.courriel@exemple.com',
-          validate: validEmail,
-          error: 'Entre une adresse courriel valide.'
-        },
-        confirmLabel: 'Continuer',
-        onConfirm: function (value) {
-          startPremiumCheckout(btn, Object.assign({}, options, { email: value }));
-        }
-      });
-      return;
-    }
+    if (!validEmail(email)) { askCheckoutEmail(btn, options, ''); return; }
     if (email) setEmail(email);
     tagPremiumClick(email);
     btn.disabled = true;
@@ -986,23 +1017,30 @@
             // Branch on WHY we blocked. A comped member (Premium granted
             // directly, no Stripe customer) has nothing in the billing portal —
             // sending them there lands on a login page that can never resolve.
+            var blockedEmail = d.email || email || '';
             var comped = d.source !== 'stripe_active';
+            // Changing the address is an edit, not a detour: reopen the same
+            // prompt pre-filled so they can correct it and be re-checked.
+            var reEnter = function () { askCheckoutEmail(btn, options, blockedEmail); };
             svpDialog(comped ? {
               title: 'Tu as déjà accès à Premium',
               message: 'Cet accès a été activé directement pour :',
-              detail: d.email || email || '',
+              detail: blockedEmail,
               confirmLabel: 'Voir mon compte',
-              onConfirm: function () { window.location.href = 'compte.html'; },
+              // compte.html is session-gated and would bounce a logged-out
+              // visitor straight back out, so go through the emailed-code
+              // login with the address already filled in.
+              onConfirm: function () { goToAccount(blockedEmail); },
               secondaryLabel: 'Utiliser une autre adresse',
-              onSecondary: function () { window.location.href = 'connexion.html'; }
+              onSecondary: reEnter
             } : {
               title: 'Cette adresse est déjà Premium',
               message: 'Un abonnement Premium actif existe déjà pour :',
-              detail: d.email || email || '',
+              detail: blockedEmail,
               confirmLabel: 'Gérer mon abonnement',
               onConfirm: function () { window.location.href = STRIPE_BILLING_LOGIN_URL; },
               secondaryLabel: 'Utiliser une autre adresse',
-              onSecondary: function () { window.location.href = 'connexion.html'; }
+              onSecondary: reEnter
             });
           }
           else svpDialog({ title: "Le paiement n'a pas pu démarrer", message: "Quelque chose a bloqué l'ouverture de la page de paiement. Réessaie dans un instant — si ça persiste, écris-nous à spectacles@silvousplaitsvp.com.", confirmLabel: 'Réessayer' });
