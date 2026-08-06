@@ -958,8 +958,8 @@
 
   function askCheckoutEmail(btn, options, prefill) {
     svpDialog({
-      title: 'Ton courriel',
-      message: 'On vérifie que cette adresse n’a pas déjà un abonnement Premium avant de t’envoyer au paiement.',
+      title: 'Confirme ton courriel',
+      message: 'C’est l’adresse qui sera facturée. On vérifie qu’elle n’a pas déjà un abonnement Premium avant de t’envoyer au paiement.',
       input: {
         type: 'email',
         placeholder: 'ton.courriel@exemple.com',
@@ -971,7 +971,7 @@
       onConfirm: function (value) {
         var next = String(value || '').trim().toLowerCase();
         setEmail(next);
-        startPremiumCheckout(btn, Object.assign({}, options, { email: next }));
+        startPremiumCheckout(btn, Object.assign({}, options, { email: next, emailConfirmed: true }));
       }
     });
   }
@@ -987,6 +987,12 @@
     // be known BEFORE Stripe opens. Without it the server rejects the request
     // (code: email_required) and Stripe would otherwise show a free-text field
     // where someone could type an address that is already subscribed.
+    // ALWAYS confirm the address, even when one is already stored. Skipping the
+    // prompt for a known email meant that once someone had entered one, every
+    // later click went straight to Stripe on whatever was cached — a stale or
+    // mistyped address would then be the one billed, and the visitor never saw
+    // which. Pre-filled, so confirming is a single click.
+    if (!options.emailConfirmed) { askCheckoutEmail(btn, options, email); return; }
     if (!validEmail(email)) { askCheckoutEmail(btn, options, ''); return; }
     if (email) setEmail(email);
     tagPremiumClick(email);
@@ -1021,7 +1027,7 @@
             var comped = d.source !== 'stripe_active';
             // Changing the address is an edit, not a detour: reopen the same
             // prompt pre-filled so they can correct it and be re-checked.
-            var reEnter = function () { askCheckoutEmail(btn, options, blockedEmail); };
+            var reEnter = function () { askCheckoutEmail(btn, Object.assign({}, options, { emailConfirmed: false }), blockedEmail); };
             svpDialog(comped ? {
               title: 'Tu as déjà accès à Premium',
               message: 'Cet accès a été activé directement pour :',
