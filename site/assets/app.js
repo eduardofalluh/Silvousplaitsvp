@@ -1438,12 +1438,80 @@
       return false;
     }
   }
+  // A still frame so a card is never blank before playback starts (or if it is
+  // refused). Uses the offer's own image when it has one.
+  function posterAttr(o) {
+    var img = o && o.image_url && String(o.image_url).trim();
+    return img ? ' poster="' + esc(offerMediaUrl(img)) + '"' : '';
+  }
+
+  // ---- play offer videos only while they are on screen ----
+  // Every card video carried `autoplay`, so a page with several offers asked the
+  // browser to decode and play all of them at once. Chrome allows that; Firefox
+  // caps concurrent autoplay/decoders and refuses the extras — which is why some
+  // cards played and others sat on their background, even though every file is
+  // H.264 and served as video/mp4 and plays fine on its own.
+  //
+  // Drive playback instead: start a video when it scrolls into view, pause and
+  // rewind when it leaves, and never run more than MAX at once. Fewer decoders
+  // also means less CPU and less wasted mobile data.
+  function wireOfferVideos() {
+    var MAX = 2;
+    function all() { return [].slice.call(document.querySelectorAll('video[data-svp-video]')); }
+    var visible = [];
+    function refresh() {
+      visible.sort(function (a, b) { return b.ratio - a.ratio; });   // most visible wins a slot
+      visible.slice(0, MAX).forEach(function (v) {
+        if (v.el.paused) { var p = v.el.play(); if (p && p.catch) p.catch(function () {}); }
+      });
+      visible.slice(MAX).forEach(function (v) { if (!v.el.paused) v.el.pause(); });
+    }
+    function prep(el) {
+      if (el.getAttribute('data-svp-video-wired')) return false;
+      el.setAttribute('data-svp-video-wired', '1');
+      el.removeAttribute('autoplay');
+      el.muted = true;                        // required for programmatic play
+      // If it will not decode, hide it so the poster or card background shows
+      // instead of a black box.
+      el.addEventListener('error', function () { el.style.display = 'none'; });
+      return true;
+    }
+    if (typeof IntersectionObserver === 'undefined') {
+      all().slice(0, MAX).forEach(function (el) {
+        if (prep(el)) { var p = el.play(); if (p && p.catch) p.catch(function () {}); }
+      });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        var i = -1;
+        for (var k = 0; k < visible.length; k++) if (visible[k].el === en.target) { i = k; break; }
+        if (en.isIntersecting && en.intersectionRatio > 0.25) {
+          if (i < 0) visible.push({ el: en.target, ratio: en.intersectionRatio });
+          else visible[i].ratio = en.intersectionRatio;
+        } else if (i >= 0) {
+          visible.splice(i, 1);
+          try { en.target.pause(); en.target.currentTime = 0; } catch (e) {}
+        }
+      });
+      refresh();
+    }, { threshold: [0, 0.25, 0.5, 0.75, 1] });
+
+    function observeAll() { all().forEach(function (el) { if (prep(el)) io.observe(el); }); }
+    observeAll();
+    // Offer cards arrive from the backend and the carousel re-renders, so pick
+    // up videos added after init too.
+    if (typeof MutationObserver !== 'undefined') {
+      new MutationObserver(observeAll).observe(document.body, { childList: true, subtree: true });
+    }
+  }
+
   function premiumMedia(o) {
     var v = o.video_url && String(o.video_url).trim();
     if (v) {
       var emb = videoEmbed(v);
       if (emb) return '<iframe src="' + esc(emb) + '" allow="autoplay;encrypted-media" tabindex="-1" style="position:absolute;inset:0;width:100%;height:100%;border:0;z-index:0;pointer-events:none"></iframe>';
-      if (isVideoFile(v)) return '<video src="' + esc(v) + '" autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0"></video>';
+      if (isVideoFile(v)) return '<video src="' + esc(v) + '" data-svp-video muted loop playsinline preload="metadata"' + posterAttr(o) + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0"></video>';
     }
     return '';
   }
@@ -1452,7 +1520,7 @@
     if (v) {
       var emb = videoEmbed(v);
       if (emb) return '<div style="height:110px;position:relative;overflow:hidden"><iframe src="' + esc(emb) + '" allow="autoplay;encrypted-media" tabindex="-1" style="position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none"></iframe></div>';
-      if (isVideoFile(v)) return '<div style="height:110px;position:relative;overflow:hidden"><video src="' + esc(v) + '" autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></video></div>';
+      if (isVideoFile(v)) return '<div style="height:110px;position:relative;overflow:hidden"><video src="' + esc(v) + '" data-svp-video muted loop playsinline preload="metadata"' + posterAttr(o) + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></video></div>';
     }
     return o.image_url ? '<div style="height:110px;background:#EEF0FD center/cover no-repeat;background-image:url(' + esc(offerMediaUrl(o.image_url)) + ')"></div>'
       : '<div style="height:110px;background:#EEF0FD;display:flex;align-items:center;justify-content:center"><div style="width:70px;height:70px;background:url(assets/icon-mic-circle.png) center/contain no-repeat;mix-blend-mode:multiply"></div></div>';
@@ -1467,7 +1535,7 @@
     if (v) {
       var emb = videoEmbed(v);
       if (emb) return '<iframe class="svp-offer-modal__media-frame" src="' + esc(emb) + '" allow="autoplay;encrypted-media" title="' + esc(o.title || 'Offre Premium') + '"></iframe>';
-      if (isVideoFile(v)) return '<video class="svp-offer-modal__media-frame" src="' + esc(v) + '" autoplay muted loop playsinline></video>';
+      if (isVideoFile(v)) return '<video class="svp-offer-modal__media-frame" src="' + esc(v) + '" data-svp-video muted loop playsinline preload="metadata"' + posterAttr(o) + '></video>';
     }
     if (o.image_url) return '<img class="svp-offer-modal__media-img" src="' + esc(offerMediaUrl(o.image_url)) + '" alt="">';
     return '<div class="svp-offer-modal__media-fallback"><img src="' + esc(funnelOfferIcon(o)) + '" alt=""></div>';
@@ -1742,7 +1810,7 @@
     if (video) {
       var emb = videoEmbed(video);
       if (emb) media = '<iframe src="' + esc(emb) + '" allow="autoplay;encrypted-media" tabindex="-1"></iframe>';
-      else if (isVideoFile(video)) media = '<video src="' + esc(video) + '" autoplay muted loop playsinline></video>';
+      else if (isVideoFile(video)) media = '<video src="' + esc(video) + '" data-svp-video muted loop playsinline preload="metadata"' + posterAttr(o) + '></video>';
     }
     if (!media) {
       media = o.image_url
@@ -2794,7 +2862,7 @@
     wireContact(); wirePremiumCheckout(); wireExitIntent(); wireFunnelArchivedOffers(); wireLiveOffers(); wireTestimonialCarousels(); wireOffersCarousel();
     wireArchive();
     runPendingPremiumScroll();
-    wireReveal(); wireCountUp(); wirePageTransitions(); landOnHash();
+    wireOfferVideos(); wireReveal(); wireCountUp(); wirePageTransitions(); landOnHash();
     // Reveal the incoming-page cover (see animations.css html.svp-nav ::after)
     // only now — after all wiring ran and one more frame has painted — so the
     // fade never competes with this heavy init work. No-op unless we arrived via
