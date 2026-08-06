@@ -1499,6 +1499,19 @@
 
     function observeAll() { all().forEach(function (el) { if (prep(el)) io.observe(el); }); }
     observeAll();
+
+    // Firefox can refuse play() outright depending on its autoplay setting,
+    // even muted. It allows it once the visitor has interacted, so retry then —
+    // one shot, passive, and harmless where playback already started.
+    var retried = false;
+    function retry() {
+      if (retried) return;
+      retried = true;
+      refresh();
+    }
+    ['pointerdown', 'touchstart', 'keydown', 'wheel', 'scroll'].forEach(function (ev) {
+      window.addEventListener(ev, retry, { passive: true, once: true });
+    });
     // Offer cards arrive from the backend and the carousel re-renders, so pick
     // up videos added after init too.
     if (typeof MutationObserver !== 'undefined') {
@@ -1506,6 +1519,19 @@
     }
   }
 
+  // Always sits behind the video: the offer's own photo when it has one, else
+  // the branded icon. A <video> shows nothing at all until it decodes a frame,
+  // and playback is not guaranteed (Firefox's autoplay policy applies to
+  // programmatic play() too), so without this an offer with no image rendered
+  // as a plain coloured rectangle.
+  function premiumMediaFallback(o) {
+    var img = o && o.image_url && String(o.image_url).trim();
+    if (img) {
+      return '<div style="position:absolute;inset:0;z-index:0;background:#16182B center/cover no-repeat;background-image:url(' + esc(offerMediaUrl(img)) + ')"></div>';
+    }
+    return '<div style="position:absolute;inset:0;z-index:0;background:#2536C8;display:flex;align-items:center;justify-content:center">'
+      + '<div style="width:96px;height:96px;opacity:.5;background:url(' + esc(funnelOfferIcon(o)) + ') center/contain no-repeat"></div></div>';
+  }
   function premiumMedia(o) {
     var v = o.video_url && String(o.video_url).trim();
     if (v) {
@@ -1598,6 +1624,7 @@
   function premiumCard(o, archived) {
     var img = o.image_url ? 'background:#0b1030 url(' + esc(offerMediaUrl(o.image_url)) + ') center/cover no-repeat;' : 'background:repeating-linear-gradient(135deg,#4155DE,#4155DE 14px,#3347CA 14px,#3347CA 28px);';
     return '<div data-svp="offer" data-offer-id="' + esc(o.id) + '" style="position:relative;flex:0 0 auto;width:290px;max-width:86vw;height:400px;scroll-snap-align:start;border-radius:20px;overflow:hidden;box-shadow:rgba(142,160,245,.3) 5px 6px 0;' + img + 'display:flex;flex-direction:column;justify-content:space-between;padding:18px">'
+      + premiumMediaFallback(o)
       + premiumMedia(o)
       + '<div style="position:absolute;inset:0;z-index:1;background:linear-gradient(rgba(8,10,26,0) 42%,rgba(8,10,26,.85) 74%)"></div>'
       + '<div style="position:relative;z-index:2;display:flex;justify-content:flex-end"><div style="background:#F5E642;color:#16182B;font:800 12px \'Instrument Sans\',sans-serif;padding:5px 11px;border-radius:100px">' + esc(o.offer_type || 'Premium') + '</div></div>'
