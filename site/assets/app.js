@@ -49,6 +49,23 @@
       card.appendChild(det);
     }
 
+    // Optional input — used to collect the email before checkout so the
+    // duplicate-subscription check can run on it.
+    var field = null, fieldErr = null;
+    if (o.input) {
+      field = document.createElement('input');
+      field.type = o.input.type || 'text';
+      field.placeholder = o.input.placeholder || '';
+      field.value = o.input.value || '';
+      field.setAttribute('autocomplete', o.input.autocomplete || 'email');
+      field.style.cssText = "box-sizing:border-box;width:100%;border:1.5px solid #E1E0D4;border-radius:10px;padding:13px 14px;font:500 16px 'Instrument Sans',sans-serif;color:#16182B;background:#fff;margin-bottom:8px";
+      card.appendChild(field);
+      fieldErr = document.createElement('div');
+      fieldErr.style.cssText = "min-height:16px;font:600 12px 'Instrument Sans',sans-serif;color:#b00020;margin-bottom:8px;text-align:left";
+      card.appendChild(fieldErr);
+      field.addEventListener('input', function () { fieldErr.textContent = ''; field.style.borderColor = '#E1E0D4'; });
+    }
+
     var ok = document.createElement('button');
     ok.type = 'button';
     ok.style.cssText = "display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:13px;font:800 14.5px 'Instrument Sans',sans-serif;cursor:pointer";
@@ -79,14 +96,31 @@
       setTimeout(function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 160);
       document.removeEventListener('keydown', onKey);
     }
-    function onKey(e) { if (e.key === 'Escape') close(); }
-    ok.addEventListener('click', function () {
+    function onKey(e) {
+      if (e.key === 'Escape') close();
+      else if (e.key === 'Enter' && field) confirm();
+    }
+    function confirm() {
+      if (field) {
+        var v = String(field.value || '').trim();
+        var bad = o.input.validate ? !o.input.validate(v) : !v;
+        if (bad) {
+          fieldErr.textContent = o.input.error || 'Entrée invalide.';
+          field.style.borderColor = '#b00020';
+          try { field.focus(); } catch (e) {}
+          return;                                   // keep the dialog open
+        }
+        close();
+        if (typeof o.onConfirm === 'function') o.onConfirm(v);
+        return;
+      }
       close();
       if (typeof o.onConfirm === 'function') o.onConfirm();
-    });
+    }
+    ok.addEventListener('click', confirm);
     overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
     document.addEventListener('keydown', onKey);
-    try { ok.focus({ preventScroll: true }); } catch (e) {}
+    try { (field || ok).focus({ preventScroll: true }); } catch (e) {}
   }
 
   // ---- required-field validation ----
@@ -902,6 +936,27 @@
     if (btn.getAttribute('data-orig-label') == null) btn.setAttribute('data-orig-label', btn.textContent);
     var plan = options.plan || btn.getAttribute('data-plan') || 'yearly';
     var email = String(options.email || getEmail() || '').trim().toLowerCase();
+    // The email is what the duplicate-subscription check runs on, so it has to
+    // be known BEFORE Stripe opens. Without it the server rejects the request
+    // (code: email_required) and Stripe would otherwise show a free-text field
+    // where someone could type an address that is already subscribed.
+    if (!validEmail(email)) {
+      svpDialog({
+        title: 'Ton courriel',
+        message: 'On vérifie que cette adresse n’a pas déjà un abonnement Premium avant de t’envoyer au paiement.',
+        input: {
+          type: 'email',
+          placeholder: 'ton.courriel@exemple.com',
+          validate: validEmail,
+          error: 'Entre une adresse courriel valide.'
+        },
+        confirmLabel: 'Continuer',
+        onConfirm: function (value) {
+          startPremiumCheckout(btn, Object.assign({}, options, { email: value }));
+        }
+      });
+      return;
+    }
     if (email) setEmail(email);
     tagPremiumClick(email);
     btn.disabled = true;
@@ -922,7 +977,12 @@
         if (d && d.url) { pixel('track', 'InitiateCheckout'); window.location.href = d.url; }
         else {
           resetCheckoutButton(btn);
-          if (d.code === 'already_premium') svpDialog({
+          if (d.code === 'email_required') svpDialog({
+            title: 'Courriel requis',
+            message: 'On a besoin de ton courriel pour vérifier ton abonnement avant le paiement.',
+            confirmLabel: 'Compris'
+          });
+          else if (d.code === 'already_premium') svpDialog({
             title: 'Cette adresse est déjà Premium',
             message: 'Un abonnement Premium actif existe déjà pour :',
             detail: d.email || email || '',
