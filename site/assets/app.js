@@ -942,9 +942,9 @@
     if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
   }
 
-  // Asks for the address the duplicate check will run on. Reused by the
-  // "Utiliser une autre adresse" action so changing the email happens right
-  // here instead of dumping the visitor on the login page.
+  // Only reached from "Utiliser une autre adresse" on the already-Premium
+  // dialog, so someone who was blocked can try a different address without
+  // being dumped on the login page. It is no longer shown before checkout.
   // Send someone to their account. compte.html redirects out when there is no
   // session, so an unauthenticated visitor has to pass the emailed-code login
   // first — carry the address over so connexion pre-fills it and they only
@@ -977,7 +977,7 @@
       onConfirm: function (value) {
         var next = String(value || '').trim().toLowerCase();
         setEmail(next);
-        startPremiumCheckout(btn, Object.assign({}, options, { email: next, emailConfirmed: true }));
+        startPremiumCheckout(btn, Object.assign({}, options, { email: next }));
       }
     });
   }
@@ -989,17 +989,10 @@
     if (btn.getAttribute('data-orig-label') == null) btn.setAttribute('data-orig-label', btn.textContent);
     var plan = options.plan || btn.getAttribute('data-plan') || 'yearly';
     var email = String(options.email || getEmail() || '').trim().toLowerCase();
-    // The email is what the duplicate-subscription check runs on, so it has to
-    // be known BEFORE Stripe opens. Without it the server rejects the request
-    // (code: email_required) and Stripe would otherwise show a free-text field
-    // where someone could type an address that is already subscribed.
-    // ALWAYS confirm the address, even when one is already stored. Skipping the
-    // prompt for a known email meant that once someone had entered one, every
-    // later click went straight to Stripe on whatever was cached — a stale or
-    // mistyped address would then be the one billed, and the visitor never saw
-    // which. Pre-filled, so confirming is a single click.
-    if (!options.emailConfirmed) { askCheckoutEmail(btn, options, email); return; }
-    if (!validEmail(email)) { askCheckoutEmail(btn, options, ''); return; }
+    // No up-front email prompt: the CTA goes straight to Stripe. The
+    // duplicate-subscription check below therefore only runs when we already
+    // know the address (stored from the funnel or a previous login) — with no
+    // email the server skips it and Stripe collects the address itself.
     if (email) setEmail(email);
     tagPremiumClick(email);
     btn.disabled = true;
@@ -1020,12 +1013,7 @@
         if (d && d.url) { pixel('track', 'InitiateCheckout'); window.location.href = d.url; }
         else {
           resetCheckoutButton(btn);
-          if (d.code === 'email_required') svpDialog({
-            title: 'Courriel requis',
-            message: 'On a besoin de ton courriel pour vérifier ton abonnement avant le paiement.',
-            confirmLabel: 'Compris'
-          });
-          else if (d.code === 'already_premium') {
+          if (d.code === 'already_premium') {
             // Branch on WHY we blocked. A comped member (Premium granted
             // directly, no Stripe customer) has nothing in the billing portal —
             // sending them there lands on a login page that can never resolve.
@@ -1033,7 +1021,7 @@
             var comped = d.source !== 'stripe_active';
             // Changing the address is an edit, not a detour: reopen the same
             // prompt pre-filled so they can correct it and be re-checked.
-            var reEnter = function () { askCheckoutEmail(btn, Object.assign({}, options, { emailConfirmed: false }), blockedEmail); };
+            var reEnter = function () { askCheckoutEmail(btn, options, blockedEmail); };
             svpDialog(comped ? {
               title: 'Tu as déjà accès à Premium',
               message: 'Cet accès a été activé directement pour :',

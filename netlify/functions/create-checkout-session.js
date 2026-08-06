@@ -191,27 +191,7 @@ exports.handler = async (event) => {
       };
     }
 
-    // An email is MANDATORY, and this gate is what makes the duplicate check
-    // binding. Previously it was optional: with no email the whole check below
-    // was skipped, the session was created without customer_email, and Stripe
-    // Checkout showed a free-text field. Someone could then type an address
-    // that already had an active subscription and be billed a second time —
-    // Stripe does not deduplicate by email.
-    //
-    // Enforced HERE rather than only in the UI, so calling the endpoint
-    // directly cannot bypass it.
-    if (!normalizedEmail || !validEmail(normalizedEmail)) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          error: 'A valid email is required before checkout.',
-          code: 'email_required',
-        }),
-      };
-    }
-
-    {
+    if (normalizedEmail && validEmail(normalizedEmail)) {
       // Never let anyone subscribe twice, while still letting someone who
       // genuinely cancelled come back. Three cases, and they need different
       // answers:
@@ -291,13 +271,13 @@ exports.handler = async (event) => {
       },
     };
 
-    // Unconditional now (the gate above guarantees a valid address). Passing
-    // customer_email makes Stripe Checkout pre-fill it and render it READ-ONLY,
-    // so the address that gets billed is necessarily the one we just checked —
-    // without it, Stripe shows an editable field and the check means nothing.
-    sessionConfig.customer_email = normalizedEmail;
-    sessionConfig.metadata.customer_email = normalizedEmail;
-    sessionConfig.subscription_data.metadata.customer_email = normalizedEmail;
+    // Only when we know it. With no address Stripe collects one itself, which
+    // also means the duplicate check above did not run for this session.
+    if (normalizedEmail && validEmail(normalizedEmail)) {
+      sessionConfig.customer_email = normalizedEmail;
+      sessionConfig.metadata.customer_email = normalizedEmail;
+      sessionConfig.subscription_data.metadata.customer_email = normalizedEmail;
+    }
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
 
