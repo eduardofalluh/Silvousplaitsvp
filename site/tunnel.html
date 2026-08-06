@@ -56,6 +56,8 @@
   .funnel-archive-media{height:64px;background:#EEF0FD center/cover no-repeat;display:flex;align-items:center;justify-content:center;overflow:hidden}
   .funnel-archive-media img{max-height:47px;max-width:60%;mix-blend-mode:multiply}
   .funnel-archive-media img.funnel-archive-photo{width:100%;height:100% !important;max-width:none !important;max-height:none !important;object-fit:cover;mix-blend-mode:normal;display:block}
+  .funnel-archive-media iframe,.funnel-archive-media video{width:100%;height:100%;border:0;object-fit:cover;display:block}
+  .funnel-archive-media iframe{pointer-events:none}
   .funnel-archive-body{padding:9px 10px 10px}
   .funnel-archive-card-title{font:800 12.5px/1.18 'Bricolage Grotesque',sans-serif;margin-bottom:3px;color:#16182B}
   .funnel-archive-meta{font:600 10px/1.3 'Instrument Sans',sans-serif;color:#8B8DA0;min-height:24px}
@@ -94,7 +96,7 @@
 <main class="funnel-page" data-svp="funnel" data-svp-funnel-v2>
   <nav class="funnel-tabs" aria-label="Étapes du tunnel">
     <button class="funnel-tab" type="button" data-step-tab="1" aria-selected="true">1 · Quiz</button>
-    <button class="funnel-tab" type="button" data-step-tab="2" aria-selected="false">2 · Exemples</button>
+    <button class="funnel-tab" type="button" data-step-tab="2" aria-selected="false">2 · Premium</button>
     <button class="funnel-tab" type="button" data-step-tab="3" aria-selected="false">3 · Invitation</button>
     <button class="funnel-tab" type="button" data-step-tab="4" aria-selected="false">Bienvenue</button>
   </nav>
@@ -159,14 +161,14 @@
     </div>
 
     <div class="funnel-step" data-funnel-step="2" hidden>
-      <div style="text-align:center;margin-bottom:12px"><span style="display:inline-block;background:#EEF0FD;color:#3347CA;font:800 11.5px 'Instrument Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:6px 15px;border-radius:100px">Aperçu</span></div>
-      <h1 class="funnel-title" style="text-align:center;font-size:25px"><span data-funnel-name>Alex</span>, voici le genre de sorties qu'on peut t'envoyer</h1>
-      <p class="funnel-copy" style="text-align:center">Quelques exemples déjà envoyés à <span data-funnel-city>Montréal</span>. L'infolettre gratuite reste gratuite.</p>
+      <div style="text-align:center;margin-bottom:12px"><span style="display:inline-block;background:#16182B;color:#FFFEF5;font:800 11.5px 'Instrument Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:6px 15px;border-radius:100px">Membre Premium</span></div>
+      <h1 class="funnel-title" style="text-align:center;font-size:25px"><span data-funnel-name>Alex</span>, les membres Premium économisent à chaque semaine&nbsp;!</h1>
+      <p class="funnel-copy" style="text-align:center">Toi, as-tu payé plein prix&nbsp;? Voici ce que des membres Premium ont reçu à <span data-funnel-city>Montréal</span>.</p>
 
-      <section class="funnel-archive" aria-label="Offres passées">
+      <section class="funnel-archive" aria-label="Offres Premium passées">
         <div class="funnel-archive-head">
           <div>
-            <div class="funnel-archive-kicker">Offres passées</div>
+            <div class="funnel-archive-kicker">Offres Premium passées</div>
             <div class="funnel-archive-title">Des exemples réels déjà envoyés</div>
           </div>
           <div class="funnel-archive-actions" aria-label="Navigation des offres passées">
@@ -185,7 +187,9 @@
         <div class="funnel-archive-empty" data-funnel-archive-empty>Les offres passées se chargent.</div>
       </section>
 
-      <button class="funnel-primary" type="button" data-premium-choice="no">Continuer gratuitement →</button>
+      <button class="funnel-primary" type="button" data-premium-choice="yes" data-plan="yearly">Je veux économiser sur mes shows</button>
+      <div style="text-align:center;font:500 11.5px 'Instrument Sans',sans-serif;color:#8B8DA0;margin-top:9px">Annule en tout temps · Garantie 30 jours</div>
+      <button class="funnel-link-button" type="button" data-premium-choice="no">Non merci, je reste au forfait gratuit</button>
     </div>
 
     <div class="funnel-step" data-funnel-step="3" hidden>

@@ -545,6 +545,7 @@
     var session = getSession();
     if (!session) { window.location.href = 'connexion.html'; return; }
     setPremiumOnlyVisible(false);
+    [].slice.call(document.querySelectorAll('[data-svp-free-only]')).forEach(function (el) { el.style.display = 'none'; });
     // Show a skeleton for the name + badge immediately (never the fake "Alex").
     var greet0 = document.querySelector('[data-svp="compte"] h1');
     if (greet0) greet0.innerHTML = 'Bonjour, <span class="svp-skel" style="display:inline-block;width:140px;height:24px;border-radius:8px;vertical-align:-3px"></span>';
@@ -574,6 +575,9 @@
     }
     [].slice.call(document.querySelectorAll('[data-svp-premium-only]')).forEach(function (el) {
       el.style.display = isPremium ? (el.getAttribute('data-svp-display') || '') : 'none';
+    });
+    [].slice.call(document.querySelectorAll('[data-svp-free-only]')).forEach(function (el) {
+      el.style.display = isPremium ? 'none' : (el.getAttribute('data-svp-display') || '');
     });
   }
 
@@ -1419,9 +1423,18 @@
   }
   function funnelArchiveCard(o) {
     var meta = [o.offer_type || '', o.venue || '', regionLabel(o.region || ''), frDate(o.event_date)].filter(Boolean).join(' · ');
-    var media = o.image_url
-      ? '<img class="funnel-archive-photo" src="' + esc(offerMediaUrl(o.image_url)) + '" alt="">'
-      : '<img src="' + esc(funnelOfferIcon(o)) + '" alt="">';
+    var video = o.video_url && String(o.video_url).trim();
+    var media = '';
+    if (video) {
+      var emb = videoEmbed(video);
+      if (emb) media = '<iframe src="' + esc(emb) + '" allow="autoplay;encrypted-media" tabindex="-1"></iframe>';
+      else if (isVideoFile(video)) media = '<video src="' + esc(video) + '" autoplay muted loop playsinline></video>';
+    }
+    if (!media) {
+      media = o.image_url
+        ? '<img class="funnel-archive-photo" src="' + esc(offerMediaUrl(o.image_url)) + '" alt="">'
+        : '<img src="' + esc(funnelOfferIcon(o)) + '" alt="">';
+    }
     return '<article class="funnel-archive-card" data-funnel-archive-card data-offer-id="' + esc(o.id || '') + '">'
       + '<div class="funnel-archive-media">' + media + '</div>'
       + '<div class="funnel-archive-body">'
