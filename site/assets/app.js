@@ -950,7 +950,13 @@
   // first — carry the address over so connexion pre-fills it and they only
   // have to request and type the code.
   function goToAccount(emailForLogin) {
-    if (getSession()) { window.location.href = 'compte.html'; return; }
+    // ALWAYS through the emailed code — never straight into compte.html, even
+    // when a session already exists. Two reasons:
+    //  - the address in the dialog is whichever one we just blocked, which is
+    //    not necessarily the session's owner, so jumping to the account could
+    //    show somebody else's; and
+    //  - reaching a Premium account must require proving control of the inbox,
+    //    not merely sharing a browser with someone who logged in once.
     var e = String(emailForLogin || '').trim().toLowerCase();
     if (e) setEmail(e);
     window.location.href = 'connexion.html' + (e ? '?email=' + encodeURIComponent(e) : '');
