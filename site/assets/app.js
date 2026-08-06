@@ -10,6 +10,56 @@
   function getEmail() { try { return localStorage.getItem(EMAIL_KEY) || ''; } catch (e) { return ''; } }
   function setEmail(v) { try { localStorage.setItem(EMAIL_KEY, v); } catch (e) {} }
   function validEmail(e) { return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e); }
+
+  // ---- required-field validation ----
+  // The flattened design has no <form> elements at all: every field is a bare
+  // input and every submit is a type="button" with a click handler. So the
+  // `required` attribute would be inert here — the browser only enforces it on a
+  // real form submission — and each handler only spot-checked one or two fields,
+  // letting people submit half-empty contact and partenariat requests.
+  //
+  // Validate explicitly instead: mark the fields, flag the empty ones, focus the
+  // first, and report how many are missing. Hidden fields are skipped so the
+  // conditional partenariat inputs (other-city, ticket quantity) only count when
+  // they are actually on screen.
+  function markInvalid(el, bad) {
+    if (!el) return;
+    if (bad) {
+      if (!el.hasAttribute('data-orig-border')) el.setAttribute('data-orig-border', el.style.borderColor || '');
+      el.style.borderColor = '#b00020';
+      el.setAttribute('aria-invalid', 'true');
+    } else {
+      el.style.borderColor = el.getAttribute('data-orig-border') || '';
+      el.removeAttribute('aria-invalid');
+    }
+  }
+  function isVisible(el) {
+    return !!(el && (el.offsetWidth || el.offsetHeight || el.getClientRects().length));
+  }
+  // fields: [{ sel, label, email }]  -> returns an error string, or '' when valid
+  function checkRequired(fields) {
+    var missing = [], firstBad = null;
+    fields.forEach(function (f) {
+      var el = document.querySelector(f.sel);
+      if (!el || !isVisible(el)) return;             // not on screen -> not required
+      var val = String(el.value || '').trim();
+      var bad = !val || (f.email && !validEmail(val));
+      markInvalid(el, bad);
+      if (bad) {
+        missing.push(f.label);
+        if (!firstBad) firstBad = el;
+        // clear the flag as soon as they start fixing it
+        if (!el.hasAttribute('data-req-wired')) {
+          el.setAttribute('data-req-wired', '1');
+          el.addEventListener('input', function () { markInvalid(el, false); });
+        }
+      }
+    });
+    if (!missing.length) return '';
+    try { if (firstBad) firstBad.focus({ preventScroll: false }); } catch (e) {}
+    if (missing.length === 1) return 'Champ requis : ' + missing[0] + '.';
+    return 'Champs requis : ' + missing.join(', ') + '.';
+  }
   function pixel(kind, name) { if (typeof window.fbq === 'function') { try { window.fbq(kind, name); } catch (e) {} } }
   function tagPremiumClick(email) {
     var knownEmail = String(email || getEmail() || '').trim().toLowerCase();
@@ -175,6 +225,15 @@
       applyRevealTargets(activeStep);
     }
     function validateStep1() {
+      // Prénom is required too: it is not decorative — the welcome step and the
+      // invite preview both address the person by name ("Bienvenue, Alex !"),
+      // and it is written to ActiveCampaign. Previously it could be skipped,
+      // which produced empty names downstream.
+      var err = checkRequired([
+        { sel: '[data-svp="prenom"]', label: 'Prénom' },
+        { sel: '[data-svp="funnel-email"]', label: 'Courriel', email: true }
+      ]);
+      if (err) { say(err, true); return false; }
       var email = ((emailInput && emailInput.value) || '').trim();
       if (!validEmail(email)) {
         say('Entre une adresse courriel valide pour continuer.', true);
@@ -526,7 +585,8 @@
 
     submit.addEventListener('click', function () {
       var email = (emailInput.value || '').trim();
-      if (!validEmail(email)) { say('Entre une adresse email valide.', true); return; }
+      var cerr = checkRequired([{ sel: '[data-svp="login-email"]', label: 'Courriel', email: true }]);
+      if (cerr) { say(cerr, true); return; }
       submit.disabled = true; say('Envoi du code…');
       fetch(FN + 'request-login-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) })
         .then(function (r) { return r.json(); }).then(function (d) {
@@ -593,6 +653,14 @@
     btn.addEventListener('click', function () {
       var session = getSession();
       if (!session) { window.location.href = 'connexion.html'; return; }
+      // Only Prénom is required. Deliberately NOT Nom: the signup funnel never
+      // collects a last name, so every existing subscriber has an empty one —
+      // requiring it here would lock them out of saving their own profile.
+      // Phone stays optional too.
+      var aerr = checkRequired([
+        { sel: '[data-svp-account-field="firstName"]', label: 'Prénom' }
+      ]);
+      if (aerr) { say(aerr, true); return; }
       btn.disabled = true;
       var original = btn.textContent;
       btn.textContent = 'Enregistrement…';
@@ -708,7 +776,13 @@
     btn.addEventListener('click', function (e) {
       e.preventDefault();
       var data = { name: v('[name="name"]'), email: v('[name="email"]'), subject: v('[name="subject"]'), message: v('[name="message"]'), website: v('[name="website"]') };
-      if (!validEmail(data.email.trim()) || !data.message.trim()) { say('Courriel valide et message requis.', true); return; }
+      var err = checkRequired([
+        { sel: '[name="name"]', label: 'Nom complet' },
+        { sel: '[name="email"]', label: 'Courriel', email: true },
+        { sel: '[name="subject"]', label: 'Sujet' },
+        { sel: '[name="message"]', label: 'Message' }
+      ]);
+      if (err) { say(err, true); return; }
       btn.disabled = true; say('Envoi…');
       fetch(FN + 'send-contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
         .then(function (r) { return r.json(); }).then(function (d) {
@@ -856,8 +930,15 @@
         return false;
       }
       if (state.step === 2) {
-        if (!val('organisation') && !val('name')) { say('Ajoutez un nom ou une organisation.', true); return false; }
-        if (!validEmail(val('email'))) { say('Ajoutez un courriel valide.', true); return false; }
+        // Was `!organisation && !name` — an OR, so either one alone let you
+        // through and partnership requests arrived with no contact person (or no
+        // organisation) to reply to. Both are needed, plus a valid email.
+        var e2 = checkRequired([
+          { sel: '[name="organisation"]', label: 'Nom (artiste ou organisation)' },
+          { sel: '[name="name"]', label: 'Nom du contact' },
+          { sel: '[name="email"]', label: 'Courriel', email: true }
+        ]);
+        if (e2) { say(e2, true); return false; }
       }
       if (state.step === 3 && !state.cities.length && !val('otherCity')) {
         say('Choisissez au moins une ville ou indiquez une autre ville.', true);
@@ -1022,7 +1103,16 @@
     btn.addEventListener('click', function (e) {
       e.preventDefault();
       var data = { name: val('name'), email: val('email'), organisation: val('organisation'), message: val('message'), website: val('website'), interests: interests };
-      if (!validEmail(data.email.trim()) || !data.message.trim()) { say('Courriel valide et message requis.', true); return; }
+      // otherCity / offerType / ticketQuantity are deliberately absent: they are
+      // conditional inputs and checkRequired only enforces what is on screen,
+      // but they are also genuinely optional even when shown.
+      var perr = checkRequired([
+        { sel: '[name="organisation"]', label: 'Nom (artiste ou organisation)' },
+        { sel: '[name="name"]', label: 'Nom du contact' },
+        { sel: '[name="email"]', label: 'Courriel', email: true },
+        { sel: '[name="message"]', label: 'Votre spectacle ou votre offre' }
+      ]);
+      if (perr) { say(perr, true); return; }
       btn.disabled = true; say('Envoi…');
       fetch(FN + 'send-partenariat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
         .then(function (r) { return r.json(); }).then(function (d) {
