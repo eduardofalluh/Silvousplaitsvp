@@ -982,15 +982,29 @@
             message: 'On a besoin de ton courriel pour vérifier ton abonnement avant le paiement.',
             confirmLabel: 'Compris'
           });
-          else if (d.code === 'already_premium') svpDialog({
-            title: 'Cette adresse est déjà Premium',
-            message: 'Un abonnement Premium actif existe déjà pour :',
-            detail: d.email || email || '',
-            confirmLabel: 'Voir mon abonnement',
-            onConfirm: function () { window.location.href = STRIPE_BILLING_LOGIN_URL; },
-            secondaryLabel: 'Utiliser une autre adresse',
-            onSecondary: function () { window.location.href = 'connexion.html'; }
-          });
+          else if (d.code === 'already_premium') {
+            // Branch on WHY we blocked. A comped member (Premium granted
+            // directly, no Stripe customer) has nothing in the billing portal —
+            // sending them there lands on a login page that can never resolve.
+            var comped = d.source !== 'stripe_active';
+            svpDialog(comped ? {
+              title: 'Tu as déjà accès à Premium',
+              message: 'Cet accès a été activé directement pour :',
+              detail: d.email || email || '',
+              confirmLabel: 'Voir mon compte',
+              onConfirm: function () { window.location.href = 'compte.html'; },
+              secondaryLabel: 'Utiliser une autre adresse',
+              onSecondary: function () { window.location.href = 'connexion.html'; }
+            } : {
+              title: 'Cette adresse est déjà Premium',
+              message: 'Un abonnement Premium actif existe déjà pour :',
+              detail: d.email || email || '',
+              confirmLabel: 'Gérer mon abonnement',
+              onConfirm: function () { window.location.href = STRIPE_BILLING_LOGIN_URL; },
+              secondaryLabel: 'Utiliser une autre adresse',
+              onSecondary: function () { window.location.href = 'connexion.html'; }
+            });
+          }
           else svpDialog({ title: "Le paiement n'a pas pu démarrer", message: "Quelque chose a bloqué l'ouverture de la page de paiement. Réessaie dans un instant — si ça persiste, écris-nous à spectacles@silvousplaitsvp.com.", confirmLabel: 'Réessayer' });
         }
       }).catch(function () { resetCheckoutButton(btn); svpDialog({ title: 'Connexion interrompue', message: "On n'a pas pu joindre le service de paiement. Vérifie ta connexion et réessaie.", confirmLabel: 'Réessayer' }); });
