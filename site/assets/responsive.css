@@ -766,6 +766,7 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
   [data-scroller] {
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
+    overflow-y: hidden !important;
     scroll-snap-type: x mandatory !important;
     -webkit-overflow-scrolling: touch;
   }
@@ -790,6 +791,12 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
     animation: none !important;
     transform: none !important;
     scrollbar-width: none;
+  }
+
+  [data-scroller="offres"],
+  [data-scroller="temoignages"] {
+    overscroll-behavior: contain;
+    touch-action: pan-x pinch-zoom;
   }
   [data-scroller="temoignages"]::-webkit-scrollbar { display: none; }
   /* Marquee loop duplicates — see wireTestimonialCarousels. Hidden only here, so
