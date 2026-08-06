@@ -30,10 +30,15 @@
 # blank white page with a bare blue link on it before the real site loaded —
 # on the very first visit, which is the worst possible moment for it.
 # status 200 rewrites in place: no second request, no flash, URL stays "/".
+# force = true is required: Netlify serves a matching static file BEFORE
+# applying a non-forced redirect, and "/" matches index.html, so without it
+# the stub kept winning and the flash stayed. Only this exact path is forced —
+# the catch-all below must stay unforced or it would shadow every real file.
 [[redirects]]
   from = "/"
   to = "/accueil.html"
   status = 200
+  force = true
 
 # Same reason for every other unmatched path: land on the real page rather
 # than bouncing through the stub.
