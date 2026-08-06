@@ -11,6 +11,58 @@
   function setEmail(v) { try { localStorage.setItem(EMAIL_KEY, v); } catch (e) {} }
   function validEmail(e) { return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e); }
 
+  // ---- branded dialog (replaces the browser's native alert) ----
+  // window.alert renders the OS/browser chrome — grey box, "silvousplaitsvp.com
+  // says…", a system OK button — which looks broken next to the rest of the
+  // site and is the first thing a visitor sees when a payment fails. This is the
+  // same card treatment the funnel's exit modal uses.
+  function svpDialog(opts) {
+    var o = opts || {};
+    var prev = document.querySelector('[data-svp-dialog]');
+    if (prev && prev.parentNode) prev.parentNode.removeChild(prev);
+
+    var overlay = document.createElement('div');
+    overlay.setAttribute('data-svp-dialog', '');
+    overlay.setAttribute('role', 'alertdialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:rgba(22,24,43,.55);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .16s ease';
+
+    var card = document.createElement('div');
+    card.style.cssText = "background:#FFFEF5;max-width:400px;width:100%;border:1.5px solid #16182B;border-radius:18px;box-shadow:6px 6px 0 #3347CA;padding:26px 24px;text-align:center;transform:translateY(6px) scale(.99);transition:transform .18s cubic-bezier(.2,.8,.2,1)";
+
+    var h = document.createElement('div');
+    h.style.cssText = "font:800 19px/1.2 'Bricolage Grotesque',sans-serif;color:#16182B;margin-bottom:8px";
+    h.textContent = o.title || 'Oups';
+
+    var p = document.createElement('div');
+    p.style.cssText = "font:500 14px/1.5 'Instrument Sans',sans-serif;color:#4A4D66;margin-bottom:18px";
+    p.textContent = o.message || '';
+
+    var ok = document.createElement('button');
+    ok.type = 'button';
+    ok.style.cssText = "display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:13px;font:800 14.5px 'Instrument Sans',sans-serif;cursor:pointer";
+    ok.textContent = o.confirmLabel || 'Compris';
+
+    card.appendChild(h); card.appendChild(p); card.appendChild(ok);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+    requestAnimationFrame(function () {
+      overlay.style.opacity = '1';
+      card.style.transform = 'none';
+    });
+
+    function close() {
+      overlay.style.opacity = '0';
+      setTimeout(function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 160);
+      document.removeEventListener('keydown', onKey);
+    }
+    function onKey(e) { if (e.key === 'Escape' || e.key === 'Enter') close(); }
+    ok.addEventListener('click', close);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', onKey);
+    try { ok.focus({ preventScroll: true }); } catch (e) {}
+  }
+
   // ---- required-field validation ----
   // The flattened design has no <form> elements at all: every field is a bare
   // input and every submit is a type="button" with a click handler. So the
@@ -844,10 +896,10 @@
         if (d && d.url) { pixel('track', 'InitiateCheckout'); window.location.href = d.url; }
         else {
           resetCheckoutButton(btn);
-          if (d.code === 'already_premium') alert('Tu as déjà un abonnement Premium actif avec cette adresse.');
-          else alert("Le paiement n'a pas pu démarrer. Réessaie.");
+          if (d.code === 'already_premium') svpDialog({ title: 'Tu es déjà Premium', message: 'Cette adresse a déjà un abonnement Premium actif. Connecte-toi pour voir tes offres.', confirmLabel: 'Compris' });
+          else svpDialog({ title: "Le paiement n'a pas pu démarrer", message: "Quelque chose a bloqué l'ouverture de la page de paiement. Réessaie dans un instant — si ça persiste, écris-nous à spectacles@silvousplaitsvp.com.", confirmLabel: 'Réessayer' });
         }
-      }).catch(function () { resetCheckoutButton(btn); alert('Erreur. Réessaie plus tard.'); });
+      }).catch(function () { resetCheckoutButton(btn); svpDialog({ title: 'Connexion interrompue', message: "On n'a pas pu joindre le service de paiement. Vérifie ta connexion et réessaie.", confirmLabel: 'Réessayer' }); });
   }
 
   function wirePremiumCheckout() {
@@ -1286,7 +1338,7 @@
     var offer = offerDetailById[String(id || '')];
     if (!offer) return;
     if (document.body && document.body.getAttribute('data-svp') === 'compte' && document.body.getAttribute('data-svp-account-premium') !== 'true') {
-      alert('Ces offres sont réservées aux membres Premium.');
+      svpDialog({ title: 'Réservé aux membres Premium', message: 'Ces offres sont réservées aux membres Premium. Passe Premium pour y accéder.', confirmLabel: 'Compris' });
       return;
     }
     var ticketUrl = safeHttpUrl(offer.ticket_url);
