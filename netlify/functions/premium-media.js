@@ -26,11 +26,39 @@ function contentTypeFromKey(key) {
   return (m && EXT_TYPES[m[1].toLowerCase()]) || 'application/octet-stream';
 }
 
+function rangeHeader(event) {
+  return String(event.headers.range || event.headers.Range || '').trim();
+}
+
+function parseByteRange(header, size) {
+  const match = /^bytes=(\d*)-(\d*)$/i.exec(header);
+  if (!match || !Number.isFinite(size) || size <= 0) return null;
+
+  let start;
+  let end;
+  if (match[1] === '' && match[2] === '') return null;
+
+  if (match[1] === '') {
+    const suffixLength = Number(match[2]);
+    if (!Number.isFinite(suffixLength) || suffixLength <= 0) return null;
+    start = Math.max(size - suffixLength, 0);
+    end = size - 1;
+  } else {
+    start = Number(match[1]);
+    end = match[2] === '' ? size - 1 : Number(match[2]);
+  }
+
+  if (!Number.isInteger(start) || !Number.isInteger(end)) return null;
+  if (start < 0 || end < start || start >= size) return null;
+  return { start, end: Math.min(end, size - 1) };
+}
+
 exports.handler = async (event) => {
   const origin = event.headers.origin || event.headers.Origin || '';
   const headers = {
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Range',
+    'Access-Control-Expose-Headers': 'Accept-Ranges, Content-Length, Content-Range',
     Vary: 'Origin',
     'X-Content-Type-Options': 'nosniff',
     'Cache-Control': 'public, max-age=31536000, immutable',
@@ -46,7 +74,7 @@ exports.handler = async (event) => {
   if (!isAllowedOrigin(event)) {
     return { statusCode: 403, headers, body: 'Forbidden origin' };
   }
-  if (event.httpMethod !== 'GET') {
+  if (event.httpMethod !== 'GET' && event.httpMethod !== 'HEAD') {
     return { statusCode: 405, headers, body: 'Method not allowed' };
   }
 
@@ -64,6 +92,8 @@ exports.handler = async (event) => {
     }
 
     const metadata = item.metadata || {};
+    const data = Buffer.from(item.data);
+    const size = data.length;
     // Falling back to application/octet-stream broke playback in Firefox, which
     // honours Content-Type strictly — and this response also sends
     // X-Content-Type-Options: nosniff, so the browser is explicitly forbidden
@@ -72,11 +102,38 @@ exports.handler = async (event) => {
     // blob written without it (a migration, a future upload path) still plays
     // everywhere instead of silently working in one browser only.
     headers['Content-Type'] = String(metadata.contentType || contentTypeFromKey(key));
+    headers['Accept-Ranges'] = 'bytes';
+
+    const requestedRange = rangeHeader(event);
+    if (requestedRange) {
+      const range = parseByteRange(requestedRange, size);
+      if (!range) {
+        return {
+          statusCode: 416,
+          headers: Object.assign({}, headers, { 'Content-Range': `bytes */${size}` }),
+          body: '',
+        };
+      }
+
+      const chunk = data.subarray(range.start, range.end + 1);
+      const rangeHeaders = Object.assign({}, headers, {
+        'Content-Range': `bytes ${range.start}-${range.end}/${size}`,
+        'Content-Length': String(chunk.length),
+      });
+      return {
+        statusCode: 206,
+        headers: rangeHeaders,
+        isBase64Encoded: true,
+        body: event.httpMethod === 'HEAD' ? '' : chunk.toString('base64'),
+      };
+    }
+
+    headers['Content-Length'] = String(size);
     return {
       statusCode: 200,
       headers,
       isBase64Encoded: true,
-      body: Buffer.from(item.data).toString('base64'),
+      body: event.httpMethod === 'HEAD' ? '' : data.toString('base64'),
     };
   } catch (error) {
     return { statusCode: 500, headers, body: 'Media unavailable' };

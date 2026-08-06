@@ -1444,6 +1444,18 @@
     var img = o && o.image_url && String(o.image_url).trim();
     return img ? ' poster="' + esc(offerMediaUrl(img)) + '"' : '';
   }
+  function startAutoplayVideos(root) {
+    [].slice.call((root || document).querySelectorAll('video[autoplay]')).forEach(function (video) {
+      video.muted = true;
+      video.defaultMuted = true;
+      video.playsInline = true;
+      video.preload = 'auto';
+      try {
+        var p = video.play();
+        if (p && p.catch) p.catch(function () {});
+      } catch (e) {}
+    });
+  }
 
   function premiumMediaFallback(o) {
     var img = o && o.image_url && String(o.image_url).trim();
@@ -1458,7 +1470,7 @@
     if (v) {
       var emb = videoEmbed(v);
       if (emb) return '<iframe src="' + esc(emb) + '" allow="autoplay;encrypted-media" tabindex="-1" style="position:absolute;inset:0;width:100%;height:100%;border:0;z-index:0;pointer-events:none"></iframe>';
-      if (isVideoFile(v)) return '<video src="' + esc(v) + '" autoplay muted loop playsinline' + posterAttr(o) + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0"></video>';
+      if (isVideoFile(v)) return '<video src="' + esc(offerMediaUrl(v)) + '" autoplay muted loop playsinline preload="auto"' + posterAttr(o) + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0"></video>';
     }
     return '';
   }
@@ -1467,7 +1479,7 @@
     if (v) {
       var emb = videoEmbed(v);
       if (emb) return '<div style="height:110px;position:relative;overflow:hidden"><iframe src="' + esc(emb) + '" allow="autoplay;encrypted-media" tabindex="-1" style="position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none"></iframe></div>';
-      if (isVideoFile(v)) return '<div style="height:110px;position:relative;overflow:hidden"><video src="' + esc(v) + '" autoplay muted loop playsinline' + posterAttr(o) + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></video></div>';
+      if (isVideoFile(v)) return '<div style="height:110px;position:relative;overflow:hidden"><video src="' + esc(offerMediaUrl(v)) + '" autoplay muted loop playsinline preload="auto"' + posterAttr(o) + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></video></div>';
     }
     return o.image_url ? '<div style="height:110px;background:#EEF0FD center/cover no-repeat;background-image:url(' + esc(offerMediaUrl(o.image_url)) + ')"></div>'
       : '<div style="height:110px;background:#EEF0FD;display:flex;align-items:center;justify-content:center"><div style="width:70px;height:70px;background:url(assets/icon-mic-circle.png) center/contain no-repeat;mix-blend-mode:multiply"></div></div>';
@@ -1482,7 +1494,7 @@
     if (v) {
       var emb = videoEmbed(v);
       if (emb) return '<iframe class="svp-offer-modal__media-frame" src="' + esc(emb) + '" allow="autoplay;encrypted-media" title="' + esc(o.title || 'Offre Premium') + '"></iframe>';
-      if (isVideoFile(v)) return '<video class="svp-offer-modal__media-frame" src="' + esc(v) + '" autoplay muted loop playsinline' + posterAttr(o) + '></video>';
+      if (isVideoFile(v)) return '<video class="svp-offer-modal__media-frame" src="' + esc(offerMediaUrl(v)) + '" autoplay muted loop playsinline preload="auto"' + posterAttr(o) + '></video>';
     }
     if (o.image_url) return '<img class="svp-offer-modal__media-img" src="' + esc(offerMediaUrl(o.image_url)) + '" alt="">';
     return '<div class="svp-offer-modal__media-fallback"><img src="' + esc(funnelOfferIcon(o)) + '" alt=""></div>';
@@ -1529,6 +1541,7 @@
     modal.querySelector('.svp-offer-modal__close').addEventListener('click', close);
     document.addEventListener('keydown', onKey);
     document.body.appendChild(modal);
+    startAutoplayVideos(modal);
     var closeBtn = modal.querySelector('.svp-offer-modal__close');
     if (closeBtn) closeBtn.focus();
   }
@@ -1758,7 +1771,7 @@
     if (video) {
       var emb = videoEmbed(video);
       if (emb) media = '<iframe src="' + esc(emb) + '" allow="autoplay;encrypted-media" tabindex="-1"></iframe>';
-      else if (isVideoFile(video)) media = '<video src="' + esc(video) + '" autoplay muted loop playsinline' + posterAttr(o) + '></video>';
+      else if (isVideoFile(video)) media = '<video src="' + esc(offerMediaUrl(video)) + '" autoplay muted loop playsinline preload="auto"' + posterAttr(o) + '></video>';
     }
     if (!media) {
       media = o.image_url
@@ -1824,6 +1837,7 @@
       }
       if (empty) empty.style.display = 'none';
       track.innerHTML = offers.map(funnelArchiveCard).join('');
+      startAutoplayVideos(track);
       applyRevealTargets(track);
       update();
       setTimeout(update, 250);
@@ -1860,6 +1874,8 @@
       var gridHtml = offers.map(function (offer) { return compteCard(offer, false); }).join('');
       if (carousel) carousel.innerHTML = carouselHtml;
       if (grid) grid.innerHTML = gridHtml || '<p style="grid-column:1/-1;color:#8B8DA0;font:500 14px \'Instrument Sans\',sans-serif;padding:8px 2px">Aucune offre pour le moment — reviens lundi pour la nouvelle sélection.</p>';
+      if (carousel) startAutoplayVideos(carousel);
+      if (grid) startAutoplayVideos(grid);
       document.querySelectorAll('[data-svp="offer"]').forEach(observeOffer);
       wirePremiumCtas();
       wireOfferDetailButtons();
