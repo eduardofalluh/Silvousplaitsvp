@@ -116,21 +116,32 @@ function validEmail(email) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(email || '').trim());
 }
 
-async function hasActiveStripeSubscription(email) {
-  if (!validEmail(email)) return false;
+// Returns { hasActive, hasAnyHistory }.
+//
+// The distinction matters: "has a subscription right now" and "has ever had
+// one" answer different questions. Active means a second checkout would double
+// bill. Any-history tells us whether an ActiveCampaign premium flag is stale
+// (they subscribed and later cancelled) or was granted by hand (comped member
+// who never went through Stripe at all).
+async function getStripeSubscriptionState(email) {
+  if (!validEmail(email)) return { hasActive: false, hasAnyHistory: false };
   const customers = await stripe.customers.list({ email, limit: 10 });
   const activeStatuses = new Set(['active', 'trialing', 'past_due', 'unpaid']);
+  let hasActive = false;
+  let hasAnyHistory = false;
   for (const customer of customers.data || []) {
     const subscriptions = await stripe.subscriptions.list({
       customer: customer.id,
       status: 'all',
       limit: 100,
     });
-    if ((subscriptions.data || []).some((sub) => activeStatuses.has(String(sub.status || '').toLowerCase()))) {
-      return true;
+    const subs = subscriptions.data || [];
+    if (subs.length) hasAnyHistory = true;
+    if (subs.some((sub) => activeStatuses.has(String(sub.status || '').toLowerCase()))) {
+      hasActive = true;
     }
   }
-  return false;
+  return { hasActive, hasAnyHistory };
 }
 
 exports.handler = async (event) => {
@@ -201,33 +212,41 @@ exports.handler = async (event) => {
     }
 
     {
-      // Stripe is the authority on whether someone is CURRENTLY subscribed: it
-      // is the system actually billing them, and it only reports
-      // active/trialing/past_due/unpaid.
+      // Never let anyone subscribe twice, while still letting someone who
+      // genuinely cancelled come back. Three cases, and they need different
+      // answers:
       //
-      // The ActiveCampaign record is a lagging mirror — its premium tag and list
-      // membership are not cleared when a subscription ends, so anyone who had
-      // ever subscribed was blocked from EVER resubscribing after cancelling.
-      // That silently turned churned members into permanently lost revenue.
+      //   Stripe says ACTIVE            -> block. A second checkout double bills.
+      //   AC premium + Stripe history   -> allow. They subscribed once and
+      //                                    cancelled; the AC tag is just stale,
+      //                                    since nothing clears it on cancel.
+      //   AC premium + NO Stripe history-> block. Premium was granted by hand
+      //                                    (comped/imported). They already have
+      //                                    it and must not be charged for it.
       //
-      // So: trust Stripe when we can reach it, and only fall back to the AC
-      // record when the Stripe lookup itself fails — losing the guard entirely
-      // on a Stripe outage would risk genuine double subscriptions.
-      let stripeAlreadySubscribed = null;   // null = lookup failed
+      // Judging only on Stripe let comped members pay for what they already
+      // had; judging only on AC locked churned members out for good.
+      let stripeState = null;                       // null = lookup failed
       try {
-        stripeAlreadySubscribed = await hasActiveStripeSubscription(normalizedEmail);
+        stripeState = await getStripeSubscriptionState(normalizedEmail);
       } catch (err) {
         console.error('Stripe subscription lookup failed, falling back to membership record:', err.message);
       }
 
       let blocked = false;
-      let source = 'stripe';
-      if (stripeAlreadySubscribed === true) {
+      let source = '';
+      if (stripeState && stripeState.hasActive) {
         blocked = true;
-      } else if (stripeAlreadySubscribed === null) {
+        source = 'stripe_active';
+      } else {
         const premiumStatus = await premiumChecker.isPremiumMember(normalizedEmail, false);
-        blocked = Boolean(premiumStatus && premiumStatus.isPremium);
-        source = 'membership_record_fallback';
+        const acPremium = Boolean(premiumStatus && premiumStatus.isPremium);
+        if (acPremium && (!stripeState || !stripeState.hasAnyHistory)) {
+          // No prior Stripe subscription to have cancelled -> not stale, real.
+          // Also covers a failed Stripe lookup, where we must stay cautious.
+          blocked = true;
+          source = stripeState ? 'membership_record' : 'membership_record_fallback';
+        }
       }
 
       if (blocked) {

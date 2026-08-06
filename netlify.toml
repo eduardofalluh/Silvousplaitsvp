@@ -25,7 +25,19 @@
   status = 302
   force = true
 
+# Serve the real home page at "/" instead of index.html. index.html is only a
+# stub whose meta-refresh points at accueil.html, so visitors got a flash of a
+# blank white page with a bare blue link on it before the real site loaded —
+# on the very first visit, which is the worst possible moment for it.
+# status 200 rewrites in place: no second request, no flash, URL stays "/".
+[[redirects]]
+  from = "/"
+  to = "/accueil.html"
+  status = 200
+
+# Same reason for every other unmatched path: land on the real page rather
+# than bouncing through the stub.
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/accueil.html"
   status = 200

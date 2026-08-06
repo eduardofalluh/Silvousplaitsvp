@@ -1,1 +1,17 @@
-<!DOCTYPE html><html lang="fr"><head><style>html{background-color:#FFFEF5}</style><script>try{if(sessionStorage.getItem('svp-nav')==='1'){var d=document.documentElement;d.classList.add('svp-nav');sessionStorage.removeItem('svp-nav');setTimeout(function(){d.classList.add('svp-revealed');},1600);}}catch(e){}</script><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=/accueil.html"><title>Silvousplait</title></head><body><a href="/accueil.html">Silvousplait</a></body></html>
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Silvousplait</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Netlify rewrites "/" straight to accueil.html, so this file is normally
+     never served. It stays as a fallback for a direct /index.html hit and for
+     anything served outside Netlify. It used to render a bare blue link on a
+     white page while the meta-refresh fired, which flashed on first load — so
+     it now paints the brand background and shows nothing but the link for
+     no-JS/no-refresh clients, kept off-screen rather than removed so the page
+     is still navigable and accessible. -->
+<meta http-equiv="refresh" content="0; url=/accueil.html">
+<script>location.replace('/accueil.html');</script>
+<style>
+  html,body{margin:0;height:100%;background:#FFFEF5}
+  a{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+  a:focus{position:static;width:auto;height:auto;padding:16px;display:inline-block;color:#3347CA}
+</style>
+</head><body><a href="/accueil.html">Aller à l'accueil — Silvousplait</a></body></html>
