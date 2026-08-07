@@ -781,6 +781,64 @@
     });
   }
 
+  var TRANSIENT_BUTTONS = [
+    '[data-svp="checkout"]',
+    '[data-svp="hero-submit"]',
+    '[data-svp="funnel-submit"]',
+    '[data-funnel-submit-skip]',
+    '[data-premium-choice]',
+    '[data-svp="login-submit"]',
+    '[data-svp="login-verify"]',
+    '[data-svp="contact-submit"]',
+    '[data-svp="partner-submit"]',
+    '[data-svp="account-save"]',
+    '[data-svp="admin-submit"]'
+  ].join(',');
+  var TRANSIENT_FALLBACK_LABELS = [
+    ['[data-svp="login-submit"]', 'Recevoir mon code'],
+    ['[data-svp="login-verify"]', 'Se connecter'],
+    ['[data-svp="contact-submit"]', 'Envoyer le message'],
+    ['[data-svp="partner-submit"]', 'Continuer →'],
+    ['[data-svp="account-save"]', 'Enregistrer les informations'],
+    ['[data-svp="admin-submit"]', "Ouvrir l'admin"],
+    ['[data-svp="funnel-submit"]', 'Terminer mon inscription →'],
+    ['[data-funnel-submit-skip]', 'Passer cette étape'],
+    ['[data-premium-choice="yes"]', 'Je veux économiser sur mes shows'],
+    ['[data-premium-choice="no"]', 'Non merci, je reste au forfait gratuit']
+  ];
+  function fallbackButtonLabel(el) {
+    for (var i = 0; i < TRANSIENT_FALLBACK_LABELS.length; i += 1) {
+      if (el.matches && el.matches(TRANSIENT_FALLBACK_LABELS[i][0])) return TRANSIENT_FALLBACK_LABELS[i][1];
+    }
+    return '';
+  }
+  function rememberTransientButtonLabels(root) {
+    [].slice.call((root || document).querySelectorAll(TRANSIENT_BUTTONS)).forEach(function (el) {
+      if (el.getAttribute('data-svp-initial-label') == null) {
+        el.setAttribute('data-svp-initial-label', (el.textContent || '').trim() || fallbackButtonLabel(el));
+      }
+    });
+  }
+  function resetTransientButtons(root) {
+    rememberTransientButtonLabels(root || document);
+    [].slice.call((root || document).querySelectorAll(TRANSIENT_BUTTONS)).forEach(function (el) {
+      var label = el.getAttribute('data-orig-label') || el.getAttribute('data-svp-initial-label') || fallbackButtonLabel(el);
+      if (label) el.textContent = label;
+      if ('disabled' in el) el.disabled = false;
+      el.removeAttribute('aria-busy');
+      el.removeAttribute('data-loading');
+    });
+  }
+  function wireTransientButtonReset() {
+    rememberTransientButtonLabels(document);
+    window.addEventListener('pageshow', function () {
+      setTimeout(function () { resetTransientButtons(document); }, 0);
+    });
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) setTimeout(function () { resetTransientButtons(document); }, 0);
+    });
+  }
+
   function wireAccountSave() {
     var btn = document.querySelector('[data-svp="account-save"]');
     if (!btn) return;
@@ -2884,6 +2942,7 @@
     if ('scrollRestoration' in history) { try { history.scrollRestoration = 'manual'; } catch (e) {} }
     wireMobileReloadTop();
     if (!hashTargetEl()) setScrollTop(0);
+    wireTransientButtonReset();
     wireIntro();
     wireUniversalMobileHeader(); wirePremiumMobileFooter(); wireHomeLink(); wireBackLinks(); wireMobileMenus(); wireFaq(); wireScrollTop(); wireAnchorScroll(); wirePremiumSignupIntent(); wirePremiumStepCtas();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();

@@ -925,8 +925,9 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
 
   [data-scroller="offres"],
   [data-scroller="temoignages"] {
-    overscroll-behavior: contain;
-    touch-action: pan-x pinch-zoom;
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: auto;
+    touch-action: auto;
   }
   [data-scroller="temoignages"]::-webkit-scrollbar { display: none; }
   /* Marquee loop duplicates — see wireTestimonialCarousels. Hidden only here, so
