@@ -1,0 +1,15 @@
+/i/* /accueil.html?ref=:splat 302!
+/ /accueil.html 200!
+/premium /premium.html 200
+/contact /contact.html 200
+/faq /faq.html 200
+/partenariat /partenariat.html 200
+/politique /politique.html 200
+/termes /termes.html 200
+/connexion /connexion.html 200
+/compte /compte.html 200
+/admin /admin.html 200
+/premium-offers-admin /premium-offers-admin.html 200
+/archive /archive.html 200
+/tunnel /tunnel.html 200
+/* /accueil.html 200
