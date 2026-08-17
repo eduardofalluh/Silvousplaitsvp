@@ -8,6 +8,8 @@
  */
 const crypto = require('crypto');
 const { verifySignedToken, createSignedToken } = require('../../utils/premium-access-token');
+const premiumChecker = require('../../utils/premium-checker');
+const { recordPremiumOfferAccessLog } = require('../../utils/premium-offers-store');
 
 const SECRET = process.env.PREMIUM_ACCESS_SECRET || '';
 const SESSION_TTL_DAYS = Number(process.env.LOGIN_SESSION_TTL_DAYS || 30);
@@ -47,5 +49,15 @@ exports.handler = async (event) => {
 
   const exp = Math.floor(Date.now() / 1000) + SESSION_TTL_DAYS * 86400;
   const session = createSignedToken({ e: payload.e, exp, kind: 'session' }, SECRET);
+
+  try {
+    const premiumStatus = await premiumChecker.isPremiumMember(payload.e, false);
+    if (premiumStatus && premiumStatus.isPremium) {
+      await recordPremiumOfferAccessLog({ email: payload.e });
+    }
+  } catch (error) {
+    console.error('Premium account login log write error:', error);
+  }
+
   return { statusCode: 200, headers, body: JSON.stringify({ success: true, session, email: payload.e }) };
 };
