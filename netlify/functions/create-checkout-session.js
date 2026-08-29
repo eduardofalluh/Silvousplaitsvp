@@ -144,6 +144,64 @@ async function getStripeSubscriptionState(email) {
   return { hasActive, hasAnyHistory };
 }
 
+// Returns a ready-to-send 409 response when this address must not start a new
+// subscription, or null when it is clear to check out.
+//
+// Split out of the handler because the 14-day trial is sold through a Stripe
+// Payment Link: that path creates no Checkout Session here, but it still has to
+// run exactly this guard before handing off (see `checkOnly` below).
+async function findDuplicatePremium(normalizedEmail) {
+  // Never let anyone subscribe twice, while still letting someone who
+  // genuinely cancelled come back. Three cases, and they need different
+  // answers:
+  //
+  //   Stripe says ACTIVE            -> block. A second checkout double bills.
+  //   AC premium + Stripe history   -> allow. They subscribed once and
+  //                                    cancelled; the AC tag is just stale,
+  //                                    since nothing clears it on cancel.
+  //   AC premium + NO Stripe history-> block. Premium was granted by hand
+  //                                    (comped/imported). They already have
+  //                                    it and must not be charged for it.
+  //
+  // Judging only on Stripe let comped members pay for what they already
+  // had; judging only on AC locked churned members out for good.
+  let stripeState = null;                       // null = lookup failed
+  try {
+    stripeState = await getStripeSubscriptionState(normalizedEmail);
+  } catch (err) {
+    console.error('Stripe subscription lookup failed, falling back to membership record:', err.message);
+  }
+
+  let blocked = false;
+  let source = '';
+  if (stripeState && stripeState.hasActive) {
+    blocked = true;
+    source = 'stripe_active';
+  } else {
+    const premiumStatus = await premiumChecker.isPremiumMember(normalizedEmail, false);
+    const acPremium = Boolean(premiumStatus && premiumStatus.isPremium);
+    if (acPremium && (!stripeState || !stripeState.hasAnyHistory)) {
+      // No prior Stripe subscription to have cancelled -> not stale, real.
+      // Also covers a failed Stripe lookup, where we must stay cautious.
+      blocked = true;
+      source = stripeState ? 'membership_record' : 'membership_record_fallback';
+    }
+  }
+
+  if (!blocked) return null;
+
+  return {
+    statusCode: 409,
+    headers,
+    body: JSON.stringify({
+      error: 'This email already has an active Premium subscription.',
+      code: 'already_premium',
+      source,
+      email: normalizedEmail,
+    }),
+  };
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers, body: '' };
@@ -159,8 +217,19 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { email, priceId, planKey, returnPath } = JSON.parse(event.body);
+    const { email, priceId, planKey, returnPath, checkOnly } = JSON.parse(event.body);
     const normalizedEmail = String(email || '').trim().toLowerCase();
+
+    // The trial's Stripe Payment Link needs the duplicate guard without a
+    // Session: answer that question alone and stop. No price is configured for
+    // the trial plan, so this must run before the price validation below.
+    if (checkOnly) {
+      if (normalizedEmail && validEmail(normalizedEmail)) {
+        const duplicate = await findDuplicatePremium(normalizedEmail);
+        if (duplicate) return duplicate;
+      }
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+    }
     const resolvedCheckout = resolveLineItem(planKey, priceId);
     const successBaseUrl = process.env.URL || 'https://silvousplaitsvp.com';
     const isProductionCheckout =
@@ -192,55 +261,8 @@ exports.handler = async (event) => {
     }
 
     if (normalizedEmail && validEmail(normalizedEmail)) {
-      // Never let anyone subscribe twice, while still letting someone who
-      // genuinely cancelled come back. Three cases, and they need different
-      // answers:
-      //
-      //   Stripe says ACTIVE            -> block. A second checkout double bills.
-      //   AC premium + Stripe history   -> allow. They subscribed once and
-      //                                    cancelled; the AC tag is just stale,
-      //                                    since nothing clears it on cancel.
-      //   AC premium + NO Stripe history-> block. Premium was granted by hand
-      //                                    (comped/imported). They already have
-      //                                    it and must not be charged for it.
-      //
-      // Judging only on Stripe let comped members pay for what they already
-      // had; judging only on AC locked churned members out for good.
-      let stripeState = null;                       // null = lookup failed
-      try {
-        stripeState = await getStripeSubscriptionState(normalizedEmail);
-      } catch (err) {
-        console.error('Stripe subscription lookup failed, falling back to membership record:', err.message);
-      }
-
-      let blocked = false;
-      let source = '';
-      if (stripeState && stripeState.hasActive) {
-        blocked = true;
-        source = 'stripe_active';
-      } else {
-        const premiumStatus = await premiumChecker.isPremiumMember(normalizedEmail, false);
-        const acPremium = Boolean(premiumStatus && premiumStatus.isPremium);
-        if (acPremium && (!stripeState || !stripeState.hasAnyHistory)) {
-          // No prior Stripe subscription to have cancelled -> not stale, real.
-          // Also covers a failed Stripe lookup, where we must stay cautious.
-          blocked = true;
-          source = stripeState ? 'membership_record' : 'membership_record_fallback';
-        }
-      }
-
-      if (blocked) {
-        return {
-          statusCode: 409,
-          headers,
-          body: JSON.stringify({
-            error: 'This email already has an active Premium subscription.',
-            code: 'already_premium',
-            source,
-            email: normalizedEmail,
-          }),
-        };
-      }
+      const duplicate = await findDuplicatePremium(normalizedEmail);
+      if (duplicate) return duplicate;
     }
 
     // Create Stripe Checkout Session

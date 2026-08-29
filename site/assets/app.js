@@ -6,6 +6,9 @@
   var FN = '/.netlify/functions/';
   var EMAIL_KEY = 'svp_email';
   var STRIPE_BILLING_LOGIN_URL = 'https://billing.stripe.com/p/login/14AaEZ2PRgeD4Hogmkb7y00';
+  // The 14-day free trial is sold through a Stripe Payment Link, not a
+  // server-created Checkout Session: every trial CTA on the site lands here.
+  var STRIPE_TRIAL_CHECKOUT_URL = 'https://buy.stripe.com/aFafZj3TV7I7c9Q4DCb7y01';
 
   function getEmail() { try { return localStorage.getItem(EMAIL_KEY) || ''; } catch (e) { return ''; } }
   function setEmail(v) { try { localStorage.setItem(EMAIL_KEY, v); } catch (e) {} }
@@ -1103,6 +1106,76 @@
     });
   }
 
+  // Both checkout paths (server-created Session for the paid plans, Stripe
+  // Payment Link for the trial) hit the same duplicate-subscription guard, so
+  // they share the dialog that explains it.
+  function showAlreadyPremiumDialog(btn, options, d, email) {
+    // Branch on WHY we blocked. A comped member (Premium granted
+    // directly, no Stripe customer) has nothing in the billing portal —
+    // sending them there lands on a login page that can never resolve.
+    var blockedEmail = d.email || email || '';
+    var comped = d.source !== 'stripe_active';
+    // Changing the address is an edit, not a detour: reopen the same
+    // prompt pre-filled so they can correct it and be re-checked.
+    var reEnter = function () { askCheckoutEmail(btn, Object.assign({}, options, { skipEmailPrompt: false }), blockedEmail); };
+    svpDialog(comped ? {
+      title: 'Tu as déjà accès à Premium',
+      message: 'Cet accès a été activé directement pour :',
+      detail: blockedEmail,
+      confirmLabel: 'Voir mon compte',
+      // compte.html is session-gated and would bounce a logged-out
+      // visitor straight back out, so go through the emailed-code
+      // login with the address already filled in.
+      onConfirm: function () { goToAccount(blockedEmail); },
+      secondaryLabel: 'Changer de courriel',
+      onSecondary: reEnter
+    } : {
+      title: 'Cette adresse est déjà Premium',
+      message: 'Un abonnement Premium actif existe déjà pour :',
+      detail: blockedEmail,
+      confirmLabel: 'Gérer mon abonnement',
+      onConfirm: function () { window.location.href = STRIPE_BILLING_LOGIN_URL; },
+      secondaryLabel: 'Changer de courriel',
+      onSecondary: reEnter
+    });
+  }
+
+  function trialCheckoutUrl(email) {
+    if (!validEmail(email)) return STRIPE_TRIAL_CHECKOUT_URL;
+    // Payment Links accept prefilled_email, so the address we just confirmed
+    // carries over instead of being typed a second time on Stripe.
+    return STRIPE_TRIAL_CHECKOUT_URL + (STRIPE_TRIAL_CHECKOUT_URL.indexOf('?') === -1 ? '?' : '&')
+      + 'prefilled_email=' + encodeURIComponent(email);
+  }
+
+  // There is no session to create for the trial — the Payment Link IS the
+  // checkout. We still ask the backend the one question it alone can answer
+  // (does this address already have Premium?) so a member can't start a second
+  // subscription. A failed check never blocks the link: our outage must not
+  // cost a signup, and Stripe stays the source of truth either way.
+  function startTrialCheckout(btn, email, options) {
+    var go = function () {
+      pixel('track', 'InitiateCheckout');
+      window.location.href = trialCheckoutUrl(email);
+    };
+    if (!validEmail(email)) { go(); return; }
+    fetch(FN + 'create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ checkOnly: true, planKey: 'trial', email: email }),
+    })
+      .then(function (r) { return r.json().then(function (d) { return d; }).catch(function () { return {}; }); })
+      .then(function (d) {
+        if (d && d.code === 'already_premium') {
+          resetCheckoutButton(btn);
+          showAlreadyPremiumDialog(btn, options, d, email);
+          return;
+        }
+        go();
+      })
+      .catch(go);
+  }
+
   function startPremiumCheckout(btn, options) {
     options = options || {};
     if (!btn) return;
@@ -1124,6 +1197,7 @@
     btn.disabled = true;
     btn.setAttribute('aria-busy', 'true');
     btn.textContent = 'Redirection…';
+    if (plan === 'trial') { startTrialCheckout(btn, email, options); return; }
     fetch(FN + 'create-checkout-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1139,36 +1213,7 @@
         if (d && d.url) { pixel('track', 'InitiateCheckout'); window.location.href = d.url; }
         else {
           resetCheckoutButton(btn);
-          if (d.code === 'already_premium') {
-            // Branch on WHY we blocked. A comped member (Premium granted
-            // directly, no Stripe customer) has nothing in the billing portal —
-            // sending them there lands on a login page that can never resolve.
-            var blockedEmail = d.email || email || '';
-            var comped = d.source !== 'stripe_active';
-            // Changing the address is an edit, not a detour: reopen the same
-            // prompt pre-filled so they can correct it and be re-checked.
-            var reEnter = function () { askCheckoutEmail(btn, Object.assign({}, options, { skipEmailPrompt: false }), blockedEmail); };
-            svpDialog(comped ? {
-              title: 'Tu as déjà accès à Premium',
-              message: 'Cet accès a été activé directement pour :',
-              detail: blockedEmail,
-              confirmLabel: 'Voir mon compte',
-              // compte.html is session-gated and would bounce a logged-out
-              // visitor straight back out, so go through the emailed-code
-              // login with the address already filled in.
-              onConfirm: function () { goToAccount(blockedEmail); },
-              secondaryLabel: 'Changer de courriel',
-              onSecondary: reEnter
-            } : {
-              title: 'Cette adresse est déjà Premium',
-              message: 'Un abonnement Premium actif existe déjà pour :',
-              detail: blockedEmail,
-              confirmLabel: 'Gérer mon abonnement',
-              onConfirm: function () { window.location.href = STRIPE_BILLING_LOGIN_URL; },
-              secondaryLabel: 'Changer de courriel',
-              onSecondary: reEnter
-            });
-          }
+          if (d.code === 'already_premium') showAlreadyPremiumDialog(btn, options, d, email);
           else svpDialog({ title: "Le paiement n'a pas pu démarrer", message: "Quelque chose a bloqué l'ouverture de la page de paiement. Réessaie dans un instant — si ça persiste, écris-nous à spectacles@silvousplaitsvp.com.", confirmLabel: 'Réessayer' });
         }
       }).catch(function () { resetCheckoutButton(btn); svpDialog({ title: 'Connexion interrompue', message: "On n'a pas pu joindre le service de paiement. Vérifie ta connexion et réessaie.", confirmLabel: 'Réessayer' }); });
