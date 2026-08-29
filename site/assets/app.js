@@ -111,9 +111,11 @@
     function confirm() {
       if (field) {
         var v = String(field.value || '').trim();
-        var bad = o.input.validate ? !o.input.validate(v) : !v;
+        var validation = o.input.validate ? o.input.validate(v) : Boolean(v);
+        var validationMessage = typeof validation === 'string' ? validation : '';
+        var bad = validationMessage ? true : !validation;
         if (bad) {
-          fieldErr.textContent = o.input.error || 'Entrée invalide.';
+          fieldErr.textContent = validationMessage || o.input.error || 'Entrée invalide.';
           field.style.borderColor = '#b00020';
           try { field.focus(); } catch (e) {}
           return;                                   // keep the dialog open
@@ -1038,9 +1040,10 @@
     if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
   }
 
-  // Only reached from "Utiliser une autre adresse" on the already-Premium
-  // dialog, so someone who was blocked can try a different address without
-  // being dumped on the login page. It is no longer shown before checkout.
+  // Send someone to their account. compte.html redirects out when there is no
+  // session, so an unauthenticated visitor has to pass the emailed-code login
+  // first — carry the address over so connexion pre-fills it and they only
+  // have to request and type the code.
   // Send someone to their account. compte.html redirects out when there is no
   // session, so an unauthenticated visitor has to pass the emailed-code login
   // first — carry the address over so connexion pre-fills it and they only
@@ -1058,22 +1061,44 @@
     window.location.href = 'connexion.html' + (e ? '?email=' + encodeURIComponent(e) : '');
   }
 
+  function checkoutEmailError(email) {
+    var value = String(email || '').trim().toLowerCase();
+    if (!validEmail(value)) return 'Entre une adresse courriel valide.';
+    var domain = value.split('@')[1] || '';
+    var commonTypos = {
+      'gmal.com': 'gmail.com',
+      'gmial.com': 'gmail.com',
+      'gmai.com': 'gmail.com',
+      'gmail.co': 'gmail.com',
+      'gmaill.com': 'gmail.com',
+      'hotmial.com': 'hotmail.com',
+      'hotmai.com': 'hotmail.com',
+      'hotmail.co': 'hotmail.com',
+      'outlok.com': 'outlook.com',
+      'outloo.com': 'outlook.com',
+      'outlook.co': 'outlook.com'
+    };
+    return commonTypos[domain] ? 'Vérifie le domaine du courriel. Tu voulais peut-être écrire ' + commonTypos[domain] + '.' : '';
+  }
+
   function askCheckoutEmail(btn, options, prefill) {
+    options = options || {};
+    var initial = prefill != null ? prefill : (options.email || getEmail() || '');
     svpDialog({
       title: 'Confirme ton courriel',
-      message: 'C’est l’adresse qui sera facturée. On vérifie qu’elle n’a pas déjà un abonnement Premium avant de t’envoyer au paiement.',
+      message: "Vérifie bien l'adresse: elle sera utilisée pour le paiement et pour vérifier si ce compte a déjà Premium.",
       input: {
         type: 'email',
         placeholder: 'ton.courriel@exemple.com',
-        value: prefill || '',
-        validate: validEmail,
+        value: String(initial || '').trim().toLowerCase(),
+        validate: function (value) { return checkoutEmailError(value) || true; },
         error: 'Entre une adresse courriel valide.'
       },
-      confirmLabel: 'Continuer',
+      confirmLabel: 'Continuer avec ce courriel',
       onConfirm: function (value) {
         var next = String(value || '').trim().toLowerCase();
         setEmail(next);
-        startPremiumCheckout(btn, Object.assign({}, options, { email: next }));
+        startPremiumCheckout(btn, Object.assign({}, options, { email: next, skipEmailPrompt: true }));
       }
     });
   }
@@ -1085,10 +1110,15 @@
     if (btn.getAttribute('data-orig-label') == null) btn.setAttribute('data-orig-label', btn.textContent);
     var plan = options.plan || btn.getAttribute('data-plan') || 'yearly';
     var email = String(options.email || getEmail() || '').trim().toLowerCase();
-    // No up-front email prompt: the CTA goes straight to Stripe. The
-    // duplicate-subscription check below therefore only runs when we already
-    // know the address (stored from the funnel or a previous login) — with no
-    // email the server skips it and Stripe collects the address itself.
+    if (!options.skipEmailPrompt) {
+      askCheckoutEmail(btn, Object.assign({}, options, { plan: plan }), email);
+      return;
+    }
+    var emailError = checkoutEmailError(email);
+    if (emailError) {
+      askCheckoutEmail(btn, Object.assign({}, options, { plan: plan, skipEmailPrompt: false }), email);
+      return;
+    }
     if (email) setEmail(email);
     tagPremiumClick(email);
     btn.disabled = true;
@@ -1117,7 +1147,7 @@
             var comped = d.source !== 'stripe_active';
             // Changing the address is an edit, not a detour: reopen the same
             // prompt pre-filled so they can correct it and be re-checked.
-            var reEnter = function () { askCheckoutEmail(btn, options, blockedEmail); };
+            var reEnter = function () { askCheckoutEmail(btn, Object.assign({}, options, { skipEmailPrompt: false }), blockedEmail); };
             svpDialog(comped ? {
               title: 'Tu as déjà accès à Premium',
               message: 'Cet accès a été activé directement pour :',
@@ -1127,7 +1157,7 @@
               // visitor straight back out, so go through the emailed-code
               // login with the address already filled in.
               onConfirm: function () { goToAccount(blockedEmail); },
-              secondaryLabel: 'Utiliser une autre adresse',
+              secondaryLabel: 'Changer de courriel',
               onSecondary: reEnter
             } : {
               title: 'Cette adresse est déjà Premium',
@@ -1135,7 +1165,7 @@
               detail: blockedEmail,
               confirmLabel: 'Gérer mon abonnement',
               onConfirm: function () { window.location.href = STRIPE_BILLING_LOGIN_URL; },
-              secondaryLabel: 'Utiliser une autre adresse',
+              secondaryLabel: 'Changer de courriel',
               onSecondary: reEnter
             });
           }
