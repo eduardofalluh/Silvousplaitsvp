@@ -685,6 +685,29 @@ html { background-color: #FFFEF5; }
   margin: 0;
 }
 
+.svp-offer-modal__extra {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1.5px solid #ECEAE0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.svp-offer-modal__extra span {
+  display: block;
+  margin-bottom: 4px;
+  color: #8B8DA0;
+  font: 700 11.5px 'Instrument Sans', system-ui, sans-serif;
+  text-transform: uppercase;
+}
+
+.svp-offer-modal__extra strong {
+  display: block;
+  color: #16182B;
+  font: 700 14px/1.45 'Instrument Sans', system-ui, sans-serif;
+  word-break: break-word;
+}
+
 .svp-offer-modal__code {
   margin-top: 16px;
   display: flex;

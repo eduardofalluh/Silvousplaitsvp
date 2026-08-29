@@ -8,6 +8,7 @@ const PREMIUM_OFFERS_ARCHIVE_TAB = process.env.PREMIUM_OFFERS_ARCHIVE_TAB || 'pr
 const PREMIUM_OFFERS_REGIONS_TAB = process.env.PREMIUM_OFFERS_REGIONS_TAB || 'premium_regions';
 const PREMIUM_OFFERS_TYPES_TAB = process.env.PREMIUM_OFFERS_TYPES_TAB || 'premium_offer_types';
 const FREE_SIGNUP_LOCATIONS_TAB = process.env.FREE_SIGNUP_LOCATIONS_TAB || 'free_signup_locations';
+const FREE_OFFER_REDEMPTIONS_TAB = process.env.FREE_OFFER_REDEMPTIONS_TAB || 'free_offer_redemptions';
 const PREMIUM_OFFERS_SHOWCASE_TAB = process.env.PREMIUM_OFFERS_SHOWCASE_TAB || 'premium_showcase';
 const PREMIUM_OFFERS_ACCESS_LOGS_TAB = process.env.PREMIUM_OFFERS_ACCESS_LOGS_TAB || 'premium_access_logs';
 const SPREADSHEET_META_CACHE_TTL_MS = 30 * 1000;
@@ -64,6 +65,7 @@ const FREE_SIGNUP_LOCATION_HEADERS = [
 ];
 const ACCESS_LOG_HEADERS = ['id', 'email', 'created_at'];
 const LEGACY_ACCESS_LOG_HEADERS = ['id', 'email', 'event_type', 'ip_address', 'user_agent', 'created_at'];
+const FREE_OFFER_REDEMPTION_HEADERS = ['id', 'email', 'offer_id', 'offer_title', 'redeemed_at'];
 const SHOWCASE_HEADERS = [
   'id',
   'title',
@@ -827,6 +829,25 @@ async function ensureAccessLogsSheet(sheets) {
   }
 }
 
+async function ensureFreeOfferRedemptionsSheet(sheets) {
+  await getOrCreateSheet(sheets, FREE_OFFER_REDEMPTIONS_TAB);
+  const read = await safeReadRange(sheets, `${FREE_OFFER_REDEMPTIONS_TAB}!A1:E10`, 'free redemptions read');
+  const rows = read.data.values || [];
+  const headerRow = rows[0] || [];
+  const hasExpectedHeaders =
+    headerRow.length >= FREE_OFFER_REDEMPTION_HEADERS.length &&
+    FREE_OFFER_REDEMPTION_HEADERS.every((header, index) => String(headerRow[index] || '').trim() === header);
+
+  if (!hasExpectedHeaders) {
+    await safeWriteRange(
+      sheets,
+      `${FREE_OFFER_REDEMPTIONS_TAB}!A1:E1`,
+      [FREE_OFFER_REDEMPTION_HEADERS],
+      'free redemptions header write'
+    );
+  }
+}
+
 async function getPremiumOffersSheet(sheets) {
   return getOrCreateSheet(sheets, PREMIUM_OFFERS_TAB, false);
 }
@@ -900,6 +921,17 @@ function mapAccessLogRow(row, rowNumber) {
     id: normalize(row[0]) || `access_log_${rowNumber}`,
     email: normalize(row[1]),
     created_at: normalize(row[createdAtIndex]),
+  };
+}
+
+function mapFreeOfferRedemptionRow(row, rowNumber) {
+  return {
+    rowNumber,
+    id: normalize(row[0]) || `free_offer_redemption_${rowNumber}`,
+    email: normalize(row[1]).toLowerCase(),
+    offer_id: normalize(row[2]),
+    offer_title: normalize(row[3]),
+    redeemed_at: normalize(row[4]),
   };
 }
 
@@ -1849,6 +1881,76 @@ async function listPremiumOfferAccessLogs({ limit = 100, sheets: providedSheets 
     .slice(0, Math.max(1, limit));
 }
 
+async function getFreeOfferRedemption(email, { sheets: providedSheets } = {}) {
+  const normalizedEmail = normalize(email).toLowerCase();
+  if (!normalizedEmail) return null;
+
+  const sheets = providedSheets || await getSheetsClient();
+  await ensureFreeOfferRedemptionsSheet(sheets);
+  const read = await safeReadRange(
+    sheets,
+    `${FREE_OFFER_REDEMPTIONS_TAB}!A:E`,
+    'free redemptions list read'
+  );
+  const rows = read.data.values || [];
+  if (rows.length < 2) return null;
+
+  return rows
+    .slice(1)
+    .map((row, index) => mapFreeOfferRedemptionRow(row, index + 2))
+    .filter((item) => item.email === normalizedEmail)
+    .sort((a, b) => String(a.redeemed_at || '').localeCompare(String(b.redeemed_at || '')))[0] || null;
+}
+
+async function redeemFreeOfferToken(entry) {
+  const email = normalize(entry && entry.email).toLowerCase();
+  const offerId = normalize(entry && entry.offerId);
+  if (!email) {
+    throw new Error('Free offer redemption email is required');
+  }
+  if (!offerId) {
+    throw new Error('Free offer redemption offerId is required');
+  }
+
+  const sheets = await getSheetsClient();
+  const existingRedemption = await getFreeOfferRedemption(email, { sheets });
+  if (existingRedemption) {
+    return {
+      redeemed: false,
+      alreadyRedeemed: true,
+      redemption: existingRedemption,
+    };
+  }
+
+  const offers = await listPremiumOffers({ includeInactive: false, sheets });
+  const offer = offers.find((item) => item.id === offerId);
+  if (!offer) {
+    throw new Error('Offer not found');
+  }
+
+  await ensureFreeOfferRedemptionsSheet(sheets);
+  const timestamp = new Date().toISOString();
+  const values = [[
+    `free_offer_redemption_${Date.now()}`,
+    email,
+    offer.id,
+    offer.title,
+    timestamp,
+  ]];
+  await safeAppendRows(
+    sheets,
+    `${FREE_OFFER_REDEMPTIONS_TAB}!A:E`,
+    values,
+    'free redemption append'
+  );
+
+  return {
+    redeemed: true,
+    redemption: mapFreeOfferRedemptionRow(values[0], 2),
+    offer,
+  };
+}
+
 async function recordPremiumOfferAccessLog(entry) {
   const email = normalize(entry && entry.email).toLowerCase();
   if (!email) {
@@ -1877,12 +1979,14 @@ module.exports = {
   PREMIUM_OFFERS_REGIONS_TAB,
   PREMIUM_OFFERS_TYPES_TAB,
   FREE_SIGNUP_LOCATIONS_TAB,
+  FREE_OFFER_REDEMPTIONS_TAB,
   PREMIUM_OFFERS_SHOWCASE_TAB,
   PREMIUM_OFFERS_ACCESS_LOGS_TAB,
   OFFER_HEADERS,
   REGION_HEADERS,
   OFFER_TYPE_HEADERS,
   FREE_SIGNUP_LOCATION_HEADERS,
+  FREE_OFFER_REDEMPTION_HEADERS,
   SHOWCASE_HEADERS,
   ACCESS_LOG_HEADERS,
   DEFAULT_REGIONS,
@@ -1909,6 +2013,8 @@ module.exports = {
   listFreeSignupLocations,
   listPremiumOfferAccessLogs,
   listPremiumShowcaseItems,
+  getFreeOfferRedemption,
+  redeemFreeOfferToken,
   recordPremiumOfferAccessLog,
   savePremiumOffer,
   savePremiumOfferRegion,

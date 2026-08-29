@@ -92,8 +92,8 @@
   </div>
 
   
-    <h2 data-svp-premium-only data-svp-display="block" style="display:none;font-size: 20px; font-weight: 700; margin-bottom: 14px;">Tes offres</h2>
-    <div data-svp-premium-only data-svp-display="flex" style="display: none; gap: 10px; margin-bottom: 18px; flex-wrap: wrap;">
+    <h2 data-svp-account-offers-title data-svp-display="block" style="display:none;font-size: 20px; font-weight: 700; margin-bottom: 14px;">Tes offres Premium</h2>
+    <div data-svp-account-offers-filters data-svp-display="flex" style="display: none; gap: 10px; margin-bottom: 18px; flex-wrap: wrap;">
       <input placeholder="Rechercher un spectacle, un lieu…" style="flex: 1 1 0%; min-width: 240px; box-sizing: border-box; border: 1.5px solid rgb(225, 224, 212); border-radius: 100px; padding: 12px 18px; font: 500 14px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 255, 255);">
       <select style="border: 1.5px solid rgb(225, 224, 212); border-radius: 100px; padding: 12px 16px; font: 600 13.5px &quot;Instrument Sans&quot;, sans-serif; color: rgb(22, 24, 43); background: rgb(255, 255, 255); cursor: pointer;">
         <option value="Tous">Type d'offre : tous</option><option>Billet gratuit</option><option>Rabais</option><option>2 pour 1</option>
@@ -102,7 +102,7 @@
         <option value="Toutes">Région : toutes</option><option>Montréal</option><option>Québec</option><option>Sherbrooke</option><option>Trois-Rivières</option>
       </select>
     </div>
-    <div data-svp="offers-grid" data-svp-premium-only data-svp-display="grid" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px;">
+    <div data-svp="offers-grid" data-svp-account-offers data-svp-display="grid" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px;">
       
         <div class="scp2" style="background: rgb(255, 255, 255); border: 1.5px solid rgb(236, 234, 224); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; transition: 0.15s;">
           <div style="height: 110px; background: rgb(238, 240, 253); display: flex; align-items: center; justify-content: center; position: relative;">
@@ -183,13 +183,13 @@
         </div>
       
     </div>
-    <section data-svp-free-only data-svp-display="block" style="display:none;background:#fff;border:1.5px solid #ECEAE0;border-radius:16px;padding:18px 20px;margin:0 0 18px">
+    <section data-svp-free-only data-svp-free-token-notice data-svp-display="block" style="display:none;background:#fff;border:1.5px solid #ECEAE0;border-radius:16px;padding:18px 20px;margin:0 0 18px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
         <div style="max-width:620px">
-          <h2 style="font-size:20px;font-weight:800;margin:0 0 8px">Tes offres Premium sont verrouillées</h2>
-          <p style="font:500 14px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin:0">Ton compte gratuit reste actif pour l'infolettre. Les cartes d'offres actives apparaissent ici seulement quand le compte passe Premium.</p>
+          <h2 data-svp-free-token-title style="font-size:20px;font-weight:800;margin:0 0 8px">Ton jeton gratuit est prêt</h2>
+          <p data-svp-free-token-copy style="font:500 14px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin:0">Comme membre gratuit, tu peux débloquer une seule offre Premium de ton choix. Choisis bien: ce jeton ne peut être utilisé qu'une fois.</p>
         </div>
-        <a href="#" data-svp="checkout" data-plan="yearly" style="display:inline-flex;align-items:center;justify-content:center;background:#3347CA;color:#FFFEF5;border-radius:100px;padding:12px 18px;font:800 13.5px 'Instrument Sans',sans-serif;text-decoration:none;white-space:nowrap">Débloquer les offres</a>
+        <a href="#" data-svp="checkout" data-plan="yearly" style="display:inline-flex;align-items:center;justify-content:center;background:#3347CA;color:#FFFEF5;border-radius:100px;padding:12px 18px;font:800 13.5px 'Instrument Sans',sans-serif;text-decoration:none;white-space:nowrap">Passer à Premium</a>
       </div>
     </section>
     
@@ -244,7 +244,7 @@
             </section>
 
             <a href="#" data-svp="checkout" data-plan="yearly" class="svp-upsell__cta">Je veux économiser sur mes shows</a>
-            <div class="svp-upsell__note">Annule en tout temps · Garantie 30 jours</div>
+            <div class="svp-upsell__note">Annule en tout temps · Garantie 30 jours, hors essais gratuits</div>
           </div>
           <a href="https://billing.stripe.com/p/login/14AaEZ2PRgeD4Hogmkb7y00" data-svp="billing" data-svp-premium-only style="display:none;text-decoration: none; font-weight: 600;">Historique de facturation</a>
           <a href="https://billing.stripe.com/p/login/14AaEZ2PRgeD4Hogmkb7y00" data-svp="billing" data-svp-premium-only class="scp5" style="display:none;color: rgb(139, 141, 160); text-decoration: underline;">Annuler mon abonnement</a>

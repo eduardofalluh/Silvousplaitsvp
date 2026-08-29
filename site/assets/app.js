@@ -408,11 +408,11 @@
     funnel.querySelectorAll('[data-premium-choice]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         state.premium = btn.getAttribute('data-premium-choice') || '';
-        if (state.premium === 'yes') {
+        if (state.premium === 'yes' || state.premium === 'trial') {
           if (!validateStep1()) return;
           var email = ((emailInput && emailInput.value) || '').trim().toLowerCase();
           setEmail(email);
-          startPremiumCheckout(btn, { email: email, plan: btn.getAttribute('data-plan') || 'yearly', returnPath: '/tunnel.html' });
+          startPremiumCheckout(btn, { email: email, plan: btn.getAttribute('data-plan') || (state.premium === 'trial' ? 'trial' : 'yearly'), returnPath: '/tunnel.html' });
           return;
         }
         showStep(3);
@@ -730,6 +730,7 @@
     var session = getSession();
     if (!session) { window.location.href = 'connexion.html'; return; }
     setPremiumOnlyVisible(false);
+    setAccountCatalogVisible(false);
     [].slice.call(document.querySelectorAll('[data-svp-free-only]')).forEach(function (el) { el.style.display = 'none'; });
     // Show a skeleton for the name + badge immediately (never the fake "Alex").
     var greet0 = document.querySelector('[data-svp="compte"] h1');
@@ -765,8 +766,18 @@
           [].slice.call(document.querySelectorAll('.svp-upsell [data-funnel-city]'))
             .forEach(function (el) { el.textContent = villeLabel; });
         }
+        loadAccountOffers(session);
       })
       .catch(function () { /* leave skeletons on network error */ });
+  }
+
+  function setAccountCatalogVisible(visible) {
+    var title = document.querySelector('[data-svp-account-offers-title]');
+    var filters = document.querySelector('[data-svp-account-offers-filters]');
+    var grid = document.querySelector('[data-svp="offers-grid"]');
+    if (title) title.style.display = visible ? (title.getAttribute('data-svp-display') || 'block') : 'none';
+    if (filters) filters.style.display = visible ? (filters.getAttribute('data-svp-display') || 'flex') : 'none';
+    if (grid) grid.style.display = visible ? (grid.getAttribute('data-svp-display') || 'grid') : 'none';
   }
 
   function setPremiumOnlyVisible(isPremium) {
@@ -804,6 +815,7 @@
     ['[data-svp="funnel-submit"]', 'Terminer mon inscription →'],
     ['[data-funnel-submit-skip]', 'Passer cette étape'],
     ['[data-premium-choice="yes"]', 'Je veux économiser sur mes shows'],
+    ['[data-premium-choice="trial"]', 'Essai gratuit de 14 jours'],
     ['[data-premium-choice="no"]', 'Non merci, je reste au forfait gratuit']
   ];
   function fallbackButtonLabel(el) {
@@ -1118,6 +1130,28 @@
     });
     // Returning to the page (e.g. Back from Stripe, incl. bfcache) restores the button.
     window.addEventListener('pageshow', function () { btns.forEach(resetCheckoutButton); });
+  }
+
+  function wirePremiumTrialOffer() {
+    if (currentPageName() !== 'premium.html') return;
+    var key = 'svp_premium_trial_popup_seen';
+    try {
+      if (sessionStorage.getItem(key) === '1') return;
+    } catch (e) {}
+    setTimeout(function () {
+      if (document.querySelector('[data-svp-dialog], .svp-offer-modal')) return;
+      try { sessionStorage.setItem(key, '1'); } catch (e2) {}
+      svpDialog({
+        title: 'Essai gratuit de 14 jours',
+        message: "Découvre les offres Premium pendant 14 jours. Tu peux lancer l'essai maintenant et choisir tes sorties ensuite.",
+        confirmLabel: "Commencer l'essai gratuit",
+        secondaryLabel: 'Plus tard',
+        onConfirm: function () {
+          var btn = document.querySelector('[data-svp="checkout"][data-plan="trial"]') || document.querySelector('[data-plan="trial"]');
+          startPremiumCheckout(btn, { plan: 'trial', returnPath: '/premium.html' });
+        }
+      });
+    }, 5200);
   }
 
   // ---- P5: admin gate ----
@@ -1608,9 +1642,146 @@
       : '<div style="height:110px;background:#EEF0FD;display:flex;align-items:center;justify-content:center"><div style="width:70px;height:70px;background:url(assets/icon-mic-circle.png) center/contain no-repeat;mix-blend-mode:multiply"></div></div>';
   }
   var offerDetailById = {};
+  var accountOfferAccess = {
+    loaded: false,
+    isPremium: false,
+    freeToken: { used: false },
+    session: ''
+  };
+  var FREE_TOKEN_TRIAL_PROMPT_KEY = 'svp_free_token_trial_prompt_seen';
   function rememberOffer(offer, archived) {
     if (!offer || !offer.id) return;
     offerDetailById[String(offer.id)] = Object.assign({}, offer, { archived: !!archived });
+  }
+  function hasOfferSpecifics(offer) {
+    if (!offer) return false;
+    if (offer.details_unlocked) return true;
+    var extra = offer.extra_fields || {};
+    return Boolean(
+      offer.description ||
+      offer.promo_code ||
+      offer.ticket_url ||
+      Object.keys(extra).some(function (key) { return String(extra[key] || '').trim(); })
+    );
+  }
+  function redeemedFreeOfferId() {
+    return accountOfferAccess.freeToken && accountOfferAccess.freeToken.used
+      ? String(accountOfferAccess.freeToken.offerId || '')
+      : '';
+  }
+  function goToPremiumOffer() {
+    storePremiumScrollIntent();
+    window.location.href = 'premium.html#premium-offer';
+  }
+  function showFreeTokenUsedDialog() {
+    var token = accountOfferAccess.freeToken || {};
+    svpDialog({
+      title: 'Jeton gratuit déjà utilisé',
+      message: 'Tu as déjà utilisé ton jeton gratuit unique. Passe à Premium pour débloquer toutes les offres et continuer à voir les codes.',
+      detail: token.offerTitle ? 'Utilisé pour : ' + token.offerTitle : '',
+      confirmLabel: 'Passer à Premium',
+      secondaryLabel: 'Plus tard',
+      onConfirm: goToPremiumOffer
+    });
+  }
+  function updateFreeTokenNotice() {
+    var notice = document.querySelector('[data-svp-free-token-notice]');
+    if (!notice) return;
+    if (accountOfferAccess.isPremium) {
+      notice.style.display = 'none';
+      return;
+    }
+    var title = notice.querySelector('[data-svp-free-token-title]');
+    var copy = notice.querySelector('[data-svp-free-token-copy]');
+    var token = accountOfferAccess.freeToken || {};
+    if (title) title.textContent = token.used ? 'Ton jeton gratuit a été utilisé' : 'Ton jeton gratuit est prêt';
+    if (copy) {
+      copy.textContent = token.used
+        ? 'Tu peux revoir les détails de l’offre choisie. Pour débloquer les autres codes et billets, passe à Premium.'
+        : 'Comme membre gratuit, tu peux débloquer une seule offre Premium de ton choix. Choisis bien: ce jeton ne peut être utilisé qu’une fois.';
+    }
+    notice.style.display = '';
+  }
+  function freeTokenPromptId(token) {
+    return String((token && (token.redeemedAt || token.offerId)) || 'used');
+  }
+  function maybePromptTrialAfterFreeToken() {
+    if (!document.querySelector('[data-svp="compte"]') || accountOfferAccess.isPremium) return;
+    var token = accountOfferAccess.freeToken || {};
+    if (!token.used) return;
+    var promptId = freeTokenPromptId(token);
+    try {
+      if (localStorage.getItem(FREE_TOKEN_TRIAL_PROMPT_KEY) === promptId) return;
+    } catch (e) {}
+    setTimeout(function () {
+      if (document.querySelector('[data-svp-dialog], .svp-offer-modal')) return;
+      try { localStorage.setItem(FREE_TOKEN_TRIAL_PROMPT_KEY, promptId); } catch (e2) {}
+      svpDialog({
+        title: 'Envie de continuer avec Premium ?',
+        message: "Ton jeton gratuit t'a donné accès à une offre. Avec l'essai gratuit de 14 jours, tu peux débloquer toutes les prochaines offres Premium.",
+        detail: token.offerTitle ? 'Jeton utilisé pour : ' + token.offerTitle : '',
+        confirmLabel: "Démarrer l'essai gratuit",
+        secondaryLabel: 'Plus tard',
+        onConfirm: function () {
+          var btn = document.querySelector('[data-svp="checkout"]');
+          startPremiumCheckout(btn, { plan: 'trial', returnPath: '/compte.html' });
+        }
+      });
+    }, 1300);
+  }
+  function claimFreeOfferToken(offer) {
+    var session = accountOfferAccess.session || getSession();
+    if (!session) {
+      window.location.href = 'connexion.html';
+      return;
+    }
+    fetch(FN + 'redeem-free-offer-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session: session, offerId: offer.id })
+    }).then(function (r) {
+      return r.json().then(function (d) { return { ok: r.ok, status: r.status, d: d }; }).catch(function () { return { ok: r.ok, status: r.status, d: {} }; });
+    }).then(function (res) {
+      var d = res.d || {};
+      if (!res.ok) {
+        if (d.code === 'free_token_used') {
+          accountOfferAccess.freeToken = d.freeToken || accountOfferAccess.freeToken || { used: true };
+          updateFreeTokenNotice();
+          showFreeTokenUsedDialog();
+          return;
+        }
+        svpDialog({
+          title: "L'offre n'a pas pu être débloquée",
+          message: d.error || 'Réessaie dans un instant. Si ça persiste, écris-nous à spectacles@silvousplaitsvp.com.',
+          confirmLabel: 'Compris'
+        });
+        return;
+      }
+      if (d.freeToken) accountOfferAccess.freeToken = d.freeToken;
+      if (d.accessLevel === 'premium') {
+        accountOfferAccess.isPremium = true;
+        setPremiumOnlyVisible(true);
+      }
+      if (d.offer && d.offer.id) rememberOffer(d.offer, false);
+      updateFreeTokenNotice();
+      showOfferDetail(offer.id);
+    }).catch(function () {
+      svpDialog({
+        title: 'Connexion interrompue',
+        message: "On n'a pas pu débloquer l'offre pour le moment. Vérifie ta connexion et réessaie.",
+        confirmLabel: 'Compris'
+      });
+    });
+  }
+  function askFreeOfferTokenConfirmation(offer) {
+    svpDialog({
+      title: 'Utiliser ton jeton gratuit ?',
+      message: 'Tu peux débloquer une seule offre Premium avec ton jeton gratuit. En confirmant, il sera utilisé pour ce spectacle et ce choix est définitif.',
+      detail: offer.title || '',
+      confirmLabel: 'Utiliser mon jeton',
+      secondaryLabel: 'Annuler',
+      onConfirm: function () { claimFreeOfferToken(offer); }
+    });
   }
   function offerDetailMedia(o) {
     var v = o.video_url && String(o.video_url).trim();
@@ -1630,15 +1801,43 @@
       return '';
     }
   }
+  function extraFieldLabel(key) {
+    return String(key || '')
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
   function showOfferDetail(id) {
     var offer = offerDetailById[String(id || '')];
     if (!offer) return;
-    if (document.body && document.body.getAttribute('data-svp') === 'compte' && document.body.getAttribute('data-svp-account-premium') !== 'true') {
-      svpDialog({ title: 'Réservé aux membres Premium', message: 'Ces offres sont réservées aux membres Premium. Passe Premium pour y accéder.', confirmLabel: 'Compris' });
+    var isAccountPage = document.body && document.body.getAttribute('data-svp') === 'compte';
+    var isFreeAccount = isAccountPage && document.body.getAttribute('data-svp-account-premium') !== 'true';
+    if (isFreeAccount) {
+      var redeemedId = redeemedFreeOfferId();
+      if (redeemedId && redeemedId === String(offer.id || '')) {
+        if (!hasOfferSpecifics(offer)) {
+          claimFreeOfferToken(offer);
+          return;
+        }
+      } else if (redeemedId) {
+        showFreeTokenUsedDialog();
+        return;
+      } else {
+        askFreeOfferTokenConfirmation(offer);
+        return;
+      }
+    }
+    if (isAccountPage && !hasOfferSpecifics(offer)) {
+      svpDialog({ title: 'Détails indisponibles', message: "Les détails de cette offre ne sont pas encore disponibles. Réessaie un peu plus tard.", confirmLabel: 'Compris' });
       return;
     }
     var ticketUrl = safeHttpUrl(offer.ticket_url);
     var meta = [offer.venue || '', regionLabel(offer.region || ''), frDate(offer.event_date)].filter(Boolean).join(' · ');
+    var extraFields = Object.keys(offer.extra_fields || {}).filter(function (key) {
+      return String((offer.extra_fields || {})[key] || '').trim();
+    }).map(function (key) {
+      return '<div class="svp-offer-modal__extra"><span>' + esc(extraFieldLabel(key) || 'Détail') + '</span><strong>' + esc(String(offer.extra_fields[key] || '').trim()) + '</strong></div>';
+    }).join('');
     var modal = document.createElement('div');
     modal.className = 'svp-offer-modal';
     modal.setAttribute('role', 'dialog');
@@ -1652,6 +1851,7 @@
       + '<h2>' + esc(offer.title || 'Offre Premium') + '</h2>'
       + (meta ? '<p class="svp-offer-modal__meta">' + esc(meta) + '</p>' : '')
       + (offer.description ? '<p class="svp-offer-modal__description">' + esc(offer.description) + '</p>' : '<p class="svp-offer-modal__description">Tous les détails de cette offre sont envoyés aux membres Premium.</p>')
+      + extraFields
       + (offer.promo_code ? '<div class="svp-offer-modal__code"><span>Code promo</span><strong>' + esc(offer.promo_code) + '</strong></div>' : '')
       + (ticketUrl && !offer.archived ? '<a class="svp-offer-modal__cta" href="' + esc(ticketUrl) + '" target="_blank" rel="noopener">Ouvrir la billetterie</a>' : '')
       + '</div></div>';
@@ -1706,6 +1906,54 @@
         ? '<span style="margin-top:10px;text-align:center;background:#EEF0FD;color:#8B8DA0;border-radius:100px;padding:11px;font:700 13px \'Instrument Sans\',sans-serif">Offre passée</span>'
         : '<button type="button" data-svp-offer-detail data-offer-id="' + esc(o.id) + '" style="margin-top:10px;text-align:center;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:11px;font:700 13px \'Instrument Sans\',sans-serif;text-decoration:none;cursor:pointer">Voir l\'offre</button>')
       + '</div></div>';
+  }
+  function loadAccountOffers(session) {
+    if (!document.querySelector('[data-svp="compte"]')) return;
+    var grid = document.querySelector('[data-svp="offers-grid"]');
+    if (!grid) return;
+    accountOfferAccess.session = session || getSession();
+    accountOfferAccess.loaded = false;
+    setAccountCatalogVisible(true);
+    grid.innerHTML = rep(skeletonGridCard(), 6);
+    fetch(FN + 'list-account-premium-offers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session: accountOfferAccess.session })
+    }).then(function (r) {
+      return r.json().then(function (d) { return { ok: r.ok, status: r.status, d: d }; }).catch(function () { return { ok: r.ok, status: r.status, d: {} }; });
+    }).then(function (res) {
+      var d = res.d || {};
+      if (!res.ok || !d.success) {
+        if (res.status === 401) {
+          setSession('');
+          window.location.href = 'connexion.html';
+          return;
+        }
+        grid.innerHTML = '<p style="grid-column:1/-1;color:#8B8DA0;font:500 14px \'Instrument Sans\',sans-serif;padding:8px 2px">Impossible de charger les offres pour le moment.</p>';
+        return;
+      }
+      accountOfferAccess.loaded = true;
+      accountOfferAccess.isPremium = d.accessLevel === 'premium';
+      accountOfferAccess.freeToken = d.freeToken || { used: false };
+      if (document.body) document.body.setAttribute('data-svp-account-premium', accountOfferAccess.isPremium ? 'true' : 'false');
+      setPremiumOnlyVisible(accountOfferAccess.isPremium);
+      setAccountCatalogVisible(true);
+      updateFreeTokenNotice();
+      maybePromptTrialAfterFreeToken();
+
+      var offers = Array.isArray(d.offers) ? d.offers : [];
+      offerDetailById = {};
+      offers.forEach(function (offer) { rememberOffer(offer, false); });
+      grid.innerHTML = offers.map(function (offer) { return compteCard(offer, false); }).join('')
+        || '<p style="grid-column:1/-1;color:#8B8DA0;font:500 14px \'Instrument Sans\',sans-serif;padding:8px 2px">Aucune offre pour le moment — reviens lundi pour la nouvelle sélection.</p>';
+      startAutoplayVideos(grid);
+      [].slice.call(grid.querySelectorAll('[data-svp="offer"]')).forEach(observeOffer);
+      wireOfferDetailButtons();
+      applyRevealTargets(grid);
+      if (typeof window.__svpApplyFilters === 'function') window.__svpApplyFilters();
+    }).catch(function () {
+      grid.innerHTML = '<p style="grid-column:1/-1;color:#8B8DA0;font:500 14px \'Instrument Sans\',sans-serif;padding:8px 2px">Impossible de charger les offres pour le moment.</p>';
+    });
   }
   // ---- Archive (past offers, read-only) ----
   function wireArchive() {
@@ -1978,7 +2226,7 @@
 
   function wireLiveOffers() {
     var carousel = document.querySelector('[data-scroller="offres"]');
-    var grid = document.querySelector('[data-svp="offers-grid"]');
+    var grid = document.querySelector('[data-svp="compte"]') ? null : document.querySelector('[data-svp="offers-grid"]');
     if (!carousel && !grid) return;
     // Replace the design's sample cards with skeletons immediately so users never
     // see fake placeholder offers while the real ones load.
@@ -2947,7 +3195,7 @@
     wireUniversalMobileHeader(); wirePremiumMobileFooter(); wireHomeLink(); wireBackLinks(); wireMobileMenus(); wireFaq(); wireScrollTop(); wireAnchorScroll(); wirePremiumSignupIntent(); wirePremiumStepCtas();
     wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireAccountSave(); wireCompteFilters(); wireUnsubscribe(); wireBilling(); wireAdmin(); wirePartenariat();
-    wireContact(); wirePremiumCheckout(); wireExitIntent(); wireFunnelArchivedOffers(); wireLiveOffers(); wireTestimonialCarousels(); wireOffersCarousel();
+    wireContact(); wirePremiumCheckout(); wirePremiumTrialOffer(); wireExitIntent(); wireFunnelArchivedOffers(); wireLiveOffers(); wireTestimonialCarousels(); wireOffersCarousel();
     wireArchive();
     runPendingPremiumScroll();
     wireReveal(); wireCountUp(); wirePageTransitions(); landOnHash();
