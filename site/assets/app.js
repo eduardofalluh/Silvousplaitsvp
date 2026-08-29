@@ -18,6 +18,7 @@
   // same card treatment the funnel's exit modal uses.
   function svpDialog(opts) {
     var o = opts || {};
+    var locked = Boolean(o.locked);
     var prev = document.querySelector('[data-svp-dialog]');
     if (prev && prev.parentNode) prev.parentNode.removeChild(prev);
 
@@ -70,6 +71,12 @@
     ok.type = 'button';
     ok.style.cssText = "display:block;width:100%;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:13px;font:800 14.5px 'Instrument Sans',sans-serif;cursor:pointer";
     ok.textContent = o.confirmLabel || 'Compris';
+    if (o.busy || o.confirmDisabled) {
+      ok.disabled = true;
+      ok.setAttribute('aria-busy', 'true');
+      ok.style.cursor = 'wait';
+      ok.style.opacity = '.78';
+    }
     card.appendChild(ok);
 
     // Optional secondary action, e.g. "Utiliser une autre adresse".
@@ -92,6 +99,7 @@
     });
 
     function close() {
+      if (locked) return;
       overlay.style.opacity = '0';
       setTimeout(function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 160);
       document.removeEventListener('keydown', onKey);
@@ -730,7 +738,9 @@
     var session = getSession();
     if (!session) { window.location.href = 'connexion.html'; return; }
     setPremiumOnlyVisible(false);
-    setAccountCatalogVisible(false);
+    setAccountCatalogVisible(true);
+    var grid0 = document.querySelector('[data-svp="offers-grid"]');
+    if (grid0) grid0.innerHTML = rep(skeletonGridCard(), 6);
     [].slice.call(document.querySelectorAll('[data-svp-free-only]')).forEach(function (el) { el.style.display = 'none'; });
     // Show a skeleton for the name + badge immediately (never the fake "Alex").
     var greet0 = document.querySelector('[data-svp="compte"] h1');
@@ -768,7 +778,23 @@
         }
         loadAccountOffers(session);
       })
-      .catch(function () { /* leave skeletons on network error */ });
+      .catch(function () {
+        var greet = document.querySelector('[data-svp="compte"] h1');
+        if (greet) greet.textContent = 'Connexion interrompue';
+        var badge = document.querySelector('[data-svp-badge]');
+        if (badge) { badge.classList.remove('svp-skel'); badge.style.minWidth = ''; badge.style.minHeight = ''; badge.style.background = '#EEF0FD'; badge.style.color = '#3347CA'; badge.textContent = 'À réessayer'; }
+        setAccountCatalogVisible(true);
+        var grid = document.querySelector('[data-svp="offers-grid"]');
+        if (grid) grid.innerHTML = '<p style="grid-column:1/-1;color:#8B8DA0;font:500 14px \'Instrument Sans\',sans-serif;padding:8px 2px">Impossible de charger ton compte pour le moment.</p>';
+        svpDialog({
+          title: 'Connexion interrompue',
+          message: "On n'a pas pu charger ton compte. Vérifie ta connexion et réessaie.",
+          confirmLabel: 'Réessayer',
+          onConfirm: function () { window.location.reload(); },
+          secondaryLabel: 'Se reconnecter',
+          onSecondary: function () { setSession(''); window.location.href = 'connexion.html'; }
+        });
+      });
   }
 
   function setAccountCatalogVisible(visible) {
@@ -1684,6 +1710,16 @@
       onConfirm: goToPremiumOffer
     });
   }
+  function showFreeTokenBusyDialog(offer) {
+    svpDialog({
+      title: 'Déblocage en cours',
+      message: "On vérifie ton jeton gratuit et on prépare les détails de l'offre.",
+      detail: offer && offer.title ? offer.title : '',
+      confirmLabel: 'Déblocage...',
+      busy: true,
+      locked: true
+    });
+  }
   function updateFreeTokenNotice() {
     var notice = document.querySelector('[data-svp-free-token-notice]');
     if (!notice) return;
@@ -1735,6 +1771,7 @@
       window.location.href = 'connexion.html';
       return;
     }
+    showFreeTokenBusyDialog(offer);
     fetch(FN + 'redeem-free-offer-token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1810,6 +1847,8 @@
   function showOfferDetail(id) {
     var offer = offerDetailById[String(id || '')];
     if (!offer) return;
+    var existingDialog = document.querySelector('[data-svp-dialog]');
+    if (existingDialog && existingDialog.parentNode) existingDialog.parentNode.removeChild(existingDialog);
     var isAccountPage = document.body && document.body.getAttribute('data-svp') === 'compte';
     var isFreeAccount = isAccountPage && document.body.getAttribute('data-svp-account-premium') !== 'true';
     if (isFreeAccount) {
