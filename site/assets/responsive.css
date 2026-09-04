@@ -1230,7 +1230,13 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
 @media (min-width: 761px) {
   body[data-svp="compte"] [style*="max-width: 960px"] {
     max-width: none !important;
-    padding-left: max(48px, calc((100% - 1600px) / 2)) !important;
+    /* Left gets the gutter PLUS the logo's transparent margin, so the content
+       lines up with the wordmark's visible ink rather than with its box.
+       logo-mot.png is blank for its first 238 of 2048px, which at the rendered
+       140px width is 16.3px: the box sits on the gutter while the ink starts
+       16px further in. Right keeps the bare gutter, because the pills there
+       ("Se deconnecter", "Retour au site") have real edges that already align. */
+    padding-left: calc(max(48px, (100% - 1600px) / 2) + 16px) !important;
     padding-right: max(48px, calc((100% - 1600px) / 2)) !important;
   }
 
@@ -1245,5 +1251,16 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
   /* The filter row's search field has flex:1 and would run to ~1000px. */
   body[data-svp="compte"] input[placeholder^="Rechercher un spectacle"] {
     max-width: 560px !important;
+  }
+}
+
+/* Same alignment on phones. The mobile header puts the logo box on a 16px
+   gutter, so its ink starts at 32px while the content block keeps its 24px
+   design padding — the greeting sits 8px left of the wordmark. Match the ink
+   here too; the right side stays on the 24px gutter, as on desktop. */
+@media (max-width: 760px) {
+  body[data-svp="compte"] [style*="max-width: 960px"] {
+    padding-left: 32px !important;
+    padding-right: 24px !important;
   }
 }
