@@ -496,12 +496,20 @@ html { background-color: #FFFEF5; }
   -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 2px 0 7px;
 }
 .svp-upsell .funnel-archive-track::-webkit-scrollbar { display: none; }
+/* 82% of the track keeps one card + a peek while the panel is narrow, but the
+   account column is no longer a narrow sidebar: at ~660px that made each card
+   ~575px wide against a fixed-height media box, i.e. a 9:1 letterbox. Cap the
+   basis so a wide column shows several properly-shaped cards instead of one
+   stretched one; below ~365px of track the 82% still wins and nothing changes. */
 .svp-upsell .funnel-archive-card {
-  flex: 0 0 82%; min-width: 0; min-height: 148px; border: 1.5px solid #ECEAE0;
+  flex: 0 0 min(82%, 300px); min-width: 0; min-height: 148px; border: 1.5px solid #ECEAE0;
   border-radius: 12px; background: #FFFEF5; overflow: hidden; scroll-snap-align: start;
 }
+/* Derive the height from the width instead of pinning it: a fixed 62px box got
+   flatter every time the card grew, cropping photos to a band of heads and
+   squashing video. 16:9 keeps the same shape at every column width. */
 .svp-upsell .funnel-archive-media {
-  height: 62px; background: #EEF0FD center/cover no-repeat; display: flex;
+  aspect-ratio: 16 / 9; background: #EEF0FD center/cover no-repeat; display: flex;
   align-items: center; justify-content: center; overflow: hidden;
   flex: 0 0 auto; min-width: 0;
 }
@@ -521,7 +529,7 @@ html { background-color: #FFFEF5; }
   display: block;
 }
 .svp-upsell .funnel-archive-media iframe { pointer-events: none; }
-.svp-upsell .funnel-archive-media img { max-height: 46px; max-width: 60%; mix-blend-mode: multiply; }
+.svp-upsell .funnel-archive-media img { max-height: 62%; max-width: 55%; mix-blend-mode: multiply; }
 /* Belt and braces: nothing inside the call-back may exceed its container, and
    every link in the flex chain must be allowed to shrink. Without min-width:0
    a flex/grid item sizes to its content instead of its column, which is the
