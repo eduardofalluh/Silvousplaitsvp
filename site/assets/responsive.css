@@ -1215,3 +1215,35 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
 @media (max-width: 760px) {
   header img, [alt="Silvousplait"] { width: auto !important; max-width: 170px !important; }
 }
+
+/* ---- compte: put the content on the same column as the header ----
+   The account page's content sat in a centred 960px box while the header bar
+   above it hugs the window on the shared gutter formula (see "Uniform header
+   container width"). On a 1512px laptop that left the logo at the very edge and
+   the content floating in the middle with ~275px of dead space each side, which
+   reads as cramped even though nothing is actually too narrow. Reuse the header
+   formula verbatim so the two line up: a 48px edge gap, widening into a centred
+   1600px column only past that width.
+
+   Desktop only. Below 761px the existing mobile block already trims horizontal
+   padding to the phone gutter, and a 48px gap there would eat a 390px screen. */
+@media (min-width: 761px) {
+  body[data-svp="compte"] [style*="max-width: 960px"] {
+    max-width: none !important;
+    padding-left: max(48px, calc((100% - 1600px) / 2)) !important;
+    padding-right: max(48px, calc((100% - 1600px) / 2)) !important;
+  }
+
+  /* Spend the extra width on more cards, not wider ones: a fixed repeat(3, 1fr)
+     would stretch each offer card to ~460px. auto-FILL (not auto-fit) keeps the
+     empty tracks, so a member holding a single offer still gets a normal-sized
+     card instead of one stretched across the whole row. */
+  body[data-svp="compte"] [data-svp="offers-grid"] {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+  }
+
+  /* The filter row's search field has flex:1 and would run to ~1000px. */
+  body[data-svp="compte"] input[placeholder^="Rechercher un spectacle"] {
+    max-width: 560px !important;
+  }
+}

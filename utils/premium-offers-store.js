@@ -558,12 +558,28 @@ async function safeWriteRange(sheets, range, values, stage) {
 
 async function safeAppendRows(sheets, range, values, stage) {
   try {
-    await sheets.spreadsheets.values.append({
+    const response = await sheets.spreadsheets.values.append({
       spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
       range,
       valueInputOption: 'RAW',
       insertDataOption: 'INSERT_ROWS',
       requestBody: { values },
+    });
+    invalidateSpreadsheetMetaCache();
+    return response;
+  } catch (error) {
+    throw formatSheetsError(error, stage);
+  }
+}
+
+// Blank a row's cells instead of deleting the row. A delete shifts every row
+// below it, so two callers deleting concurrently can each remove a row the
+// other is still pointing at; clearing a fixed range cannot move anything.
+async function safeClearRange(sheets, range, stage) {
+  try {
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId: PREMIUM_OFFERS_SHEET_ID,
+      range,
     });
     invalidateSpreadsheetMetaCache();
   } catch (error) {
@@ -1881,9 +1897,17 @@ async function listPremiumOfferAccessLogs({ limit = 100, sheets: providedSheets 
     .slice(0, Math.max(1, limit));
 }
 
-async function getFreeOfferRedemption(email, { sheets: providedSheets } = {}) {
+// Every redemption row recorded for one address, earliest row first.
+//
+// Normally there is at most one. A second can exist for a few hundred
+// milliseconds when two requests race (the sheet has no transactions), so the
+// tie-break has to be a total order both requests compute identically: the row
+// number the append assigned. Timestamps are not enough -- two requests in the
+// same millisecond produce identical strings and the two callers could then
+// disagree about who won.
+async function listFreeOfferRedemptions(email, { sheets: providedSheets } = {}) {
   const normalizedEmail = normalize(email).toLowerCase();
-  if (!normalizedEmail) return null;
+  if (!normalizedEmail) return [];
 
   const sheets = providedSheets || await getSheetsClient();
   await ensureFreeOfferRedemptionsSheet(sheets);
@@ -1893,15 +1917,37 @@ async function getFreeOfferRedemption(email, { sheets: providedSheets } = {}) {
     'free redemptions list read'
   );
   const rows = read.data.values || [];
-  if (rows.length < 2) return null;
+  if (rows.length < 2) return [];
 
   return rows
     .slice(1)
     .map((row, index) => mapFreeOfferRedemptionRow(row, index + 2))
     .filter((item) => item.email === normalizedEmail)
-    .sort((a, b) => String(a.redeemed_at || '').localeCompare(String(b.redeemed_at || '')))[0] || null;
+    .sort((a, b) => a.rowNumber - b.rowNumber);
 }
 
+async function getFreeOfferRedemption(email, options = {}) {
+  const claims = await listFreeOfferRedemptions(email, options);
+  return claims[0] || null;
+}
+
+// Which row did our append land on? The API reports it as e.g.
+// "free_offer_redemptions!A7:E7".
+function appendedRowNumber(response) {
+  const updates = response && response.data && response.data.updates;
+  const match = /![A-Z]+(\d+)/.exec(String((updates && updates.updatedRange) || ''));
+  return match ? Number(match[1]) : 0;
+}
+
+// Spend a member's single free-offer token.
+//
+// A spreadsheet has no transactions, so "check then write" can double-spend:
+// two requests can both read "no redemption yet" and both append. The fix is to
+// settle AFTER writing instead of trusting the check before it. Whoever holds
+// the lowest row wins, and that verdict is stable -- a request that appended
+// later always sees the earlier row, because that row was committed before this
+// read began. A loser blanks its own row and reports the token as spent, so a
+// second code is never returned even for the few hundred ms both rows coexist.
 async function redeemFreeOfferToken(entry) {
   const email = normalize(entry && entry.email).toLowerCase();
   const offerId = normalize(entry && entry.offerId);
@@ -1937,16 +1983,47 @@ async function redeemFreeOfferToken(entry) {
     offer.title,
     timestamp,
   ]];
-  await safeAppendRows(
+  const appendResponse = await safeAppendRows(
     sheets,
     `${FREE_OFFER_REDEMPTIONS_TAB}!A:E`,
     values,
     'free redemption append'
   );
+  const ourRow = appendedRowNumber(appendResponse);
+
+  const claims = await listFreeOfferRedemptions(email, { sheets });
+  const winner = claims[0] || null;
+
+  if (winner && ourRow && winner.rowNumber !== ourRow) {
+    // Lost the race. Blank only the row we wrote ourselves -- never another
+    // request's -- then answer exactly as if the token had already been spent,
+    // because it had.
+    await safeClearRange(
+      sheets,
+      `${FREE_OFFER_REDEMPTIONS_TAB}!A${ourRow}:E${ourRow}`,
+      'free redemption rollback'
+    );
+    return {
+      redeemed: false,
+      alreadyRedeemed: true,
+      redemption: winner,
+    };
+  }
+
+  if (!ourRow && claims.length > 1) {
+    // The append gave us no row number, so we cannot prove which row is ours
+    // and must not blank one. Stand down instead: a stray row is recoverable,
+    // a second code handed to a member is not.
+    return {
+      redeemed: false,
+      alreadyRedeemed: true,
+      redemption: winner,
+    };
+  }
 
   return {
     redeemed: true,
-    redemption: mapFreeOfferRedemptionRow(values[0], 2),
+    redemption: winner || mapFreeOfferRedemptionRow(values[0], ourRow || 2),
     offer,
   };
 }
