@@ -1264,3 +1264,22 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
     padding-right: 24px !important;
   }
 }
+
+/* ---- compte: the free-token notice CTA ----
+   The notice is one full-width bar: a 620px copy block, then space-between,
+   then the button. At 960px that read as a tidy two-column bar; on the widened
+   column it leaves ~800px of empty card between the sentence and a button
+   pinned to the TOP-right (align-items:flex-start), which reads as dropped
+   there rather than placed.
+
+   Centre it against the copy block and let the copy use more of the bar, so the
+   two sit on one optical line with a normal gap instead of facing each other
+   across an empty card. */
+@media (min-width: 761px) {
+  body[data-svp="compte"] [data-svp-free-token-notice] > div {
+    align-items: center !important;
+  }
+  body[data-svp="compte"] [data-svp-free-token-notice] > div > div[style*="max-width:620px"] {
+    max-width: 820px !important;
+  }
+}
