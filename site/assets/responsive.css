@@ -1291,3 +1291,31 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
     max-width: 820px !important;
   }
 }
+
+/* ---- compte: let the two account cards shrink on phones ----
+   PRE-EXISTING BUG (verified against the Aug 17 prod deploy, which shows the
+   same 644px block): the Informations/Compte pair is a `1fr 1fr` grid that the
+   mobile block collapses to one column, but a grid item's default
+   `min-width: auto` refuses to shrink below its min-content, and `1fr` is
+   `minmax(auto, 1fr)` — so the column takes the item's min-content instead of
+   the container's width. The Compte card's min-content comes from the archive
+   carousel track, so the card measured 644px inside a 334px grid on a 390px
+   phone. html{overflow-x:hidden} then CLIPPED the excess rather than letting it
+   scroll, which is why the inputs and the upsell were sliced off mid-word with
+   no way to reach them.
+
+   min-width:0 is the canonical release valve for exactly this. Bisected to the
+   track by hiding subtrees, then confirmed: card 644 -> 334, nothing overflows,
+   and the carousel still scrolls (1245px of swipe left).
+
+   Applied at every width, not just phones: at 768px the grid is still two
+   columns of a ~333px track, so the same 644px min-content overflowed there
+   too. On a wide desktop the columns already exceed the content, so allowing
+   the shrink changes nothing there.
+
+   NOTE for future debugging: document.scrollWidth CANNOT detect this, because
+   overflow-x:hidden makes scrollWidth equal clientWidth. Compare element right
+   edges against innerWidth instead, skipping anything inside a scroller. */
+body[data-svp="compte"] [style*="grid-template-columns"] > * {
+  min-width: 0 !important;
+}

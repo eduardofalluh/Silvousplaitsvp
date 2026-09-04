@@ -34,6 +34,15 @@
     var card = document.createElement('div');
     card.style.cssText = "background:#FFFEF5;max-width:400px;width:100%;border:1.5px solid #16182B;border-radius:18px;box-shadow:6px 6px 0 #3347CA;padding:26px 24px;text-align:center;transform:translateY(6px) scale(.99);transition:transform .18s cubic-bezier(.2,.8,.2,1)";
 
+    // Optional blue kicker above the title, for dialogs that are an offer
+    // rather than a warning.
+    if (o.kicker) {
+      var kick = document.createElement('div');
+      kick.style.cssText = "font:800 11px 'Instrument Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#3347CA;margin-bottom:7px";
+      kick.textContent = o.kicker;
+      card.appendChild(kick);
+    }
+
     var h = document.createElement('div');
     h.style.cssText = "font:800 19px/1.2 'Bricolage Grotesque',sans-serif;color:#16182B;margin-bottom:8px";
     h.textContent = o.title || 'Oups';
@@ -89,6 +98,7 @@
       sec.style.cssText = "display:block;width:100%;background:none;border:none;margin-top:10px;font:600 13px 'Instrument Sans',sans-serif;color:#8B8DA0;text-decoration:underline;cursor:pointer";
       sec.textContent = o.secondaryLabel;
       sec.addEventListener('click', function () {
+        resolved = true;
         close();
         if (typeof o.onSecondary === 'function') o.onSecondary();
       });
@@ -101,11 +111,16 @@
       card.style.transform = 'none';
     });
 
+    var resolved = false;                        // a button was used
     function close() {
       if (locked) return;
       overlay.style.opacity = '0';
       setTimeout(function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 160);
       document.removeEventListener('keydown', onKey);
+      if (!resolved) {
+        resolved = true;
+        if (typeof o.onDismiss === 'function') o.onDismiss();
+      }
     }
     function onKey(e) {
       if (e.key === 'Escape') close();
@@ -123,10 +138,12 @@
           try { field.focus(); } catch (e) {}
           return;                                   // keep the dialog open
         }
+        resolved = true;
         close();
         if (typeof o.onConfirm === 'function') o.onConfirm(v);
         return;
       }
+      resolved = true;
       close();
       if (typeof o.onConfirm === 'function') o.onConfirm();
     }
@@ -428,9 +445,39 @@
           startPremiumCheckout(btn, { email: email, plan: btn.getAttribute('data-plan') || (state.premium === 'trial' ? 'trial' : 'yearly'), returnPath: '/tunnel.html' });
           return;
         }
-        showStep(3);
+        offerTrialBeforeDecline(btn);
       });
     });
+
+    // "Non merci, je reste au forfait gratuit" gets one last offer of the free
+    // trial before the free flow continues (client request). Declining, closing
+    // with Escape, or clicking the backdrop all continue to step 3 exactly as
+    // the bare button used to, so the funnel can never stall behind this.
+    var trialOfferShown = false;
+    function offerTrialBeforeDecline(declineBtn) {
+      if (trialOfferShown) { showStep(3); return; }
+      trialOfferShown = true;
+      var goFree = function () { state.premium = 'no'; showStep(3); };
+      svpDialog({
+        kicker: '14 jours gratuits',
+        title: 'Essaie Premium avant de décider',
+        message: "Tu peux voir toutes les offres Premium pendant 14 jours, sans payer. Annule en tout temps avant la fin de l'essai.",
+        detail: '14 jours gratuits, puis 60 $ par année',
+        confirmLabel: "Commencer l'essai gratuit",
+        secondaryLabel: 'Non merci, je reste au forfait gratuit',
+        onConfirm: function () {
+          if (!validateStep1()) { showStep(1); return; }
+          var email = ((emailInput && emailInput.value) || '').trim().toLowerCase();
+          setEmail(email);
+          // Keep the tag honest: they accepted the trial from here, so the
+          // enriched submit must not report them as having refused Premium.
+          state.premium = 'trial';
+          startPremiumCheckout(declineBtn, { email: email, plan: 'trial', returnPath: '/tunnel.html' });
+        },
+        onSecondary: goFree,
+        onDismiss: goFree
+      });
+    }
     var copy = funnel.querySelector('[data-funnel-copy]');
     if (copy) copy.addEventListener('click', function () {
       var url = inviteUrl();
@@ -1243,6 +1290,7 @@
       if (document.querySelector('[data-svp-dialog], .svp-offer-modal')) return;
       try { sessionStorage.setItem(key, '1'); } catch (e2) {}
       svpDialog({
+        kicker: '14 jours gratuits',
         title: 'Essai gratuit de 14 jours',
         message: "Découvre les offres Premium pendant 14 jours. Tu peux lancer l'essai maintenant et choisir tes sorties ensuite.",
         confirmLabel: "Commencer l'essai gratuit",
@@ -1828,6 +1876,7 @@
       if (document.querySelector('[data-svp-dialog], .svp-offer-modal')) return;
       try { localStorage.setItem(FREE_TOKEN_TRIAL_PROMPT_KEY, promptId); } catch (e2) {}
       svpDialog({
+        kicker: '14 jours gratuits',
         title: 'Envie de continuer avec Premium ?',
         message: "Ton jeton gratuit t'a donné accès à une offre. Avec l'essai gratuit de 14 jours, tu peux débloquer toutes les prochaines offres Premium.",
         detail: token.offerTitle ? 'Jeton utilisé pour : ' + token.offerTitle : '',
