@@ -1319,3 +1319,14 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
 body[data-svp="compte"] [style*="grid-template-columns"] > * {
   min-width: 0 !important;
 }
+
+/* Trial offer inside the signup funnel. */
+.svp-trial-card{box-sizing:border-box;max-width:540px!important;max-height:calc(100dvh - 40px);overflow-y:auto;text-align:left!important;padding:32px!important}
+.svp-trial-card .svp-dialog-title{font-size:28px!important;line-height:1.12!important;margin:12px 0!important;max-width:380px}
+.svp-trial-benefits{list-style:none;padding:0;margin:20px 0 24px;display:grid;gap:12px;color:#25349B;font:600 14px/1.5 'Instrument Sans',sans-serif}
+.svp-trial-benefits li{display:flex;gap:10px;align-items:baseline}
+.svp-trial-benefits li::before{content:'✓';color:#3347CA;font-weight:800}
+.svp-trial-card .svp-dialog-detail{word-break:normal!important;border-top:1px solid #D9DDF9;border-radius:0!important;background:transparent!important;padding:16px 0!important;margin-bottom:4px!important;font-size:15px!important}
+.svp-trial-card .svp-dialog-confirm{padding:16px!important;font-size:15px!important}
+.svp-trial-card .svp-dialog-secondary{color:#4A4D66!important;border:1px solid #D9D8CD!important;border-radius:100px;padding:13px!important;text-decoration:none!important;margin-top:12px!important}
+@media(max-width:480px){.svp-trial-card{padding:24px 20px!important}.svp-trial-card .svp-dialog-title{font-size:25px!important}.svp-trial-benefits{font-size:13px}}

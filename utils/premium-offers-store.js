@@ -1897,6 +1897,23 @@ async function listPremiumOfferAccessLogs({ limit = 100, sheets: providedSheets 
     .slice(0, Math.max(1, limit));
 }
 
+// Admin history uses the same earliest-row winner as token redemption.
+async function listFreeOfferRedemptionsAdmin({ sheets: providedSheets } = {}) {
+  const sheets = providedSheets || await getSheetsClient();
+  await ensureFreeOfferRedemptionsSheet(sheets);
+  const read = await safeReadRange(sheets, `${FREE_OFFER_REDEMPTIONS_TAB}!A:E`, 'admin free redemptions read');
+  const seen = new Set();
+  return (read.data.values || []).slice(1)
+    .map((row, index) => mapFreeOfferRedemptionRow(row, index + 2))
+    .filter((entry) => {
+      if (!entry.email || !entry.offer_id || seen.has(entry.email)) return false;
+      seen.add(entry.email);
+      return true;
+    })
+    .sort((a, b) => b.redeemed_at.localeCompare(a.redeemed_at))
+    .map(({ email, offer_id, offer_title, redeemed_at }) => ({ email, offer_id, offer_title, redeemed_at }));
+}
+
 // Every redemption row recorded for one address, earliest row first.
 //
 // Normally there is at most one. A second can exist for a few hundred
@@ -2089,6 +2106,7 @@ module.exports = {
   listPremiumOfferTypes,
   listFreeSignupLocations,
   listPremiumOfferAccessLogs,
+  listFreeOfferRedemptionsAdmin,
   listPremiumShowcaseItems,
   getFreeOfferRedemption,
   redeemFreeOfferToken,

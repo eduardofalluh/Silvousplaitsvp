@@ -5,3 +5,5 @@
 node_modules/
 tickets-sent.csv
 .netlify/
+test-results/
+playwright-report/

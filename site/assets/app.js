@@ -22,6 +22,7 @@
   function svpDialog(opts) {
     var o = opts || {};
     var locked = Boolean(o.locked);
+    var previousFocus = document.activeElement;
     var prev = document.querySelector('[data-svp-dialog]');
     if (prev && prev.parentNode) prev.parentNode.removeChild(prev);
 
@@ -32,6 +33,7 @@
     overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:rgba(22,24,43,.55);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .16s ease';
 
     var card = document.createElement('div');
+    if (o.variant === 'trial') card.className = 'svp-trial-card';
     card.style.cssText = "background:#FFFEF5;max-width:400px;width:100%;border:1.5px solid #16182B;border-radius:18px;box-shadow:6px 6px 0 #3347CA;padding:26px 24px;text-align:center;transform:translateY(6px) scale(.99);transition:transform .18s cubic-bezier(.2,.8,.2,1)";
 
     // Optional blue kicker above the title, for dialogs that are an offer
@@ -46,12 +48,27 @@
     var h = document.createElement('div');
     h.style.cssText = "font:800 19px/1.2 'Bricolage Grotesque',sans-serif;color:#16182B;margin-bottom:8px";
     h.textContent = o.title || 'Oups';
+    h.id = 'svp-dialog-title';
+    h.className = 'svp-dialog-title';
+    overlay.setAttribute('aria-labelledby', h.id);
 
     var p = document.createElement('div');
     p.style.cssText = "font:500 14px/1.5 'Instrument Sans',sans-serif;color:#4A4D66;margin-bottom:18px";
     p.textContent = o.message || '';
+    p.id = 'svp-dialog-description';
+    overlay.setAttribute('aria-describedby', p.id);
 
     card.appendChild(h); card.appendChild(p);
+    if (o.benefits) {
+      var benefits = document.createElement('ul');
+      benefits.className = 'svp-trial-benefits';
+      o.benefits.forEach(function (text) {
+        var item = document.createElement('li');
+        item.textContent = text;
+        benefits.appendChild(item);
+      });
+      card.appendChild(benefits);
+    }
 
     // Optional highlighted detail — used to show WHICH address is already
     // subscribed, so the visitor can tell whether it is even their account.
@@ -59,6 +76,7 @@
       var det = document.createElement('div');
       det.style.cssText = "display:block;background:#EEF0FD;color:#3347CA;border-radius:10px;padding:10px 12px;margin-bottom:16px;font:700 13.5px 'Instrument Sans',sans-serif;word-break:break-all";
       det.textContent = o.detail;
+      det.className = 'svp-dialog-detail';
       card.appendChild(det);
     }
 
@@ -89,6 +107,7 @@
       ok.style.cursor = 'wait';
       ok.style.opacity = '.78';
     }
+    ok.className = 'svp-dialog-confirm';
     card.appendChild(ok);
 
     // Optional secondary action, e.g. "Utiliser une autre adresse".
@@ -97,6 +116,7 @@
       sec.type = 'button';
       sec.style.cssText = "display:block;width:100%;background:none;border:none;margin-top:10px;font:600 13px 'Instrument Sans',sans-serif;color:#8B8DA0;text-decoration:underline;cursor:pointer";
       sec.textContent = o.secondaryLabel;
+      sec.className = 'svp-dialog-secondary';
       sec.addEventListener('click', function () {
         resolved = true;
         close();
@@ -117,12 +137,19 @@
       overlay.style.opacity = '0';
       setTimeout(function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 160);
       document.removeEventListener('keydown', onKey);
+      if (previousFocus && previousFocus.isConnected) previousFocus.focus({ preventScroll: true });
       if (!resolved) {
         resolved = true;
         if (typeof o.onDismiss === 'function') o.onDismiss();
       }
     }
     function onKey(e) {
+      if (e.key === 'Tab') {
+        var focusable = [].slice.call(card.querySelectorAll('button:not(:disabled), input:not(:disabled)'));
+        var first = focusable[0], last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
       if (e.key === 'Escape') close();
       else if (e.key === 'Enter' && field) confirm();
     }
@@ -344,7 +371,7 @@
       var pct = current === 4 || current === 'already' ? 100 : Math.max(33, current * 33);
       if (progress) progress.style.width = Math.min(100, pct) + '%';
       if (badge) {
-        if (current === 4) badge.textContent = '✓ INSCRIT';
+        if (current === 4) badge.textContent = 'COURRIEL À CONFIRMER';
         else if (current === 'already') badge.textContent = 'DÉJÀ INSCRIT';
         else badge.textContent = 'ÉTAPE ' + current + ' / 3';
       }
@@ -460,8 +487,10 @@
       var goFree = function () { state.premium = 'no'; showStep(3); };
       svpDialog({
         kicker: '14 jours gratuits',
-        title: 'Essaie Premium avant de décider',
-        message: "Tu peux voir toutes les offres Premium pendant 14 jours, sans payer. Annule en tout temps avant la fin de l'essai.",
+        variant: 'trial',
+        title: 'Tes prochaines sorties commencent ici',
+        message: 'Prends 14 jours pour découvrir Premium et choisir les offres qui te plaisent.',
+        benefits: ['Accès à toutes les offres Premium', 'Billets gratuits et rabais exclusifs', "Annulation en tout temps avant la fin de l'essai"],
         detail: '14 jours gratuits, puis 60 $ par année',
         confirmLabel: "Commencer l'essai gratuit",
         secondaryLabel: 'Non merci, je reste au forfait gratuit',
@@ -675,7 +704,7 @@
             setEmail(email);
             pixel('track', 'Lead');
             var card = funnel.querySelector('[data-svp="funnel-card"]') || funnel;
-            card.innerHTML = '<div style="text-align:center;padding:20px 8px"><div style="font:800 24px \'Bricolage Grotesque\',sans-serif;color:#3347CA;margin-bottom:10px">Merci' + (prenom ? ' ' + prenom.trim() : '') + '&nbsp;! 🎉</div><p style="font:500 15px \'Instrument Sans\',sans-serif;color:#4A4D66;line-height:1.5">Ton inscription est confirmée. Ta première infolettre arrive lundi.</p><a href="accueil.html" style="display:inline-block;margin-top:18px;background:#3347CA;color:#FFFEF5;text-decoration:none;border-radius:100px;padding:14px 24px;font:700 15px \'Instrument Sans\',sans-serif">Retour au site →</a></div>';
+            card.innerHTML = '<div style="text-align:center;padding:20px 8px"><div style="font:800 24px \'Bricolage Grotesque\',sans-serif;color:#3347CA;margin-bottom:10px">Merci' + (prenom ? ' ' + prenom.trim() : '') + '&nbsp;! 🎉</div><p style="font:500 15px \'Instrument Sans\',sans-serif;color:#4A4D66;line-height:1.5">Vérifie ta boîte courriel et clique sur le lien de confirmation pour recevoir notre infolettre.</p><a href="accueil.html" style="display:inline-block;margin-top:18px;background:#3347CA;color:#FFFEF5;text-decoration:none;border-radius:100px;padding:14px 24px;font:700 15px \'Instrument Sans\',sans-serif">Retour au site →</a></div>';
           } else {
             submit.disabled = false; submit.textContent = original;
             say((d && d.error) || "L'inscription n'a pas fonctionné. Réessaie.", true);
@@ -1300,7 +1329,7 @@
           startPremiumCheckout(btn, { plan: 'trial', returnPath: '/premium.html' });
         }
       });
-    }, 5200);
+    }, 30000);
   }
 
   // ---- P5: admin gate ----
@@ -1339,6 +1368,8 @@
     var back = form.querySelector('[data-partner-back]');
     var feeNote = form.querySelector('[data-partner-fee-note]');
     var sent = form.querySelector('[data-partner-sent]');
+    var phoneInput = form.querySelector('[name="phone"]');
+    if (phoneInput) phoneInput.addEventListener('input', function () { say(''); });
     var card = form.querySelector('[data-partner-card]');
     var actions = form.querySelector('[data-partner-actions]');
     var monthLabel = form.querySelector('[data-partner-month]');
@@ -1394,6 +1425,11 @@
         ]);
         if (e2) { say(e2, true); return false; }
       }
+      if (state.step === 2 && val('phone') && (val('phone').replace(/\D/g, '').length < 7 || val('phone').length > 40 || !/^[+\d\s().x#-]+$/i.test(val('phone')))) {
+        say('Entrez un numéro de téléphone valide ou laissez ce champ vide.', true);
+        form.querySelector('[name="phone"]').focus();
+        return false;
+      }
       if (state.step === 3 && !state.cities.length && !val('otherCity')) {
         say('Choisissez au moins une ville ou indiquez une autre ville.', true);
         return false;
@@ -1448,6 +1484,7 @@
       var data = {
         name: val('name'),
         email: val('email'),
+        phone: val('phone'),
         organisation: val('organisation'),
         role: val('role'),
         interests: selectedLabels('[data-svp-partner-interest]', 'data-svp-partner-interest'),
@@ -1556,7 +1593,7 @@
     if (!btn) return;
     btn.addEventListener('click', function (e) {
       e.preventDefault();
-      var data = { name: val('name'), email: val('email'), organisation: val('organisation'), message: val('message'), website: val('website'), interests: interests };
+      var data = { name: val('name'), email: val('email'), phone: val('phone'), organisation: val('organisation'), message: val('message'), website: val('website'), interests: interests };
       // otherCity / offerType / ticketQuantity are deliberately absent: they are
       // conditional inputs and checkRequired only enforces what is on screen,
       // but they are also genuinely optional even when shown.
@@ -1572,7 +1609,7 @@
         .then(function (r) { return r.json(); }).then(function (d) {
           btn.disabled = false;
           if (d && d.sent) {
-            ['name', 'email', 'organisation', 'message'].forEach(function (n) { var el = form.querySelector('[name="' + n + '"]'); if (el) el.value = ''; });
+            ['name', 'email', 'phone', 'organisation', 'message'].forEach(function (n) { var el = form.querySelector('[name="' + n + '"]'); if (el) el.value = ''; });
             interests = []; form.querySelectorAll('[data-svp-partner-interest]').forEach(function (o) { o.removeAttribute('data-selected'); });
             say('Merci ! On vous revient rapidement.');
           } else { say((d && d.error) || "L'envoi a échoué. Réessaie.", true); }

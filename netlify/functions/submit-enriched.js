@@ -1,14 +1,13 @@
 /**
  * Enriched signup (the tunnel funnel): captures prénom, ville, interests and
  * outing frequency, then writes to the contact system:
- *   - contact/sync (email + firstName)
- *   - add to the city's list (status active)
+ *   - contact/sync through the city's double opt-in form
  *   - apply interest + frequency tags (resolved by name, created if missing)
  *
  * Body (JSON): { email, firstName, ville, interests: [], tranche, website }
- * `website` is a honeypot. `ville` may be "test" to route to the test list
- * (used by automated tests so real lists are never touched).
+ * `website` is a honeypot. Unknown cities are rejected before any writes.
  */
+const { cityForms, submitDoubleOptIn } = require('../../utils/newsletter-opt-in');
 const AC_API_URL = process.env.ACTIVECAMPAIGN_API_URL || '';
 const AC_API_KEY = process.env.ACTIVECAMPAIGN_API_KEY || '';
 
@@ -69,12 +68,14 @@ async function acApi(path, options = {}) {
 
 async function findContactByEmail(email) {
   const found = await acApi(`contacts?email=${encodeURIComponent(email)}`);
+  if (!found.ok) throw new Error('Contact lookup failed');
   const contacts = (found.data && found.data.contacts) || [];
-  return contacts.find((c) => norm(c.email) === norm(email)) || contacts[0] || null;
+  return contacts.find((c) => norm(c.email) === norm(email)) || null;
 }
 
 async function activeSubscriptionLists(contactId) {
   const lists = await acApi(`contacts/${encodeURIComponent(contactId)}/contactLists`);
+  if (!lists.ok) throw new Error('Subscription lookup failed');
   return ((lists.data && lists.data.contactLists) || []).filter((cl) => {
     const listId = String(cl.list || '').trim();
     const status = String(cl.status || '').trim();
@@ -85,10 +86,12 @@ async function activeSubscriptionLists(contactId) {
 async function hasPremiumTag(contactId) {
   if (!PREMIUM_TAG) return false;
   const tagLinks = await acApi(`contacts/${encodeURIComponent(contactId)}/contactTags`);
+  if (!tagLinks.ok) throw new Error('Premium lookup failed');
   const tagIds = [...new Set(((tagLinks.data && tagLinks.data.contactTags) || []).map((ct) => ct.tag).filter(Boolean))];
   const expected = norm(PREMIUM_TAG);
   for (const tagId of tagIds) {
     const tagRes = await acApi(`tags/${encodeURIComponent(tagId)}`);
+    if (!tagRes.ok) throw new Error('Premium tag lookup failed');
     const tagName = tagRes.data && tagRes.data.tag && tagRes.data.tag.tag;
     if (norm(tagName) === expected) return true;
   }
@@ -124,66 +127,73 @@ exports.handler = async (event) => {
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch { return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid request' }) }; }
 
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid request' }) };
+
   // Honeypot -> pretend success, do nothing.
   if (String(body.website || '').trim()) {
     return { statusCode: 200, headers, body: JSON.stringify({ subscribed: false, botBlocked: true }) };
   }
 
   const email = norm(body.email);
-  if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Adresse email invalide' }) };
   }
 
-  const existing = await findContactByEmail(email);
-  if (existing && existing.id) {
-    const activeLists = await activeSubscriptionLists(existing.id);
-    const premiumTagged = await hasPremiumTag(existing.id);
-    if (activeLists.length || premiumTagged) {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          subscribed: false,
-          alreadySubscribed: true,
-          alreadyPremium: premiumTagged || activeLists.some((cl) => String(cl.list) === String(PREMIUM_LIST_ID)),
-          contactId: existing.id,
-        }),
-      };
+  const city = slugCity(body.ville || 'montreal');
+  const listId = CITY_LIST[city];
+  const formId = cityForms()[city];
+  if (!listId || !formId) return { statusCode: 400, headers, body: JSON.stringify({ error: 'Ville non prise en charge', subscribed: false }) };
+
+  try {
+    const existing = await findContactByEmail(email);
+    if (existing && existing.id) {
+      const activeLists = await activeSubscriptionLists(existing.id);
+      const premiumTagged = await hasPremiumTag(existing.id);
+      if (activeLists.length || premiumTagged) {
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            subscribed: false,
+            alreadySubscribed: true,
+            alreadyPremium: premiumTagged || activeLists.some((cl) => String(cl.list) === String(PREMIUM_LIST_ID)),
+            contactId: existing.id,
+          }),
+        };
+      }
     }
+
+    const contact = { email };
+    const firstName = String(body.firstName || '').trim();
+    if (firstName) contact.firstName = firstName;
+    const { contactId, confirmationPending } = await submitDoubleOptIn(acApi, contact, formId, listId);
+
+    // Enrichment is best effort after the form succeeds. A tag outage must not
+    // tell the visitor to repeat a successful confirmation request.
+    // 3) interest + frequency tags
+    const appliedTags = [];
+    try {
+      const interests = Array.isArray(body.interests) ? body.interests : [];
+      for (const label of interests) {
+        const tagName = INTEREST_TAG[norm(label)] || String(label).trim();
+        if (tagName && (await applyTag(contactId, tagName))) appliedTags.push(tagName);
+      }
+      const trancheName = TRANCHE_TAG[String(body.tranche || '').trim()];
+      if (trancheName && (await applyTag(contactId, trancheName))) appliedTags.push(trancheName);
+
+      // premium interest (yes -> "intérêt premium", no -> "refusé-premium-site")
+      const pi = String(body.premiumInterest || '').trim().toLowerCase();
+      if (pi === 'yes' || pi === 'oui') { if (await applyTag(contactId, 'intérêt premium')) appliedTags.push('intérêt premium'); }
+      else if (pi === 'no' || pi === 'non') { if (await applyTag(contactId, 'refusé-premium-site')) appliedTags.push('refusé-premium-site'); }
+
+    } catch { console.error('Newsletter submitted but enrichment failed'); }
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({ subscribed: true, confirmationPending, contactId, listId, appliedTags }),
+    };
+  } catch {
+    console.error('Newsletter double opt-in submission failed');
+    return { statusCode: 502, headers, body: JSON.stringify({ subscribed: false, error: "L'inscription n'a pas fonctionné. Réessaie dans quelques instants." }) };
   }
-
-  // 1) sync contact (email + prénom)
-  const contact = { email };
-  const firstName = String(body.firstName || '').trim();
-  if (firstName) contact.firstName = firstName;
-  const sync = await acApi('contact/sync', { method: 'POST', body: JSON.stringify({ contact }) });
-  const contactId = sync.data && sync.data.contact && sync.data.contact.id;
-  if (!contactId) {
-    return { statusCode: 502, headers, body: JSON.stringify({ error: 'Subscription sync failed', subscribed: false }) };
-  }
-
-  // 2) add to the city's list (active)
-  const listId = CITY_LIST[slugCity(body.ville)] || DEFAULT_LIST;
-  const listRes = await acApi('contactLists', { method: 'POST', body: JSON.stringify({ contactList: { list: listId, contact: contactId, status: 1 } }) });
-
-  // 3) interest + frequency tags
-  const appliedTags = [];
-  const interests = Array.isArray(body.interests) ? body.interests : [];
-  for (const label of interests) {
-    const tagName = INTEREST_TAG[norm(label)] || String(label).trim();
-    if (tagName && (await applyTag(contactId, tagName))) appliedTags.push(tagName);
-  }
-  const trancheName = TRANCHE_TAG[String(body.tranche || '').trim()];
-  if (trancheName && (await applyTag(contactId, trancheName))) appliedTags.push(trancheName);
-
-  // premium interest (yes -> "intérêt premium", no -> "refusé-premium-site")
-  const pi = String(body.premiumInterest || '').trim().toLowerCase();
-  if (pi === 'yes' || pi === 'oui') { if (await applyTag(contactId, 'intérêt premium')) appliedTags.push('intérêt premium'); }
-  else if (pi === 'no' || pi === 'non') { if (await applyTag(contactId, 'refusé-premium-site')) appliedTags.push('refusé-premium-site'); }
-
-  return {
-    statusCode: 200,
-    headers,
-    body: JSON.stringify({ subscribed: Boolean(listRes.ok), contactId, listId, appliedTags }),
-  };
 };

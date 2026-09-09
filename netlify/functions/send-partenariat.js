@@ -1,6 +1,6 @@
 /**
  * Partenariat form -> emails a new partnership request to promotions@silvousplaitsvp.com.
- * Body (JSON): { name, email, organisation, message, website }  (website = honeypot)
+ * Body (JSON): { name, email, phone, organisation, message, website }  (website = honeypot)
  */
 const nodemailer = require('nodemailer');
 
@@ -106,6 +106,7 @@ function buildPartnerSummary(data) {
     '',
     `Nom: ${data.name || '(non précisé)'}`,
     `Courriel: ${data.email}`,
+    `Téléphone: ${data.phone || '(non précisé)'}`,
     `Organisation: ${data.organisation || '(non précisée)'}`,
     `Rôle: ${data.role || '(non précisé)'}`,
     `Intérêts: ${data.interestLine}`,
@@ -123,7 +124,7 @@ async function syncPartnerToContactSystem(data) {
   const firstName = String(data.name || '').trim().split(/\s+/)[0] || undefined;
   const sync = await acApi('contact/sync', {
     method: 'POST',
-    body: JSON.stringify({ contact: { email: data.email, ...(firstName ? { firstName } : {}) } }),
+    body: JSON.stringify({ contact: { email: data.email, ...(data.phone ? { phone: data.phone } : {}), ...(firstName ? { firstName } : {}) } }),
   });
   const contactId = sync.data && sync.data.contact && sync.data.contact.id;
   if (!contactId) return { ok: false, reason: 'contact-sync-failed' };
@@ -167,11 +168,17 @@ exports.handler = async (event) => {
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch { return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid JSON body' }) }; }
 
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid request' }) };
+
   // Honeypot -> pretend success.
   if (String(body.website || '').trim()) return { statusCode: 200, headers, body: JSON.stringify({ sent: true }) };
 
   const name = String(body.name || '').trim();
   const email = String(body.email || '').trim();
+  const phone = String(body.phone || '').trim();
+  if (phone && (phone.replace(/\D/g, '').length < 7 || phone.length > 40 || !/^[+\d\s().x#-]+$/i.test(phone))) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Numéro de téléphone invalide' }) };
+  }
   const organisation = String(body.organisation || body.company || '').trim();
   const role = String(body.role || '').trim();
   const message = String(body.message || '').trim();
@@ -198,6 +205,7 @@ exports.handler = async (event) => {
   const payload = {
     name,
     email,
+    phone,
     organisation,
     role,
     interests,
@@ -238,7 +246,7 @@ exports.handler = async (event) => {
         replyTo: email,
         subject: `Nouvelle demande de partenariat — ${organisation || name || email}`,
         text: summary,
-        html: `<div style="font-family:Arial,sans-serif"><p><strong>Nom&nbsp;:</strong> ${esc(name)}</p><p><strong>Courriel&nbsp;:</strong> ${esc(email)}</p><p><strong>Organisation&nbsp;:</strong> ${esc(organisation)}</p><p><strong>Rôle&nbsp;:</strong> ${esc(role)}</p><p><strong>Intérêt&nbsp;:</strong> ${esc(interestLine)}</p><p><strong>Villes&nbsp;:</strong> ${esc(cityLine)}</p><p><strong>Dates&nbsp;:</strong> ${esc(dateLine)}</p><p><strong>Offre Premium&nbsp;:</strong> ${esc(offerLine)}</p><p><strong>Message&nbsp;:</strong></p><p style="white-space:pre-wrap">${esc(fullMessage || '(aucun message libre)')}</p></div>`,
+        html: `<div style="font-family:Arial,sans-serif"><p><strong>Nom&nbsp;:</strong> ${esc(name)}</p><p><strong>Courriel&nbsp;:</strong> ${esc(email)}</p><p><strong>Téléphone&nbsp;:</strong> ${esc(phone || '(non précisé)')}</p><p><strong>Organisation&nbsp;:</strong> ${esc(organisation)}</p><p><strong>Rôle&nbsp;:</strong> ${esc(role)}</p><p><strong>Intérêt&nbsp;:</strong> ${esc(interestLine)}</p><p><strong>Villes&nbsp;:</strong> ${esc(cityLine)}</p><p><strong>Dates&nbsp;:</strong> ${esc(dateLine)}</p><p><strong>Offre Premium&nbsp;:</strong> ${esc(offerLine)}</p><p><strong>Message&nbsp;:</strong></p><p style="white-space:pre-wrap">${esc(fullMessage || '(aucun message libre)')}</p></div>`,
       });
       emailSent = true;
     } catch (err) {

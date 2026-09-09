@@ -155,6 +155,7 @@
     }
     .access-log-item strong {
       font-size: 16px;
+      overflow-wrap: anywhere;
     }
     .access-log-meta {
       color: rgba(22, 32, 59, 0.74);
@@ -246,6 +247,16 @@
     </section>
 
     <section id="admin-app" hidden>
+      <div class="admin-card" id="token-history">
+        <h2>Utilisation des jetons gratuits</h2>
+        <p>Retrouve les membres qui ont utilisé leur jeton, l'offre débloquée et la date d'utilisation.</p>
+        <label for="token-search">Rechercher un courriel ou une offre</label>
+        <input id="token-search" type="search" placeholder="Courriel ou titre de l'offre" style="margin:8px 0 12px">
+        <button type="button" id="token-refresh" class="button-secondary">Actualiser</button>
+        <p id="token-status" role="status" aria-live="polite">Chargement des utilisations…</p>
+        <div id="token-list" class="access-log-list"></div>
+      </div>
+
       <div class="admin-card">
         <div class="filter-manager-grid">
           <div>
@@ -356,6 +367,7 @@
           <div id="premium-carousel-offer-list" class="offer-list"></div>
         </div>
       </div>
+
 
       <div class="admin-card">
         <h2>Logs live des connexions premium</h2>
@@ -497,6 +509,9 @@
       }
 
       function closeApp() {
+        tokenRedemptions = [];
+        tokenList.replaceChildren();
+        tokenSearch.value = '';
         appPanel.hidden = true;
         loginPanel.hidden = false;
         if (accessLogsRefreshTimer) {
@@ -976,6 +991,49 @@
         });
       }
 
+      const tokenList = document.getElementById('token-list');
+      const tokenStatus = document.getElementById('token-status');
+      const tokenSearch = document.getElementById('token-search');
+      const tokenRefresh = document.getElementById('token-refresh');
+      let tokenRedemptions = [];
+      function renderTokenRedemptions() {
+        const query = tokenSearch.value.trim().toLocaleLowerCase('fr');
+        const entries = tokenRedemptions.filter((entry) =>
+          `${entry.email} ${entry.offer_title} ${entry.offer_id}`.toLocaleLowerCase('fr').includes(query));
+        tokenList.replaceChildren();
+        tokenStatus.textContent = tokenRedemptions.length
+          ? `${entries.length} utilisation(s) affichée(s) sur ${tokenRedemptions.length}.`
+          : 'Aucun jeton utilisé pour le moment.';
+        if (query && !entries.length && tokenRedemptions.length) tokenStatus.textContent = 'Aucune utilisation ne correspond à cette recherche.';
+        entries.forEach((entry) => {
+          const card = document.createElement('article');
+          card.className = 'access-log-item';
+          const email = document.createElement('strong');
+          email.textContent = entry.email;
+          const offer = document.createElement('div');
+          offer.textContent = entry.offer_title || entry.offer_id;
+          const date = document.createElement('div');
+          date.className = 'access-log-meta';
+          date.textContent = 'Jeton utilisé le ' + formatDateTime(entry.redeemed_at);
+          card.append(email, offer, date);
+          tokenList.appendChild(card);
+        });
+      }
+      async function loadTokenRedemptions() {
+        tokenRefresh.disabled = true;
+        try {
+          const response = await authFetch('/.netlify/functions/list-free-token-redemptions-admin');
+          if (!response.ok) throw new Error('Token history unavailable');
+          const data = await response.json();
+          tokenRedemptions = Array.isArray(data.redemptions) ? data.redemptions : [];
+          renderTokenRedemptions();
+        } catch {
+          tokenStatus.textContent = 'Impossible de charger les utilisations. Clique sur Actualiser pour réessayer.';
+        } finally { tokenRefresh.disabled = false; }
+      }
+      tokenSearch.addEventListener('input', renderTokenRedemptions);
+      tokenRefresh.addEventListener('click', loadTokenRedemptions);
+
       function renderAccessLogs() {
         if (!accessLogs.length) {
           accessLogList.innerHTML = '<p>Aucune connexion premium enregistrée pour le moment.</p>';
@@ -1006,6 +1064,7 @@
         accessLogsRefreshTimer = setInterval(() => {
           if (!adminAccessToken) return;
           loadAccessLogs().catch(() => {});
+          loadTokenRedemptions();
         }, 15000);
       }
 
@@ -1073,7 +1132,7 @@
         setMessage(loginMessage, '', '');
         passwordInput.value = '';
         await loadOffers();
-        await loadAccessLogs();
+        await Promise.all([loadAccessLogs(), loadTokenRedemptions()]);
         startAccessLogsRefresh();
       });
 
