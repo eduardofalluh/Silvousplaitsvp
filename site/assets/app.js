@@ -1423,12 +1423,13 @@
         var e2 = checkRequired([
           { sel: '[name="organisation"]', label: 'Nom (artiste ou organisation)' },
           { sel: '[name="name"]', label: 'Nom du contact' },
-          { sel: '[name="email"]', label: 'Courriel', email: true }
+          { sel: '[name="email"]', label: 'Courriel', email: true },
+          { sel: '[name="phone"]', label: 'Numéro de téléphone' }
         ]);
         if (e2) { say(e2, true); return false; }
       }
-      if (state.step === 2 && val('phone') && (val('phone').replace(/\D/g, '').length < 7 || val('phone').length > 40 || !/^[+\d\s().x#-]+$/i.test(val('phone')))) {
-        say('Entrez un numéro de téléphone valide ou laissez ce champ vide.', true);
+      if (state.step === 2 && (val('phone').replace(/\D/g, '').length < 7 || val('phone').length > 40 || !/^[+\d\s().x#-]+$/i.test(val('phone')))) {
+        say('Entrez un numéro de téléphone valide.', true);
         form.querySelector('[name="phone"]').focus();
         return false;
       }

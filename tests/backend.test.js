@@ -104,12 +104,13 @@ test('partner phone reaches the contact record, note, and notification', async (
   assert.match(sent[0].text, /555-0123/);
   assert.match(sent[0].html, /555-0123/);
 });
-test('partner phone remains optional and rejects invalid values', async () => {
+test('partner phone is required and rejects invalid values', async () => {
   const body = { name: 'Alex', email: 'member@example.test', types: ['edito'] };
   assert.equal((await partner(event({ ...body, phone: '<script>' }))).statusCode, 400);
+  assert.equal((await partner(event(body))).statusCode, 400);
   assert.equal(calls.length, 0);
-  assert.equal((await partner(event(body))).statusCode, 200);
-  assert.equal('phone' in calls.find(c => c.path === 'contact/sync').body.contact, false);
+  assert.equal((await partner(event({ ...body, phone: '+1 514 555 0123' }))).statusCode, 200);
+  assert.equal(calls.find(c => c.path === 'contact/sync').body.contact.phone, '+1 514 555 0123');
 });
 test('login code lookup falls back to exact email search for free members', async () => {
   searchOnly = true;

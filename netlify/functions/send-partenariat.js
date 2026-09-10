@@ -176,7 +176,7 @@ exports.handler = async (event) => {
   const name = String(body.name || '').trim();
   const email = String(body.email || '').trim();
   const phone = String(body.phone || '').trim();
-  if (phone && (phone.replace(/\D/g, '').length < 7 || phone.length > 40 || !/^[+\d\s().x#-]+$/i.test(phone))) {
+  if (!phone || phone.replace(/\D/g, '').length < 7 || phone.length > 40 || !/^[+\d\s().x#-]+$/i.test(phone)) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Numéro de téléphone invalide' }) };
   }
   const organisation = String(body.organisation || body.company || '').trim();

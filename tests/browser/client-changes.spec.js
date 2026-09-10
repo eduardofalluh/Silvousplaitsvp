@@ -80,6 +80,8 @@ test('partnership phone survives the complete form and validates', async ({ page
   await page.locator('[name="organisation"]').fill('Théâtre Test');
   await page.locator('[name="name"]').fill('Alex');
   await page.locator('[name="email"]').fill('member@example.test');
+  await next.click();
+  await expect(page.locator('[data-svp="partner-msg"]')).toContainText('Numéro de téléphone');
   await page.getByLabel('Numéro de téléphone').fill('123');
   await next.click();
   await expect(page.locator('[data-svp="partner-msg"]')).toContainText('numéro de téléphone valide');
