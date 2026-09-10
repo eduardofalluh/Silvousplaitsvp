@@ -3,7 +3,7 @@ const { verifySignedToken } = require('../../utils/premium-access-token');
 const {
   getMissingSheetEnvVars,
   listPremiumOffers,
-  getFreeOfferRedemption,
+  getFreeOfferRedemptionsSummary,
 } = require('../../utils/premium-offers-store');
 const { buildJsonHeaders, isAllowedOrigin } = require('../../utils/http-security');
 
@@ -41,14 +41,25 @@ function previewOffer(offer) {
   };
 }
 
-function freeTokenPayload(redemption) {
-  return redemption ? {
-    used: true,
-    offerId: redemption.offer_id,
-    offerTitle: redemption.offer_title,
-    redeemedAt: redemption.redeemed_at,
-  } : {
-    used: false,
+function freeTokenPayload(summary) {
+  const redemptions = summary && Array.isArray(summary.redemptions) ? summary.redemptions : [];
+  const last = redemptions[redemptions.length - 1] || null;
+  const limit = summary && summary.limit ? summary.limit : 3;
+  return {
+    used: redemptions.length > 0,
+    usedCount: redemptions.length,
+    remaining: summary && Number.isFinite(summary.remaining) ? summary.remaining : Math.max(0, limit - redemptions.length),
+    limit,
+    offerId: last ? last.offer_id : '',
+    offerTitle: last ? last.offer_title : '',
+    redeemedAt: last ? last.redeemed_at : '',
+    redemptions: redemptions.map((item) => ({
+      offerId: item.offer_id,
+      offerTitle: item.offer_title,
+      redeemedAt: item.redeemed_at,
+      tokenNumber: item.token_number,
+      tokenLimit: item.token_limit,
+    })),
   };
 }
 
@@ -100,11 +111,11 @@ exports.handler = async (event) => {
   try {
     const premiumStatus = await premiumChecker.isPremiumMember(session.email, false);
     const isPremium = Boolean(premiumStatus && premiumStatus.isPremium);
-    const [offers, redemption] = await Promise.all([
+    const [offers, tokenSummary] = await Promise.all([
       listPremiumOffers({ includeInactive: false }),
-      isPremium ? Promise.resolve(null) : getFreeOfferRedemption(session.email),
+      isPremium ? Promise.resolve({ limit: 3, usedCount: 0, remaining: 3, redemptions: [] }) : getFreeOfferRedemptionsSummary(session.email),
     ]);
-    const redeemedOfferId = redemption && redemption.offer_id;
+    const redeemedOfferIds = new Set(((tokenSummary && tokenSummary.redemptions) || []).map((item) => item.offer_id));
 
     return {
       statusCode: 200,
@@ -113,9 +124,9 @@ exports.handler = async (event) => {
         success: true,
         email: session.email,
         accessLevel: isPremium ? 'premium' : 'free',
-        freeToken: freeTokenPayload(redemption),
+        freeToken: freeTokenPayload(tokenSummary),
         offers: offers.map((offer) => {
-          if (isPremium || (redeemedOfferId && offer.id === redeemedOfferId)) {
+          if (isPremium || redeemedOfferIds.has(offer.id)) {
             return fullOffer(offer);
           }
           return previewOffer(offer);

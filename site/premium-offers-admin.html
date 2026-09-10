@@ -249,7 +249,7 @@
     <section id="admin-app" hidden>
       <div class="admin-card" id="token-history">
         <h2>Utilisation des jetons gratuits</h2>
-        <p>Retrouve les membres qui ont utilisé leur jeton, l'offre débloquée et la date d'utilisation.</p>
+        <p>Retrouve les membres qui ont utilisé leurs jetons gratuits, l'offre débloquée, la date d'utilisation et le rang du jeton sur 3.</p>
         <label for="token-search">Rechercher un courriel ou une offre</label>
         <input id="token-search" type="search" placeholder="Courriel ou titre de l'offre" style="margin:8px 0 12px">
         <button type="button" id="token-refresh" class="button-secondary">Actualiser</button>
@@ -1014,7 +1014,8 @@
           offer.textContent = entry.offer_title || entry.offer_id;
           const date = document.createElement('div');
           date.className = 'access-log-meta';
-          date.textContent = 'Jeton utilisé le ' + formatDateTime(entry.redeemed_at);
+          const tokenNumber = entry.token_number && entry.token_limit ? `Jeton ${entry.token_number}/${entry.token_limit} · ` : '';
+          date.textContent = tokenNumber + 'Utilisé le ' + formatDateTime(entry.redeemed_at);
           card.append(email, offer, date);
           tokenList.appendChild(card);
         });

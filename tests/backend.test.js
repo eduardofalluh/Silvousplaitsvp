@@ -7,23 +7,28 @@ Object.assign(process.env, {
 });
 const enriched = require('../netlify/functions/submit-enriched').handler;
 const signup = require('../netlify/functions/submit-signup').handler;
+const requestLoginCode = require('../netlify/functions/request-login-code').handler;
 const partner = require('../netlify/functions/send-partenariat').handler;
 const { submitDoubleOptIn } = require('../utils/newsletter-opt-in');
 const nodemailer = require('nodemailer');
 const originalFetch = global.fetch;
 const originalTransport = nodemailer.createTransport;
-let calls, existing, status, failure, sent;
+let calls, existing, status, failure, sent, searchOnly;
 const reply = (data, code = 200) => new Response(JSON.stringify(data), { status: code });
 const event = (body) => ({ httpMethod: 'POST', headers: {}, body: JSON.stringify(body) });
 beforeEach(() => {
-  calls = []; existing = false; status = '0'; failure = ''; sent = [];
+  calls = []; existing = false; status = '0'; failure = ''; sent = []; searchOnly = false;
   nodemailer.createTransport = () => ({ sendMail: async (message) => { sent.push(message); } });
   global.fetch = async (url, options = {}) => {
     const path = String(url).split('/api/3/')[1];
     const body = options.body && JSON.parse(options.body);
     calls.push({ path, body, method: options.method || 'GET' });
     if (failure && path.startsWith(failure)) return reply({}, 503);
-    if (path.startsWith('contacts?')) return reply({ contacts: existing ? [{ id: '42', email: 'member@example.test' }] : [] });
+    if (path.startsWith('contacts?')) {
+      const isSearch = path.startsWith('contacts?search=');
+      if (searchOnly && !isSearch) return reply({ contacts: [] });
+      return reply({ contacts: (existing || (searchOnly && isSearch)) ? [{ id: '42', email: 'member@example.test' }] : [] });
+    }
     if (path.endsWith('/contactLists')) return reply({ contactLists: [{ list: '4', status }] });
     if (path.endsWith('/contactTags')) return reply({ contactTags: [] });
     if (path.startsWith('forms/')) return reply({ form: { options: { sendoptin: true }, actiondata: { actions: [{ type: 'subscribe-to-list', list: { 1: '4', 9: '8', 11: '9', 13: '10' }[path.split('/')[1]] }] } } });
@@ -106,6 +111,16 @@ test('partner phone remains optional and rejects invalid values', async () => {
   assert.equal((await partner(event(body))).statusCode, 200);
   assert.equal('phone' in calls.find(c => c.path === 'contact/sync').body.contact, false);
 });
+test('login code lookup falls back to exact email search for free members', async () => {
+  searchOnly = true;
+  const r = await requestLoginCode(event({ email: 'member@example.test' }));
+  const body = JSON.parse(r.body);
+  assert.equal(r.statusCode, 200);
+  assert.equal(body.sent, true);
+  assert.equal(sent.length, 1);
+  assert.equal(calls.some(c => c.path.startsWith('contacts?email=')), true);
+  assert.equal(calls.some(c => c.path.startsWith('contacts?search=')), true);
+});
 test('admin token history rejects visitors, members and expired sessions', async () => {
   const handler = require('../netlify/functions/list-free-token-redemptions-admin').handler;
   const auth = require('../utils/premium-offers-auth');
@@ -115,14 +130,32 @@ test('admin token history rejects visitors, members and expired sessions', async
     assert.equal(r.statusCode, 401);
   }
 });
-test('token history shows only winning claims, newest first, including deleted offers', async () => {
+test('token history shows the first three different shows per member, newest first', async () => {
   const store = require('../utils/premium-offers-store');
   const rows = [store.FREE_OFFER_REDEMPTION_HEADERS,
     ['1', 'first@example.test', 'deleted', 'Old show', '2026-09-01T12:00:00Z'],
-    [], ['2', 'FIRST@example.test', 'loser', 'Race loser', '2026-09-02T12:00:00Z'],
-    ['3', 'second@example.test', 'new', 'New show', '2026-09-03T12:00:00Z']];
+    ['2', 'FIRST@example.test', 'deleted', 'Duplicate old show', '2026-09-02T12:00:00Z'],
+    ['3', 'first@example.test', 'second-show', 'Second show', '2026-09-03T12:00:00Z'],
+    ['4', 'first@example.test', 'third-show', 'Third show', '2026-09-04T12:00:00Z'],
+    ['5', 'first@example.test', 'fourth-show', 'Fourth show', '2026-09-05T12:00:00Z'],
+    ['6', 'second@example.test', 'new', 'New show', '2026-09-06T12:00:00Z']];
   const sheets = { spreadsheets: { get: async () => ({ data: { sheets: [{ properties: { title: store.FREE_OFFER_REDEMPTIONS_TAB, sheetId: 1 } }] } }), values: { get: async () => ({ data: { values: rows } }) } } };
   const result = await store.listFreeOfferRedemptionsAdmin({ sheets });
-  assert.deepEqual(result.map(r => r.offer_id), ['new', 'deleted']);
+  assert.deepEqual(result.map(r => r.offer_id), ['new', 'third-show', 'second-show', 'deleted']);
+  assert.deepEqual(result.filter(r => r.email === 'first@example.test').map(r => r.token_number), [3, 2, 1]);
   assert.equal('rowNumber' in result[0], false);
+});
+test('free token summary counts only three unique shows and ignores duplicate claims', async () => {
+  const store = require('../utils/premium-offers-store');
+  const rows = [store.FREE_OFFER_REDEMPTION_HEADERS,
+    ['1', 'member@example.test', 'a', 'A', '2026-09-01T12:00:00Z'],
+    ['2', 'member@example.test', 'a', 'A duplicate', '2026-09-02T12:00:00Z'],
+    ['3', 'member@example.test', 'b', 'B', '2026-09-03T12:00:00Z'],
+    ['4', 'member@example.test', 'c', 'C', '2026-09-04T12:00:00Z'],
+    ['5', 'member@example.test', 'd', 'D', '2026-09-05T12:00:00Z']];
+  const sheets = { spreadsheets: { get: async () => ({ data: { sheets: [{ properties: { title: store.FREE_OFFER_REDEMPTIONS_TAB, sheetId: 1 } }] } }), values: { get: async () => ({ data: { values: rows } }) } } };
+  const summary = await store.getFreeOfferRedemptionsSummary('MEMBER@example.test', { sheets });
+  assert.equal(summary.usedCount, 3);
+  assert.equal(summary.remaining, 0);
+  assert.deepEqual(summary.redemptions.map(r => r.offer_id), ['a', 'b', 'c']);
 });

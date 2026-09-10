@@ -12,6 +12,7 @@ const FREE_OFFER_REDEMPTIONS_TAB = process.env.FREE_OFFER_REDEMPTIONS_TAB || 'fr
 const PREMIUM_OFFERS_SHOWCASE_TAB = process.env.PREMIUM_OFFERS_SHOWCASE_TAB || 'premium_showcase';
 const PREMIUM_OFFERS_ACCESS_LOGS_TAB = process.env.PREMIUM_OFFERS_ACCESS_LOGS_TAB || 'premium_access_logs';
 const SPREADSHEET_META_CACHE_TTL_MS = 30 * 1000;
+const DEFAULT_FREE_OFFER_TOKEN_LIMIT = 3;
 
 const OFFER_HEADERS = [
   'id',
@@ -1897,21 +1898,55 @@ async function listPremiumOfferAccessLogs({ limit = 100, sheets: providedSheets 
     .slice(0, Math.max(1, limit));
 }
 
-// Admin history uses the same earliest-row winner as token redemption.
+function freeOfferTokenLimit() {
+  const configured = Number.parseInt(String(process.env.FREE_OFFER_TOKEN_LIMIT || DEFAULT_FREE_OFFER_TOKEN_LIMIT), 10);
+  return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_FREE_OFFER_TOKEN_LIMIT;
+}
+
+function validFreeOfferRedemptions(claims, limit = freeOfferTokenLimit()) {
+  const seenOfferIds = new Set();
+  return (claims || [])
+    .filter((entry) => entry && entry.email && entry.offer_id)
+    .sort((a, b) => (a.rowNumber || 0) - (b.rowNumber || 0))
+    .filter((entry) => {
+      if (seenOfferIds.has(entry.offer_id)) return false;
+      seenOfferIds.add(entry.offer_id);
+      return seenOfferIds.size <= limit;
+    })
+    .map((entry, index) => ({
+      ...entry,
+      token_number: index + 1,
+      token_limit: limit,
+      tokens_remaining: Math.max(0, limit - index - 1),
+    }));
+}
+
+// Admin history uses the same valid-row selection as token redemption.
 async function listFreeOfferRedemptionsAdmin({ sheets: providedSheets } = {}) {
   const sheets = providedSheets || await getSheetsClient();
   await ensureFreeOfferRedemptionsSheet(sheets);
   const read = await safeReadRange(sheets, `${FREE_OFFER_REDEMPTIONS_TAB}!A:E`, 'admin free redemptions read');
-  const seen = new Set();
-  return (read.data.values || []).slice(1)
+  const grouped = (read.data.values || []).slice(1)
     .map((row, index) => mapFreeOfferRedemptionRow(row, index + 2))
-    .filter((entry) => {
-      if (!entry.email || !entry.offer_id || seen.has(entry.email)) return false;
-      seen.add(entry.email);
-      return true;
-    })
+    .filter((entry) => entry.email && entry.offer_id)
+    .reduce((acc, entry) => {
+      if (!acc[entry.email]) acc[entry.email] = [];
+      acc[entry.email].push(entry);
+      return acc;
+    }, {});
+
+  return Object.values(grouped)
+    .flatMap((claims) => validFreeOfferRedemptions(claims))
     .sort((a, b) => b.redeemed_at.localeCompare(a.redeemed_at))
-    .map(({ email, offer_id, offer_title, redeemed_at }) => ({ email, offer_id, offer_title, redeemed_at }));
+    .map(({ email, offer_id, offer_title, redeemed_at, token_number, token_limit, tokens_remaining }) => ({
+      email,
+      offer_id,
+      offer_title,
+      redeemed_at,
+      token_number,
+      token_limit,
+      tokens_remaining,
+    }));
 }
 
 // Every redemption row recorded for one address, earliest row first.
@@ -1945,7 +1980,19 @@ async function listFreeOfferRedemptions(email, { sheets: providedSheets } = {}) 
 
 async function getFreeOfferRedemption(email, options = {}) {
   const claims = await listFreeOfferRedemptions(email, options);
-  return claims[0] || null;
+  return validFreeOfferRedemptions(claims)[0] || null;
+}
+
+async function getFreeOfferRedemptionsSummary(email, options = {}) {
+  const claims = await listFreeOfferRedemptions(email, options);
+  const limit = freeOfferTokenLimit();
+  const redemptions = validFreeOfferRedemptions(claims, limit);
+  return {
+    limit,
+    usedCount: redemptions.length,
+    remaining: Math.max(0, limit - redemptions.length),
+    redemptions,
+  };
 }
 
 // Which row did our append land on? The API reports it as e.g.
@@ -1956,15 +2003,12 @@ function appendedRowNumber(response) {
   return match ? Number(match[1]) : 0;
 }
 
-// Spend a member's single free-offer token.
+// Spend one of a member's free-offer tokens.
 //
 // A spreadsheet has no transactions, so "check then write" can double-spend:
-// two requests can both read "no redemption yet" and both append. The fix is to
-// settle AFTER writing instead of trusting the check before it. Whoever holds
-// the lowest row wins, and that verdict is stable -- a request that appended
-// later always sees the earlier row, because that row was committed before this
-// read began. A loser blanks its own row and reports the token as spent, so a
-// second code is never returned even for the few hundred ms both rows coexist.
+// requests can all read "room left" and append. The fix is to settle AFTER
+// writing instead of trusting the check before it. The first three unique show
+// rows win, and that verdict is stable. A loser blanks only its own row.
 async function redeemFreeOfferToken(entry) {
   const email = normalize(entry && entry.email).toLowerCase();
   const offerId = normalize(entry && entry.offerId);
@@ -1976,12 +2020,28 @@ async function redeemFreeOfferToken(entry) {
   }
 
   const sheets = await getSheetsClient();
-  const existingRedemption = await getFreeOfferRedemption(email, { sheets });
-  if (existingRedemption) {
+  const limit = freeOfferTokenLimit();
+  const existingClaims = await listFreeOfferRedemptions(email, { sheets });
+  const existingRedemptions = validFreeOfferRedemptions(existingClaims, limit);
+  const existingForOffer = existingRedemptions.find((item) => item.offer_id === offerId);
+  if (existingForOffer) {
     return {
       redeemed: false,
       alreadyRedeemed: true,
-      redemption: existingRedemption,
+      sameOffer: true,
+      redemption: existingForOffer,
+      redemptions: existingRedemptions,
+      tokenLimit: limit,
+    };
+  }
+  if (existingRedemptions.length >= limit) {
+    return {
+      redeemed: false,
+      alreadyRedeemed: true,
+      limitReached: true,
+      redemption: existingRedemptions[0] || null,
+      redemptions: existingRedemptions,
+      tokenLimit: limit,
     };
   }
 
@@ -2009,12 +2069,14 @@ async function redeemFreeOfferToken(entry) {
   const ourRow = appendedRowNumber(appendResponse);
 
   const claims = await listFreeOfferRedemptions(email, { sheets });
-  const winner = claims[0] || null;
+  const valid = validFreeOfferRedemptions(claims, limit);
+  const winnerForOffer = valid.find((item) => item.offer_id === offerId) || null;
+  const ourClaim = claims.find((item) => item.rowNumber === ourRow) || null;
+  const ourClaimWon = Boolean(ourClaim && valid.some((item) => item.rowNumber === ourClaim.rowNumber));
 
-  if (winner && ourRow && winner.rowNumber !== ourRow) {
+  if (!ourClaimWon && ourRow) {
     // Lost the race. Blank only the row we wrote ourselves -- never another
-    // request's -- then answer exactly as if the token had already been spent,
-    // because it had.
+    // request's -- then answer exactly as if the token had already been spent.
     await safeClearRange(
       sheets,
       `${FREE_OFFER_REDEMPTIONS_TAB}!A${ourRow}:E${ourRow}`,
@@ -2023,24 +2085,32 @@ async function redeemFreeOfferToken(entry) {
     return {
       redeemed: false,
       alreadyRedeemed: true,
-      redemption: winner,
+      sameOffer: Boolean(winnerForOffer),
+      limitReached: !winnerForOffer,
+      redemption: winnerForOffer || valid[0] || null,
+      redemptions: valid,
+      tokenLimit: limit,
     };
   }
 
-  if (!ourRow && claims.length > 1) {
+  if (!ourRow && claims.length > valid.length) {
     // The append gave us no row number, so we cannot prove which row is ours
     // and must not blank one. Stand down instead: a stray row is recoverable,
-    // a second code handed to a member is not.
+    // an extra code handed to a member is not.
     return {
       redeemed: false,
       alreadyRedeemed: true,
-      redemption: winner,
+      redemption: winnerForOffer || valid[0] || null,
+      redemptions: valid,
+      tokenLimit: limit,
     };
   }
 
   return {
     redeemed: true,
-    redemption: winner || mapFreeOfferRedemptionRow(values[0], ourRow || 2),
+    redemption: winnerForOffer || mapFreeOfferRedemptionRow(values[0], ourRow || 2),
+    redemptions: valid.length ? valid : validFreeOfferRedemptions([mapFreeOfferRedemptionRow(values[0], ourRow || 2)], limit),
+    tokenLimit: limit,
     offer,
   };
 }
@@ -2085,6 +2155,7 @@ module.exports = {
   ACCESS_LOG_HEADERS,
   DEFAULT_REGIONS,
   DEFAULT_OFFER_TYPES,
+  DEFAULT_FREE_OFFER_TOKEN_LIMIT,
   DEFAULT_FREE_SIGNUP_LOCATIONS,
   DEFAULT_SHOWCASE_ITEMS,
   normalize,
@@ -2109,6 +2180,7 @@ module.exports = {
   listFreeOfferRedemptionsAdmin,
   listPremiumShowcaseItems,
   getFreeOfferRedemption,
+  getFreeOfferRedemptionsSummary,
   redeemFreeOfferToken,
   recordPremiumOfferAccessLog,
   savePremiumOffer,

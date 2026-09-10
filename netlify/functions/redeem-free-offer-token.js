@@ -27,14 +27,25 @@ function sanitizeOffer(offer) {
   };
 }
 
-function freeTokenPayload(redemption) {
-  return redemption ? {
-    used: true,
-    offerId: redemption.offer_id,
-    offerTitle: redemption.offer_title,
-    redeemedAt: redemption.redeemed_at,
-  } : {
-    used: false,
+function freeTokenPayload(redemptions, tokenLimit) {
+  const entries = Array.isArray(redemptions) ? redemptions : (redemptions ? [redemptions] : []);
+  const limit = tokenLimit || (entries[0] && entries[0].token_limit) || 3;
+  const last = entries[entries.length - 1] || null;
+  return {
+    used: entries.length > 0,
+    usedCount: entries.length,
+    remaining: Math.max(0, limit - entries.length),
+    limit,
+    offerId: last ? last.offer_id : '',
+    offerTitle: last ? last.offer_title : '',
+    redeemedAt: last ? last.redeemed_at : '',
+    redemptions: entries.map((entry) => ({
+      offerId: entry.offer_id,
+      offerTitle: entry.offer_title,
+      redeemedAt: entry.redeemed_at,
+      tokenNumber: entry.token_number,
+      tokenLimit: entry.token_limit || limit,
+    })),
   };
 }
 
@@ -111,7 +122,7 @@ exports.handler = async (event) => {
 
     const result = await redeemFreeOfferToken({ email: session.email, offerId });
     if (result.alreadyRedeemed) {
-      if (result.redemption && result.redemption.offer_id === offerId) {
+      if (result.sameOffer || (result.redemption && result.redemption.offer_id === offerId)) {
         const offer = await findActiveOffer(offerId);
         if (!offer) return { statusCode: 404, headers, body: JSON.stringify({ error: 'Offer not found' }) };
         return {
@@ -121,7 +132,7 @@ exports.handler = async (event) => {
             success: true,
             accessLevel: 'free',
             alreadyRedeemed: true,
-            freeToken: freeTokenPayload(result.redemption),
+            freeToken: freeTokenPayload(result.redemptions || result.redemption, result.tokenLimit),
             offer: sanitizeOffer(offer),
           }),
         };
@@ -133,7 +144,7 @@ exports.handler = async (event) => {
         body: JSON.stringify({
           error: 'Free offer token already used',
           code: 'free_token_used',
-          freeToken: freeTokenPayload(result.redemption),
+          freeToken: freeTokenPayload(result.redemptions || result.redemption, result.tokenLimit),
         }),
       };
     }
@@ -145,7 +156,7 @@ exports.handler = async (event) => {
         success: true,
         accessLevel: 'free',
         redeemed: true,
-        freeToken: freeTokenPayload(result.redemption),
+        freeToken: freeTokenPayload(result.redemptions || result.redemption, result.tokenLimit),
         offer: sanitizeOffer(result.offer),
       }),
     };

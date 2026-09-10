@@ -103,8 +103,8 @@ test('admin displays, searches, refreshes token history and escapes stored conte
   await page.route('**/list-free-token-redemptions-admin', route => {
     expect(route.request().headers().authorization).toBe('Bearer admin-test-token');
     return route.fulfill(fail ? { status: 503, json: {} } : { json: { redemptions: [
-      { email: 'alex@example.test', offer_title: 'Spectacle Montréal', offer_id: 'one', redeemed_at: '2026-09-09T12:00:00Z' },
-      { email: 'sam@example.test', offer_title: '<img src=x onerror=alert(1)>', offer_id: 'two', redeemed_at: '2026-09-08T12:00:00Z' },
+      { email: 'alex@example.test', offer_title: 'Spectacle Montréal', offer_id: 'one', redeemed_at: '2026-09-09T12:00:00Z', token_number: 1, token_limit: 3 },
+      { email: 'sam@example.test', offer_title: '<img src=x onerror=alert(1)>', offer_id: 'two', redeemed_at: '2026-09-08T12:00:00Z', token_number: 2, token_limit: 3 },
     ] } });
   });
   await page.goto('/premium-offers-admin.html');
@@ -112,6 +112,7 @@ test('admin displays, searches, refreshes token history and escapes stored conte
   await page.locator('#admin-password').fill('test');
   await page.locator('#admin-login-form button').click();
   await expect(page.locator('#token-list article')).toHaveCount(2);
+  await expect(page.locator('#token-list article').first()).toContainText('Jeton 1/3');
   await expect(page.locator('#token-list img')).toHaveCount(0);
   await page.locator('#token-history').scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('token-history.png'), fullPage: false });

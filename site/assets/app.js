@@ -803,10 +803,12 @@
       if (cerr) { say(cerr, true); return; }
       submit.disabled = true; say('Envoi du code…');
       fetch(FN + 'request-login-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) })
-        .then(function (r) { return r.json(); }).then(function (d) {
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }).catch(function () { return { ok: r.ok, d: {} }; }); }).then(function (res) {
+          var d = res.d || {};
           submit.disabled = false;
           if (d && d.sent) { challenge = d.challenge; setEmail(email); say('Code envoyé ! Vérifie ton courriel.'); showCodeStep(); }
-          else { say('Aucun compte trouvé pour ce courriel.', true); }
+          else if (d.reason === 'no-account') { say('Aucun compte trouvé pour ce courriel.', true); }
+          else { say(d.error || "Le code n'a pas pu être envoyé. Réessaie dans un instant.", true); }
         }).catch(function () { submit.disabled = false; say('Erreur. Réessaie plus tard.', true); });
     });
   }
@@ -1850,10 +1852,26 @@
       Object.keys(extra).some(function (key) { return String(extra[key] || '').trim(); })
     );
   }
-  function redeemedFreeOfferId() {
-    return accountOfferAccess.freeToken && accountOfferAccess.freeToken.used
-      ? String(accountOfferAccess.freeToken.offerId || '')
-      : '';
+  function freeTokenRedemptions() {
+    var token = accountOfferAccess.freeToken || {};
+    return Array.isArray(token.redemptions) ? token.redemptions : (token.used && token.offerId ? [{ offerId: token.offerId, offerTitle: token.offerTitle, redeemedAt: token.redeemedAt }] : []);
+  }
+  function freeTokenLimit() {
+    var token = accountOfferAccess.freeToken || {};
+    return Number(token.limit || token.tokenLimit || 3) || 3;
+  }
+  function freeTokenUsedCount() {
+    var token = accountOfferAccess.freeToken || {};
+    return Number(token.usedCount || freeTokenRedemptions().length || 0) || 0;
+  }
+  function freeTokenRemaining() {
+    var token = accountOfferAccess.freeToken || {};
+    if (token.remaining != null) return Math.max(0, Number(token.remaining) || 0);
+    return Math.max(0, freeTokenLimit() - freeTokenUsedCount());
+  }
+  function hasRedeemedFreeOffer(offerId) {
+    var id = String(offerId || '');
+    return freeTokenRedemptions().some(function (entry) { return String(entry.offerId || entry.offer_id || '') === id; });
   }
   function goToPremiumOffer() {
     storePremiumScrollIntent();
@@ -1862,9 +1880,9 @@
   function showFreeTokenUsedDialog() {
     var token = accountOfferAccess.freeToken || {};
     svpDialog({
-      title: 'Jeton gratuit déjà utilisé',
-      message: 'Tu as déjà utilisé ton jeton gratuit unique. Passe à Premium pour débloquer toutes les offres et continuer à voir les codes.',
-      detail: token.offerTitle ? 'Utilisé pour : ' + token.offerTitle : '',
+      title: 'Tes jetons gratuits sont utilisés',
+      message: 'Tu as utilisé tes ' + freeTokenLimit() + ' jetons gratuits. Passe à Premium pour débloquer toutes les offres et continuer à voir les codes.',
+      detail: token.offerTitle ? 'Dernier spectacle débloqué : ' + token.offerTitle : '',
       confirmLabel: 'Passer à Premium',
       secondaryLabel: 'Plus tard',
       onConfirm: goToPremiumOffer
@@ -1889,12 +1907,14 @@
     }
     var title = notice.querySelector('[data-svp-free-token-title]');
     var copy = notice.querySelector('[data-svp-free-token-copy]');
-    var token = accountOfferAccess.freeToken || {};
-    if (title) title.textContent = token.used ? 'Ton jeton gratuit a été utilisé' : 'Ton jeton gratuit est prêt';
+    var remaining = freeTokenRemaining();
+    var used = freeTokenUsedCount();
+    var limit = freeTokenLimit();
+    if (title) title.textContent = remaining ? 'Tes jetons gratuits sont prêts' : 'Tes jetons gratuits ont été utilisés';
     if (copy) {
-      copy.textContent = token.used
-        ? 'Tu peux revoir les détails de l’offre choisie. Pour débloquer les autres codes et billets, passe à Premium.'
-        : 'Comme membre gratuit, tu peux débloquer une seule offre Premium de ton choix. Choisis bien: ce jeton ne peut être utilisé qu’une fois.';
+      copy.textContent = remaining
+        ? 'Comme membre gratuit, tu peux débloquer ' + remaining + ' offre' + (remaining > 1 ? 's' : '') + ' Premium sur ' + limit + '. Chaque spectacle ne peut être débloqué qu’une seule fois.'
+        : 'Tu peux revoir les détails des ' + used + ' offres choisies. Pour débloquer les autres codes et billets, passe à Premium.';
     }
     notice.style.display = '';
   }
@@ -1904,7 +1924,7 @@
   function maybePromptTrialAfterFreeToken() {
     if (!document.querySelector('[data-svp="compte"]') || accountOfferAccess.isPremium) return;
     var token = accountOfferAccess.freeToken || {};
-    if (!token.used) return;
+    if (freeTokenRemaining() > 0) return;
     var promptId = freeTokenPromptId(token);
     try {
       if (localStorage.getItem(FREE_TOKEN_TRIAL_PROMPT_KEY) === promptId) return;
@@ -1915,8 +1935,8 @@
       svpDialog({
         kicker: '14 jours gratuits',
         title: 'Envie de continuer avec Premium ?',
-        message: "Ton jeton gratuit t'a donné accès à une offre. Avec l'essai gratuit de 14 jours, tu peux débloquer toutes les prochaines offres Premium.",
-        detail: token.offerTitle ? 'Jeton utilisé pour : ' + token.offerTitle : '',
+        message: 'Tes ' + freeTokenLimit() + " jetons gratuits t'ont donné accès à des offres. Avec l'essai gratuit de 14 jours, tu peux débloquer toutes les prochaines offres Premium.",
+        detail: token.offerTitle ? 'Dernier spectacle débloqué : ' + token.offerTitle : '',
         confirmLabel: "Démarrer l'essai gratuit",
         secondaryLabel: 'Plus tard',
         onConfirm: function () {
@@ -1972,9 +1992,10 @@
     });
   }
   function askFreeOfferTokenConfirmation(offer) {
+    var remaining = freeTokenRemaining();
     svpDialog({
-      title: 'Utiliser ton jeton gratuit ?',
-      message: 'Tu peux débloquer une seule offre Premium avec ton jeton gratuit. En confirmant, il sera utilisé pour ce spectacle et ce choix est définitif.',
+      title: 'Utiliser un jeton gratuit ?',
+      message: 'Il te reste ' + remaining + ' jeton' + (remaining > 1 ? 's' : '') + ' gratuit' + (remaining > 1 ? 's' : '') + '. En confirmant, ce spectacle sera débloqué et ne comptera qu’une seule fois.',
       detail: offer.title || '',
       confirmLabel: 'Utiliser mon jeton',
       secondaryLabel: 'Annuler',
@@ -2013,13 +2034,12 @@
     var isAccountPage = document.body && document.body.getAttribute('data-svp') === 'compte';
     var isFreeAccount = isAccountPage && document.body.getAttribute('data-svp-account-premium') !== 'true';
     if (isFreeAccount) {
-      var redeemedId = redeemedFreeOfferId();
-      if (redeemedId && redeemedId === String(offer.id || '')) {
+      if (hasRedeemedFreeOffer(offer.id)) {
         if (!hasOfferSpecifics(offer)) {
           claimFreeOfferToken(offer);
           return;
         }
-      } else if (redeemedId) {
+      } else if (freeTokenRemaining() <= 0) {
         showFreeTokenUsedDialog();
         return;
       } else {

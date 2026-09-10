@@ -10,9 +10,9 @@
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { createSignedToken } = require('../../utils/premium-access-token');
-const premiumChecker = require('../../utils/premium-checker');
-
 const SECRET = process.env.PREMIUM_ACCESS_SECRET || '';
+const AC_API_URL = process.env.ACTIVECAMPAIGN_API_URL || '';
+const AC_API_KEY = process.env.ACTIVECAMPAIGN_API_KEY || '';
 const CODE_TTL_MIN = Number(process.env.LOGIN_CODE_TTL_MINUTES || 10);
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.activehosted.com';
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
@@ -29,6 +29,25 @@ const headers = {
 
 function normalizeEmail(e) { return String(e || '').trim().toLowerCase(); }
 function codeHmac(email, code) { return crypto.createHmac('sha256', SECRET).update(email + '|' + code).digest('hex'); }
+
+async function ac(path) {
+  const response = await fetch(`${AC_API_URL}/api/3/${path}`, {
+    headers: { 'Api-Token': AC_API_KEY, Accept: 'application/json' },
+  });
+  let data = {};
+  try { data = await response.json(); } catch { data = {}; }
+  if (!response.ok) throw new Error(`ActiveCampaign lookup failed: ${response.status}`);
+  return data;
+}
+
+async function findContactByEmail(email) {
+  const exact = await ac(`contacts?email=${encodeURIComponent(email)}`);
+  const exactMatch = ((exact && exact.contacts) || []).find((contact) => normalizeEmail(contact.email) === email);
+  if (exactMatch) return exactMatch;
+
+  const searched = await ac(`contacts?search=${encodeURIComponent(email)}`);
+  return ((searched && searched.contacts) || []).find((contact) => normalizeEmail(contact.email) === email) || null;
+}
 
 async function sendCodeEmail(email, code) {
   const transporter = nodemailer.createTransport({
@@ -47,12 +66,15 @@ async function sendCodeEmail(email, code) {
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
   if (event.httpMethod !== 'POST') return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
-  if (!SECRET || !SMTP_USER || !SMTP_PASS || !SENDER_EMAIL) {
+  if (!SECRET || !SMTP_USER || !SMTP_PASS || !SENDER_EMAIL || !AC_API_URL || !AC_API_KEY) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Login is not fully configured on server' }) };
   }
 
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch { return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid JSON body' }) }; }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid JSON body' }) };
+  }
   const email = normalizeEmail(body.email);
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Adresse email invalide' }) };
@@ -61,9 +83,8 @@ exports.handler = async (event) => {
   // Any existing contact (premium OR free subscriber) can log in to see their
   // info. Only send a code if the email already exists in the contact system.
   try {
-    const look = await fetch(`${process.env.ACTIVECAMPAIGN_API_URL}/api/3/contacts?email=${encodeURIComponent(email)}`, { headers: { 'Api-Token': process.env.ACTIVECAMPAIGN_API_KEY } });
-    const data = await look.json();
-    if (!((data.contacts || []).length)) {
+    const contact = await findContactByEmail(email);
+    if (!contact) {
       return { statusCode: 200, headers, body: JSON.stringify({ sent: false, reason: 'no-account' }) };
     }
   } catch (e) {
