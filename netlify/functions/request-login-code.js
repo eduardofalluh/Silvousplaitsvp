@@ -1,5 +1,5 @@
 /**
- * Passwordless login — step 1: email a 6-digit code to a premium member.
+ * Passwordless login — step 1: email a 6-digit code to an existing member.
  * Stateless & secure: the returned `challenge` is a signed token whose payload
  * holds an HMAC(secret, email|code) of the code — so the code can't be brute
  * forced offline from the token without the server secret.
@@ -10,6 +10,7 @@
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { createSignedToken } = require('../../utils/premium-access-token');
+const { getMissingSheetEnvVars, recordPremiumOfferAccessLog } = require('../../utils/premium-offers-store');
 const SECRET = process.env.PREMIUM_ACCESS_SECRET || '';
 const AC_API_URL = process.env.ACTIVECAMPAIGN_API_URL || '';
 const AC_API_KEY = process.env.ACTIVECAMPAIGN_API_KEY || '';
@@ -100,5 +101,14 @@ exports.handler = async (event) => {
   } catch (err) {
     return { statusCode: 502, headers, body: JSON.stringify({ error: "L'envoi du code a échoué. Réessaie." }) };
   }
+
+  if (!getMissingSheetEnvVars().length) {
+    try {
+      await recordPremiumOfferAccessLog({ email });
+    } catch (error) {
+      console.error('Login code request log write error:', error.message || error);
+    }
+  }
+
   return { statusCode: 200, headers, body: JSON.stringify({ sent: true, challenge }) };
 };
