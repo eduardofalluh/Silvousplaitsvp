@@ -1681,6 +1681,10 @@
   var FR_MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
   function frDate(iso) {
     if (!iso) return '';
+    var localMatch = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (localMatch) {
+      return Number(localMatch[3]) + ' ' + FR_MONTHS[Number(localMatch[2]) - 1];
+    }
     var d = new Date(iso);
     if (isNaN(d)) return '';
     return d.getUTCDate() + ' ' + FR_MONTHS[d.getUTCMonth()];

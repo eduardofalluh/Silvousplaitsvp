@@ -639,21 +639,28 @@
 
       function toDateTimeLocalValue(value) {
         if (!value) return '';
+        if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(String(value))) return String(value).slice(0, 16);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return String(value) + 'T00:00';
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return value;
         const offsetMs = date.getTimezoneOffset() * 60000;
         return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
       }
 
-      function toIsoDateTimeValue(value) {
-        if (!value) return '';
-        const date = new Date(value);
-        if (Number.isNaN(date.getTime())) return value;
-        return date.toISOString();
-      }
-
       function formatEventDate(value) {
         if (!value) return '';
+        if (/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?/.test(String(value))) {
+          const [datePart, timePart = ''] = String(value).split('T');
+          const [year, month, day] = datePart.split('-').map(Number);
+          const [hour, minute] = timePart.split(':').map(Number);
+          if (year && month && day) {
+            return new Intl.DateTimeFormat('fr-CA', {
+              dateStyle: 'medium',
+              ...(Number.isFinite(hour) && Number.isFinite(minute) ? { timeStyle: 'short' } : {}),
+              timeZone: 'America/Toronto',
+            }).format(new Date(year, month - 1, day, hour || 0, minute || 0));
+          }
+        }
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return value;
         return date.toLocaleString('fr-CA', {
@@ -1022,18 +1029,25 @@
       }
       async function loadTokenRedemptions() {
         tokenRefresh.disabled = true;
+        tokenRefresh.textContent = 'Actualisation...';
+        tokenStatus.textContent = 'Actualisation des utilisations...';
         try {
-          const response = await authFetch('/.netlify/functions/list-free-token-redemptions-admin');
+          const response = await authFetch('/.netlify/functions/list-free-token-redemptions-admin?ts=' + Date.now(), { cache: 'no-store' });
           if (!response.ok) throw new Error('Token history unavailable');
           const data = await response.json();
           tokenRedemptions = Array.isArray(data.redemptions) ? data.redemptions : [];
           renderTokenRedemptions();
         } catch {
           tokenStatus.textContent = 'Impossible de charger les utilisations. Clique sur Actualiser pour réessayer.';
-        } finally { tokenRefresh.disabled = false; }
+        } finally {
+          tokenRefresh.disabled = false;
+          tokenRefresh.textContent = 'Actualiser';
+        }
       }
       tokenSearch.addEventListener('input', renderTokenRedemptions);
-      tokenRefresh.addEventListener('click', loadTokenRedemptions);
+      tokenRefresh.addEventListener('click', () => {
+        Promise.all([loadOffers(), loadAccessLogs(), loadTokenRedemptions()]).catch(() => {});
+      });
 
       function renderAccessLogs() {
         if (!accessLogs.length) {
@@ -1050,7 +1064,7 @@
       }
 
       async function loadAccessLogs() {
-        const response = await authFetch('/.netlify/functions/list-premium-access-logs-admin');
+        const response = await authFetch('/.netlify/functions/list-premium-access-logs-admin?ts=' + Date.now(), { cache: 'no-store' });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
           accessLogList.innerHTML = '<p>Impossible de charger les logs live.</p>';
@@ -1144,7 +1158,7 @@
           return acc;
         }, {});
         payload.extra_fields = readDynamicExtraFields();
-        payload.event_date = toIsoDateTimeValue(payload.event_date);
+        payload.event_date = String(payload.event_date || '').trim();
         payload.show_on_premium_carousel = offerShowPremiumCarouselInput && offerShowPremiumCarouselInput.checked ? 'true' : 'false';
         payload.show_on_form_carousel = offerShowFormCarouselInput && offerShowFormCarouselInput.checked ? 'true' : 'false';
         if (/^data:/i.test(payload.image_url || '') || /^data:/i.test(payload.video_url || '')) {

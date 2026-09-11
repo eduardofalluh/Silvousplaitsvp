@@ -102,7 +102,9 @@ test('admin displays, searches, refreshes token history and escapes stored conte
   page.on('pageerror', err => errors.push(err.message));
   await page.route('**/admin-login', route => route.fulfill({ json: { accessToken: 'admin-test-token' } }));
   let fail = false;
-  await page.route('**/list-free-token-redemptions-admin', route => {
+  let tokenRequests = 0;
+  await page.route('**/list-free-token-redemptions-admin**', route => {
+    tokenRequests += 1;
     expect(route.request().headers().authorization).toBe('Bearer admin-test-token');
     return route.fulfill(fail ? { status: 503, json: {} } : { json: { redemptions: [
       { email: 'alex@example.test', offer_title: 'Spectacle Montréal', offer_id: 'one', redeemed_at: '2026-09-09T12:00:00Z', token_number: 1, token_limit: 3 },
@@ -129,5 +131,32 @@ test('admin displays, searches, refreshes token history and escapes stored conte
   await page.locator('#token-search').fill('');
   await page.locator('#token-refresh').click();
   await expect(page.locator('#token-list article')).toHaveCount(2);
+  expect(tokenRequests).toBeGreaterThanOrEqual(3);
   expect(errors).toEqual([]);
+});
+
+test('admin saves the selected premium offer date without shifting the day', async ({ page }) => {
+  await page.route('**/admin-login', route => route.fulfill({ json: { accessToken: 'admin-test-token' } }));
+  await page.route('**/list-premium-offers-admin**', route => route.fulfill({ json: {
+    offers: [],
+    archivedOffers: [],
+    regions: [{ id: 'montreal', label: 'Montreal' }],
+    offerTypes: [],
+    freeSignupLocations: [],
+  } }));
+  let saved;
+  await page.route('**/save-premium-offer', route => {
+    saved = route.request().postDataJSON();
+    return route.fulfill({ json: { offer: saved } });
+  });
+  await page.goto('/premium-offers-admin.html');
+  await page.locator('#admin-password').fill('test');
+  await page.locator('#admin-login-form button').click();
+  await page.locator('#offer-title').fill('Phil Roy - RODAGE No 3');
+  await page.locator('#offer-region').selectOption('Montreal');
+  await page.locator('#offer-venue').fill("Le lion d'or");
+  await page.locator('#offer-date').evaluate((el) => { el.value = '2026-09-17T00:00'; });
+  await page.locator('#offer-form button[type="submit"]').click();
+  await expect(page.locator('#admin-form-message')).toContainText('succès');
+  expect(saved.event_date).toBe('2026-09-17T00:00');
 });
