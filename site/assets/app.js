@@ -270,6 +270,41 @@
       .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'ami';
   }
 
+
+  function submitPartialSignup(email) {
+    var clean = String(email || '').trim().toLowerCase();
+    if (!validEmail(clean)) return Promise.resolve(false);
+    setEmail(clean);
+    try {
+      return fetch(FN + 'submit-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: clean, f: '1', partial: true }),
+        keepalive: true,
+      }).then(function () { return true; }).catch(function () { return false; });
+    } catch (e) {
+      return Promise.resolve(false);
+    }
+  }
+
+  function formatCount(n) {
+    var value = Number(n || 0);
+    if (!Number.isFinite(value) || value <= 0) return '';
+    return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+
+  function wireSubscriberCount() {
+    var nodes = [].slice.call(document.querySelectorAll('[data-svp="subscriber-count"]'));
+    if (!nodes.length) return;
+    fetch(FN + 'newsletter-count', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : {}; })
+      .then(function (d) {
+        var text = formatCount(d && d.count);
+        if (!text) return;
+        nodes.forEach(function (el) { el.textContent = text; });
+      }).catch(function () {});
+  }
+
   // ---- Hero signup (accueil): capture email, continue to the funnel ----
   function wireHero() {
     var emails = Array.prototype.slice.call(document.querySelectorAll('[data-svp="hero-email"]'));
@@ -288,9 +323,10 @@
       btn.addEventListener('click', function (ev) {
         var email = (input && input.value || '').trim();
         if (!validEmail(email)) { if (ev) ev.preventDefault(); if (input) input.focus(); return false; }
-        setEmail(email);
-        pixel('track', 'Lead');
-        // let the anchor's href="tunnel.html" carry the navigation
+        if (ev) ev.preventDefault();
+        var href = btn.getAttribute('href') || 'tunnel.html';
+        var go = function () { window.location.href = href; };
+        submitPartialSignup(email).then(go).catch(go);
       });
     });
   }
@@ -331,7 +367,7 @@
   }
 
   function wireFunnelV2(funnel) {
-    var state = { ville: 'montreal', cityLabel: 'Montréal', interests: [], tranche: '2-3', premium: '' };
+    var state = { ville: '', cityLabel: '', interests: [], tranche: '', premium: '' };
     var current = 1;
     var submitted = false;
     var exitShown = false;
@@ -352,16 +388,16 @@
     }
     function firstName() {
       var v = (nameInput && nameInput.value || '').trim();
-      return v || 'Alex';
+      return v;
     }
-    function cityName() { return state.cityLabel || 'Montréal'; }
+    function cityName() { return state.cityLabel || 'ta ville'; }
     function interestsPhrase() {
       var arts = { 'Théâtre': 'le théâtre', 'Musique': 'la musique', 'Humour': "l'humour", 'Cinéma': 'le cinéma', 'Arts visuels': 'les arts visuels', 'Festivals': 'les festivals' };
       var picked = state.interests.filter(function (x) { return x !== 'Sport'; }).slice(0, 2).map(function (x) { return arts[x] || x; });
       return picked.length ? picked.join(' et ') : 'les sorties culturelles';
     }
     function inviteUrl() {
-      return 'https://silvousplaitsvp.com/i/' + slugify(firstName());
+      return 'https://silvousplaitsvp.com/i/' + slugify(firstName() || 'ami');
     }
     function updateCopy() {
       setAllText(funnel, '[data-funnel-name]', firstName());
@@ -378,6 +414,13 @@
       tabs.forEach(function (tab) {
         tab.setAttribute('aria-selected', String(Number(tab.getAttribute('data-step-tab')) === current));
       });
+      if (exitModal) {
+        var exitName = exitModal.querySelector('[data-funnel-exit-name]');
+        if (exitName) {
+          var name = firstName();
+          exitName.textContent = name ? ', ' + name : '';
+        }
+      }
     }
     function showStep(n) {
       current = n;
@@ -409,8 +452,18 @@
         if (emailInput) emailInput.focus();
         return false;
       }
-      if (!state.ville) state.ville = 'montreal';
-      if (!state.cityLabel) state.cityLabel = 'Montréal';
+      if (!state.ville) {
+        say('Choisis ta ville pour recevoir la bonne infolettre.', true);
+        return false;
+      }
+      if (!state.interests.length) {
+        say('Choisis au moins un type de sortie.', true);
+        return false;
+      }
+      if (!state.tranche) {
+        say('Choisis combien de fois tu sors par mois.', true);
+        return false;
+      }
       return true;
     }
     function setSingle(selector, attr, el) {
@@ -451,6 +504,7 @@
       btn.addEventListener('click', function () {
         var next = Number(btn.getAttribute('data-funnel-next') || 1);
         if (next > 1 && !validateStep1()) return;
+        if (next > 1 && emailInput) submitPartialSignup(emailInput.value);
         showStep(next);
       });
     });
@@ -1668,7 +1722,7 @@
       o.querySelector('[data-x-go]').addEventListener('click', function () {
         var em = (o.querySelector('[data-x-email]').value || '').trim();
         if (!validEmail(em)) { o.querySelector('[data-x-email]').focus(); return; }
-        setEmail(em); pixel('track', 'Lead'); window.location.href = 'tunnel.html';
+        submitPartialSignup(em).then(function () { window.location.href = 'tunnel.html'; }).catch(function () { window.location.href = 'tunnel.html'; });
       });
     }
     document.addEventListener('mouseout', function (e) {
@@ -3418,7 +3472,7 @@
     wireTransientButtonReset();
     wireIntro();
     wireUniversalMobileHeader(); wirePremiumMobileFooter(); wireHomeLink(); wireBackLinks(); wireMobileMenus(); wireFaq(); wireScrollTop(); wireAnchorScroll(); wirePremiumSignupIntent(); wirePremiumStepCtas();
-    wireHero(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
+    wireHero(); wireSubscriberCount(); wirePremiumCtas(); wireOfferViews(); wireFunnel(); wireCountdown();
     wireConnexion(); wireAccount(); wireAccountSave(); wireCompteFilters(); wireUnsubscribe(); wireBilling(); wireAdmin(); wirePartenariat();
     wireContact(); wirePremiumCheckout(); wirePremiumTrialOffer(); wireExitIntent(); wireFunnelArchivedOffers(); wireLiveOffers(); wireTestimonialCarousels(); wireOffersCarousel();
     wireArchive();

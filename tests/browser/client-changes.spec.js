@@ -3,6 +3,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     if (url.hostname !== '127.0.0.1') return route.abort();
+    if (url.pathname.includes('/.netlify/functions/newsletter-count')) return route.fulfill({ json: { count: 6001 } });
     if (url.pathname.includes('/.netlify/functions/')) return route.fulfill({ json: { offers: [], archivedOffers: [], regions: [], offerTypes: [], freeSignupLocations: [], showcaseItems: [], accessLogs: [] } });
     return route.continue();
   });
@@ -11,11 +12,77 @@ async function funnelOffer(page) {
   await page.goto('/tunnel.html');
   await page.locator('[data-svp="prenom"]').fill('Alex');
   await page.locator('[data-svp="funnel-email"]').fill('member@example.test');
+  await page.locator('[data-svp-ville="montreal"]').click();
+  await page.locator('[data-svp-interest="Théâtre"]').click();
+  await page.locator('[data-svp-tranche="2-3"]').click();
   await page.locator('[data-funnel-next="2"]').click();
   await page.locator('[data-premium-choice="no"]').click();
   await expect(page.locator('.svp-trial-card')).toBeVisible();
   await expect(page.getByRole('alertdialog')).toHaveCSS('opacity', '1');
 }
+
+
+test('home email submit enrolls partial signup, updates count, and waits on Meta Lead', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.fbq = (...args) => { window.__pixelEvents = window.__pixelEvents || []; window.__pixelEvents.push(args); };
+  });
+  let partialSignup;
+  await page.route('**/submit-signup', route => {
+    partialSignup = route.request().postDataJSON();
+    return route.fulfill({ json: { subscribed: true, confirmationPending: true } });
+  });
+  await page.goto('/accueil.html');
+  await expect(page.locator('[data-svp="subscriber-count"]').first()).toHaveText('6 001');
+  await page.locator('[data-svp="hero-email"]').first().fill('home@example.test');
+  await page.locator('[data-svp="hero-submit"]').first().click();
+  await expect.poll(async () => partialSignup && partialSignup.email).toBe('home@example.test');
+  expect(partialSignup.f).toBe('1');
+  expect(await page.evaluate(() => window.__pixelEvents || [])).toEqual([]);
+  await expect(page).toHaveURL(/tunnel\.html$/);
+});
+
+test('funnel starts with no selected quiz answers and no fake Alex in exit popup', async ({ page }) => {
+  await page.goto('/tunnel.html');
+  await expect(page.locator('[data-svp-ville][data-selected="1"]')).toHaveCount(0);
+  await expect(page.locator('[data-svp-interest][data-selected="1"]')).toHaveCount(0);
+  await expect(page.locator('[data-svp-tranche][data-selected="1"]')).toHaveCount(0);
+  await page.locator('[data-funnel-open-exit]').click();
+  await expect(page.locator('#funnel-exit-title')).toHaveText('Tu y es presque');
+});
+
+test('email step creates partial signup without firing Meta Lead until final submit', async ({ page }) => {
+  const pixelEvents = [];
+  await page.addInitScript(() => {
+    window.fbq = (...args) => { window.__pixelEvents = window.__pixelEvents || []; window.__pixelEvents.push(args); };
+  });
+  let partialSignup;
+  await page.route('**/submit-signup', route => {
+    partialSignup = route.request().postDataJSON();
+    return route.fulfill({ json: { subscribed: true, confirmationPending: true } });
+  });
+  let finalSignup;
+  await page.route('**/submit-enriched', route => {
+    finalSignup = route.request().postDataJSON();
+    return route.fulfill({ json: { subscribed: true, confirmationPending: true } });
+  });
+  await page.goto('/tunnel.html');
+  await page.locator('[data-svp="prenom"]').fill('Lou');
+  await page.locator('[data-svp="funnel-email"]').fill('lou@example.test');
+  await page.locator('[data-svp-ville="montreal"]').click();
+  await page.locator('[data-svp-interest="Musique"]').click();
+  await page.locator('[data-svp-tranche="2-3"]').click();
+  await page.locator('[data-funnel-next="2"]').click();
+  await expect.poll(async () => partialSignup && partialSignup.email).toBe('lou@example.test');
+  expect(await page.evaluate(() => window.__pixelEvents || [])).toEqual([]);
+  await page.locator('[data-premium-choice="no"]').click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Non merci, je reste au forfait gratuit' }).click();
+  await page.locator('[data-svp="funnel-submit"]').click();
+  await expect(page.locator('[data-funnel-step="4"]')).toBeVisible();
+  expect(finalSignup.email).toBe('lou@example.test');
+  pixelEvents.push(...await page.evaluate(() => window.__pixelEvents || []));
+  expect(pixelEvents).toEqual([['track', 'Lead']]);
+});
+
 test('premium popup waits at least 30 seconds and shows once per session', async ({ page }) => {
   await page.clock.install();
   await page.goto('/premium.html');

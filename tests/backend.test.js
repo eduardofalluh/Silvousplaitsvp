@@ -8,6 +8,7 @@ Object.assign(process.env, {
 const enriched = require('../netlify/functions/submit-enriched').handler;
 const signup = require('../netlify/functions/submit-signup').handler;
 const requestLoginCode = require('../netlify/functions/request-login-code').handler;
+const newsletterCount = require('../netlify/functions/newsletter-count').handler;
 const partner = require('../netlify/functions/send-partenariat').handler;
 const { submitDoubleOptIn } = require('../utils/newsletter-opt-in');
 const nodemailer = require('nodemailer');
@@ -96,6 +97,34 @@ test('enrichment failure does not repeat a successful opt-in submission', async 
   assert.equal(JSON.parse(r.body).subscribed, true);
   assert.equal(calls.filter(c => c.path === 'contact/sync').length, 1);
 });
+
+test('newsletter count sums active city list totals from ActiveCampaign', async () => {
+  global.fetch = async (url) => {
+    const path = String(url).split('/api/3/')[1];
+    assert.match(path, /^contacts\?/);
+    const listId = new URL(String(url)).searchParams.get('listid');
+    return reply({ contacts: [], meta: { total: { 4: 5600, 8: 12, 9: 8, 10: 7 }[listId] || 0 } });
+  };
+  const r = await newsletterCount({ httpMethod: 'GET', headers: {} });
+  assert.equal(r.statusCode, 200);
+  assert.equal(JSON.parse(r.body).count, 5627);
+});
+
+
+test('newsletter count keeps successful list totals when one ActiveCampaign list fails', async () => {
+  global.fetch = async (url) => {
+    const listId = new URL(String(url)).searchParams.get('listid');
+    if (listId === '8') return reply({ message: 'ActiveCampaign internal error.' }, 590);
+    return reply({ contacts: [], meta: { total: { 4: 5600, 9: 8, 10: 7 }[listId] || 0 } });
+  };
+  const r = await newsletterCount({ httpMethod: 'GET', headers: {} });
+  const body = JSON.parse(r.body);
+  assert.equal(r.statusCode, 200);
+  assert.equal(body.count, 5615);
+  assert.equal(body.fallback, false);
+  assert.equal(body.partial, true);
+});
+
 test('partner phone reaches the contact record, note, and notification', async () => {
   const r = await partner(event({ name: 'Alex Test', email: 'member@example.test', phone: '+1 (514) 555-0123', organisation: 'Théâtre', types: ['premium'] }));
   assert.equal(r.statusCode, 200);
