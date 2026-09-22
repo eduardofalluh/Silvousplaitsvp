@@ -23,8 +23,10 @@ async function funnelOffer(page) {
 
 
 test('home email submit enrolls partial signup, updates count, and waits on Meta Lead', async ({ page }) => {
+  const pixelEvents = [];
+  await page.exposeFunction('recordFbq', args => { pixelEvents.push(args); });
   await page.addInitScript(() => {
-    window.fbq = (...args) => { window.__pixelEvents = window.__pixelEvents || []; window.__pixelEvents.push(args); };
+    window.fbq = (...args) => { window.recordFbq(args); };
   });
   let partialSignup;
   await page.route('**/submit-signup', route => {
@@ -37,8 +39,8 @@ test('home email submit enrolls partial signup, updates count, and waits on Meta
   await page.locator('[data-svp="hero-submit"]').first().click();
   await expect.poll(async () => partialSignup && partialSignup.email).toBe('home@example.test');
   expect(partialSignup.f).toBe('1');
-  expect(await page.evaluate(() => window.__pixelEvents || [])).toEqual([]);
   await expect(page).toHaveURL(/tunnel\.html$/);
+  expect(pixelEvents).toEqual([]);
 });
 
 test('funnel starts with no selected quiz answers and no fake Alex in exit popup', async ({ page }) => {
@@ -81,6 +83,31 @@ test('email step creates partial signup without firing Meta Lead until final sub
   expect(finalSignup.email).toBe('lou@example.test');
   pixelEvents.push(...await page.evaluate(() => window.__pixelEvents || []));
   expect(pixelEvents).toEqual([['track', 'Lead']]);
+});
+
+
+test('home shows partner logos and the three free offers copy', async ({ page }) => {
+  await page.goto('/accueil.html');
+  await expect(page.getByAltText('Radio-Canada').first()).toBeVisible();
+  await expect(page.getByAltText('Cinéma Public').first()).toBeVisible();
+  await expect(page.getByAltText("Centre du Théâtre d'Aujourd'hui").first()).toBeVisible();
+  await expect(page.getByAltText('Espace GO').first()).toBeVisible();
+  await expect(page.getByAltText('La Vitrine').first()).toBeVisible();
+  await expect(page.getByAltText('Le Point de Vente').first()).toBeVisible();
+  await expect(page.locator('#premium')).toContainText('3 offres gratuites');
+  await expect(page.locator('#premium')).not.toContainText('Pas de billets gratuits');
+});
+
+test('Meta pixel loader stays idle without an id and loads when configured', async ({ page }) => {
+  await page.route('https://connect.facebook.net/**', route => route.fulfill({ body: '' }));
+  await page.goto('/accueil.html');
+  await expect(page.locator('script[src*="connect.facebook.net"][src*="fbevents.js"]')).toHaveCount(0);
+
+  await page.addInitScript(() => { window.SVP_META_PIXEL_ID = '123456789012345'; });
+  await page.goto('/accueil.html');
+  await expect(page.locator('script[src*="connect.facebook.net"][src*="fbevents.js"]')).toHaveCount(1);
+  const calls = await page.evaluate(() => (window.fbq && window.fbq.queue ? window.fbq.queue : []).map(args => Array.from(args)));
+  expect(calls).toEqual([['init', '123456789012345'], ['track', 'PageView']]);
 });
 
 test('premium popup waits at least 30 seconds and shows once per session', async ({ page }) => {

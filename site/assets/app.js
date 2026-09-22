@@ -10,6 +10,45 @@
   // server-created Checkout Session: every trial CTA on the site lands here.
   var STRIPE_TRIAL_CHECKOUT_URL = 'https://buy.stripe.com/aFafZj3TV7I7c9Q4DCb7y01';
 
+  var META_PIXEL_ID = '';
+
+  function configuredMetaPixelId() {
+    if (META_PIXEL_ID) return META_PIXEL_ID;
+    try {
+      if (window.SVP_META_PIXEL_ID) return String(window.SVP_META_PIXEL_ID).trim();
+      var meta = document.querySelector('meta[name="facebook-pixel-id"], meta[name="meta-pixel-id"], meta[name="svp-meta-pixel-id"]');
+      if (meta) return String(meta.getAttribute('content') || '').trim();
+    } catch (e) {}
+    return '';
+  }
+
+  function ensureMetaPixel() {
+    var id = configuredMetaPixelId();
+    if (!id || !/^\d{8,20}$/.test(id)) return false;
+    if (!window.fbq) {
+      var n = window.fbq = function () {
+        n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+      };
+      if (!window._fbq) window._fbq = n;
+      n.push = n;
+      n.loaded = true;
+      n.version = '2.0';
+      n.queue = [];
+      var t = document.createElement('script');
+      t.async = true;
+      t.src = 'https://connect.facebook.net/en_US/fbevents.js';
+      var s = document.getElementsByTagName('script')[0];
+      if (s && s.parentNode) s.parentNode.insertBefore(t, s);
+    }
+    if (!window.__svpMetaPixelInitialized) {
+      window.__svpMetaPixelInitialized = true;
+      try { window.fbq('init', id); window.fbq('track', 'PageView'); } catch (e) {}
+    }
+    return true;
+  }
+
+  ensureMetaPixel();
+
   function getEmail() { try { return localStorage.getItem(EMAIL_KEY) || ''; } catch (e) { return ''; } }
   function setEmail(v) { try { localStorage.setItem(EMAIL_KEY, v); } catch (e) {} }
   function validEmail(e) { return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e); }
@@ -229,7 +268,7 @@
     if (missing.length === 1) return 'Champ requis : ' + missing[0] + '.';
     return 'Champs requis : ' + missing.join(', ') + '.';
   }
-  function pixel(kind, name) { if (typeof window.fbq === 'function') { try { window.fbq(kind, name); } catch (e) {} } }
+  function pixel(kind, name) { ensureMetaPixel(); if (typeof window.fbq === 'function') { try { window.fbq(kind, name); } catch (e) {} } }
   function tagPremiumClick(email) {
     var knownEmail = String(email || getEmail() || '').trim().toLowerCase();
     pixel('trackCustom', 'PremiumClick');
