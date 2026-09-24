@@ -922,6 +922,22 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
     animation: none !important;
   }
 
+  [data-svp-trust-track] {
+    width: max-content !important;
+    max-width: none !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    transform: translateX(0);
+    animation: marqueeSVP 24s linear infinite !important;
+  }
+  [data-svp-trust-group] {
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+  }
+  [data-svp-trust-group] > a {
+    flex: 0 0 auto !important;
+  }
+
   /* Horizontal-scroll carousels (e.g. premium offers) must NOT wrap/stack on
      mobile — keep them a swipeable carousel with a peek of the next card. */
   [data-scroller] {
