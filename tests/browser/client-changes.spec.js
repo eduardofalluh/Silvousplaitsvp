@@ -87,6 +87,7 @@ test('email step creates partial signup without firing Meta Lead until final sub
 
 
 test('home shows partner logos and the three free offers copy', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto('/accueil.html');
   await expect(page.locator('[data-svp-trust-strip]')).toBeVisible();
   await expect(page.getByAltText('Radio-Canada')).toHaveCount(2);
@@ -96,7 +97,17 @@ test('home shows partner logos and the three free offers copy', async ({ page })
   await expect(page.getByAltText('La Vitrine')).toHaveCount(2);
   await expect(page.getByAltText('Le Point de Vente')).toHaveCount(2);
   await expect(page.locator('[data-svp-trust-group]')).toHaveCount(2);
-  await expect(page.locator('[data-svp-trust-track]')).toHaveCSS('animation-name', 'marqueeSVP');
+  const trustTrack = page.locator('[data-svp-trust-track]');
+  await expect(trustTrack).toHaveCSS('animation-name', 'marqueeSVP');
+  const animationDuration = await trustTrack.evaluate(track => getComputedStyle(track).animationDuration);
+  const viewport = page.viewportSize();
+  if (viewport && viewport.width <= 768) {
+    expect(animationDuration).toBe('16s');
+  }
+  const firstTransform = await trustTrack.evaluate(track => getComputedStyle(track).transform);
+  await page.waitForTimeout(350);
+  const secondTransform = await trustTrack.evaluate(track => getComputedStyle(track).transform);
+  expect(secondTransform).not.toBe(firstTransform);
   const groupWidths = await page.locator('[data-svp-trust-group]').evaluateAll(groups => groups.map(group => Math.round(group.getBoundingClientRect().width)));
   expect(groupWidths[0]).toBeGreaterThan(0);
   expect(Math.abs(groupWidths[0] - groupWidths[1])).toBeLessThanOrEqual(1);

@@ -913,7 +913,7 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
   /* Decorative animated marquees (trust logos, testimonials) use a very wide
      max-content track + transform animation -> they clip content on mobile.
      Neutralize the animation and let the cards stack/wrap so nothing is cut. */
-  [style*="max-content"] {
+  [style*="max-content"]:not([data-svp-trust-track]) {
     width: 100% !important;
     max-width: 100% !important;
     flex-wrap: wrap !important;
@@ -922,15 +922,25 @@ div[style*="max-width: 1160px"][style*="padding: 14px 32px"],
     animation: none !important;
   }
 
+  [data-svp-trust-strip] {
+    overflow: hidden !important;
+    touch-action: pan-y !important;
+  }
   [data-svp-trust-track] {
+    display: flex !important;
     width: max-content !important;
     max-width: none !important;
     flex-wrap: nowrap !important;
     justify-content: flex-start !important;
-    transform: translateX(0);
-    animation: marqueeSVP 24s linear infinite !important;
+    transform: translate3d(0, 0, 0);
+    animation: marqueeSVP 16s linear infinite !important;
+    will-change: transform;
+  }
+  [data-svp-trust-track]:hover {
+    animation-play-state: running !important;
   }
   [data-svp-trust-group] {
+    display: flex !important;
     flex-wrap: nowrap !important;
     justify-content: flex-start !important;
   }
