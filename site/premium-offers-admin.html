@@ -354,6 +354,10 @@
               <input type="checkbox" id="offer-show-form-carousel" checked style="width:auto" />
               Afficher cette offre passée sur la page 2 du formulaire gratuit
             </label>
+            <label style="display:flex;align-items:flex-start;gap:9px;font:600 13.5px 'Instrument Sans',system-ui,sans-serif;color:#16203B;line-height:1.35">
+              <input type="checkbox" id="offer-premium-redemption-only" style="width:auto;margin-top:2px" />
+              Spectacle seulement Premium (visible par tous, utilisable seulement par les membres Premium)
+            </label>
             <div class="form-actions">
               <button type="submit">Enregistrer l'offre</button>
               <button type="button" id="reset-form" class="button-secondary">Vider le formulaire</button>
@@ -373,6 +377,12 @@
       <div class="admin-card">
         <h2>Logs live des connexions</h2>
         <div id="access-log-list" class="access-log-list"></div>
+      </div>
+
+      <div class="admin-card">
+        <h2>Logs clics billetterie Premium</h2>
+        <p style="margin:0 0 12px;color:#4A4D66;font-size:13.5px">Membres Premium qui ont cliqué sur le lien de billetterie pour sortir du site.</p>
+        <div id="ticket-click-log-list" class="access-log-list"></div>
       </div>
     </section>
   </main>
@@ -401,9 +411,11 @@
       const offerPlacementInput = document.getElementById('offer-placement');
       const offerShowPremiumCarouselInput = document.getElementById('offer-show-premium-carousel');
       const offerShowFormCarouselInput = document.getElementById('offer-show-form-carousel');
+      const offerPremiumRedemptionOnlyInput = document.getElementById('offer-premium-redemption-only');
       const premiumCarouselOfferList = document.getElementById('premium-carousel-offer-list');
       const resetFormButton = document.getElementById('reset-form');
       const accessLogList = document.getElementById('access-log-list');
+      const ticketClickLogList = document.getElementById('ticket-click-log-list');
       const extraFieldsContainer = document.getElementById('offer-extra-fields');
 
       const fieldMap = {
@@ -531,6 +543,7 @@
         if (offerPlacementInput) offerPlacementInput.value = 'current';
         if (offerShowPremiumCarouselInput) offerShowPremiumCarouselInput.checked = true;
         if (offerShowFormCarouselInput) offerShowFormCarouselInput.checked = true;
+        if (offerPremiumRedemptionOnlyInput) offerPremiumRedemptionOnlyInput.checked = false;
         renderDynamicExtraFields();
       }
 
@@ -819,6 +832,7 @@
         if (offerPlacementInput) offerPlacementInput.value = offer.placement;
         if (offerShowPremiumCarouselInput) offerShowPremiumCarouselInput.checked = boolField(offer.show_on_premium_carousel, true);
         if (offerShowFormCarouselInput) offerShowFormCarouselInput.checked = boolField(offer.show_on_form_carousel, true);
+        if (offerPremiumRedemptionOnlyInput) offerPremiumRedemptionOnlyInput.checked = boolField(offer.premium_redemption_only, false);
         Object.keys(fieldMap).forEach((key) => {
           if (key === 'is_active') { fieldMap[key].value = String(offer[key]); return; }
           fieldMap[key].value = key === 'event_date' ? toDateTimeLocalValue(offer[key]) : (offer[key] || '');
@@ -883,13 +897,14 @@
         const isArchived = offer.placement === 'archived';
         const premiumVisible = boolField(offer.show_on_premium_carousel, true);
         const formVisible = boolField(offer.show_on_form_carousel, true);
+        const premiumRedemptionOnly = boolField(offer.premium_redemption_only, false);
         return `
           <article class="offer-admin-item">
             <img src="${offer.image_url || 'assets/premium_image.avif'}" alt="${offer.title || ''}" />
             ${offer.video_url ? '<span style="display:inline-block;background:#EEF0FD;color:#3347CA;font:700 11px sans-serif;padding:3px 9px;border-radius:100px;margin-bottom:6px">Video</span>' : ''}
             <strong>${offer.title || ''}</strong>
             <span>${[formatRegionLabel(offer.region), offer.filtre_offre || offer.offer_type, offer.venue, formatEventDate(offer.event_date)].filter(Boolean).join(' · ')}</span>
-            <span>${isArchived ? 'Offre passée' : 'Offre actuelle'} · ${offer.is_active ? 'Active' : 'Inactive'}${isArchived ? ' · Premium: ' + (premiumVisible ? 'oui' : 'non') + ' · Formulaire: ' + (formVisible ? 'oui' : 'non') : ''}</span>
+            <span>${isArchived ? 'Offre passée' : 'Offre actuelle'} · ${offer.is_active ? 'Active' : 'Inactive'}${premiumRedemptionOnly ? ' · Spectacle seulement Premium' : ''}${isArchived ? ' · Premium: ' + (premiumVisible ? 'oui' : 'non') + ' · Formulaire: ' + (formVisible ? 'oui' : 'non') : ''}</span>
             <div class="offer-admin-actions">
               <button type="button" data-edit-carousel="${offer.id}" data-placement="${offer.placement}" class="button-secondary">Modifier</button>
               <button type="button" data-toggle-carousel="${offer.id}" data-placement="${offer.placement}" class="button-secondary">${isArchived ? 'Mettre actuelle' : 'Mettre passée'}</button>
@@ -1050,18 +1065,47 @@
         Promise.all([loadOffers(), loadAccessLogs(), loadTokenRedemptions()]).catch(() => {});
       });
 
+      function appendLogItem(list, entry, metaText) {
+        const card = document.createElement('article');
+        card.className = 'access-log-item';
+        const email = document.createElement('strong');
+        email.textContent = entry.email || '';
+        card.appendChild(email);
+        if (entry.offer_title || entry.offer_id) {
+          const offer = document.createElement('div');
+          offer.textContent = entry.offer_title || entry.offer_id;
+          card.appendChild(offer);
+        }
+        const meta = document.createElement('div');
+        meta.className = 'access-log-meta';
+        meta.textContent = metaText;
+        card.appendChild(meta);
+        list.appendChild(card);
+      }
+
       function renderAccessLogs() {
-        if (!accessLogs.length) {
-          accessLogList.innerHTML = '<p>Aucune connexion enregistrée pour le moment.</p>';
-          return;
+        const connectionLogs = accessLogs.filter((entry) => entry.event_type !== 'ticket_click');
+        const ticketLogs = accessLogs.filter((entry) => entry.event_type === 'ticket_click');
+        accessLogList.replaceChildren();
+        if (ticketClickLogList) ticketClickLogList.replaceChildren();
+
+        if (!connectionLogs.length) {
+          const empty = document.createElement('p');
+          empty.textContent = 'Aucune connexion enregistrée pour le moment.';
+          accessLogList.appendChild(empty);
+        } else {
+          connectionLogs.forEach((entry) => appendLogItem(accessLogList, entry, formatDateTime(entry.created_at)));
         }
 
-        accessLogList.innerHTML = accessLogs.map((entry) => `
-          <article class="access-log-item">
-            <strong>${entry.email || ''}</strong>
-            <div class="access-log-meta">${formatDateTime(entry.created_at)}</div>
-          </article>
-        `).join('');
+        if (ticketClickLogList) {
+          if (!ticketLogs.length) {
+            const empty = document.createElement('p');
+            empty.textContent = 'Aucun clic billetterie Premium pour le moment.';
+            ticketClickLogList.appendChild(empty);
+          } else {
+            ticketLogs.forEach((entry) => appendLogItem(ticketClickLogList, entry, 'Clic billetterie · ' + formatDateTime(entry.created_at)));
+          }
+        }
       }
 
       async function loadAccessLogs() {
@@ -1069,6 +1113,7 @@
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
           accessLogList.innerHTML = '<p>Impossible de charger les logs live.</p>';
+          if (ticketClickLogList) ticketClickLogList.innerHTML = '<p>Impossible de charger les clics billetterie.</p>';
           return;
         }
         accessLogs = Array.isArray(data.accessLogs) ? data.accessLogs : [];
@@ -1162,6 +1207,7 @@
         payload.event_date = String(payload.event_date || '').trim();
         payload.show_on_premium_carousel = offerShowPremiumCarouselInput && offerShowPremiumCarouselInput.checked ? 'true' : 'false';
         payload.show_on_form_carousel = offerShowFormCarouselInput && offerShowFormCarouselInput.checked ? 'true' : 'false';
+        payload.premium_redemption_only = offerPremiumRedemptionOnlyInput && offerPremiumRedemptionOnlyInput.checked ? 'true' : 'false';
         if (/^data:/i.test(payload.image_url || '') || /^data:/i.test(payload.video_url || '')) {
           setMessage(formMessage, 'err', 'Le média doit être téléversé ou hébergé. Un fichier base64 ne peut pas être enregistré ici.');
           return;

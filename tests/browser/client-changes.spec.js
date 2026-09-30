@@ -222,6 +222,10 @@ test('admin displays, searches, refreshes token history and escapes stored conte
       { email: 'sam@example.test', offer_title: '<img src=x onerror=alert(1)>', offer_id: 'two', redeemed_at: '2026-09-08T12:00:00Z', token_number: 2, token_limit: 3 },
     ] } });
   });
+  await page.route('**/list-premium-access-logs-admin**', route => route.fulfill({ json: { accessLogs: [
+    { email: 'vip@example.test', event_type: 'ticket_click', offer_id: 'show-1', offer_title: 'Show One', created_at: '2026-09-30T12:00:00Z' },
+    { email: 'free@example.test', event_type: 'login_code_request', created_at: '2026-09-30T11:00:00Z' },
+  ] } }));
   await page.goto('/premium-offers-admin.html');
   await expect(page.locator('#token-history')).toBeHidden();
   await page.locator('#admin-password').fill('test');
@@ -229,6 +233,11 @@ test('admin displays, searches, refreshes token history and escapes stored conte
   await expect(page.locator('#token-list article')).toHaveCount(2);
   await expect(page.locator('#token-list article').first()).toContainText('Jeton 1/3');
   await expect(page.locator('#token-list img')).toHaveCount(0);
+  await expect(page.locator('#access-log-list article')).toHaveCount(1);
+  await expect(page.locator('#access-log-list article')).toContainText('free@example.test');
+  await expect(page.locator('#ticket-click-log-list article')).toHaveCount(1);
+  await expect(page.locator('#ticket-click-log-list article')).toContainText('vip@example.test');
+  await expect(page.locator('#ticket-click-log-list article')).toContainText('Show One');
   await page.locator('#token-history').scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('token-history.png'), fullPage: false });
   await page.locator('#token-search').fill('MONTRÉAL');
@@ -267,7 +276,9 @@ test('admin saves the selected premium offer date without shifting the day', asy
   await page.locator('#offer-region').selectOption('Montreal');
   await page.locator('#offer-venue').fill("Le lion d'or");
   await page.locator('#offer-date').evaluate((el) => { el.value = '2026-09-17T00:00'; });
+  await page.locator('#offer-premium-redemption-only').check();
   await page.locator('#offer-form button[type="submit"]').click();
   await expect(page.locator('#admin-form-message')).toContainText('succès');
   expect(saved.event_date).toBe('2026-09-17T00:00');
+  expect(saved.premium_redemption_only).toBe('true');
 });

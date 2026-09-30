@@ -23,6 +23,7 @@ function sanitizeOffer(offer) {
     promo_code: offer.promo_code,
     ticket_url: offer.ticket_url,
     extra_fields: offer.extra_fields || {},
+    premium_redemption_only: offer.premium_redemption_only === true,
     details_unlocked: true,
   };
 }
@@ -121,6 +122,19 @@ exports.handler = async (event) => {
     }
 
     const result = await redeemFreeOfferToken({ email: session.email, offerId });
+    if (result.premiumOnly) {
+      return {
+        statusCode: 403,
+        headers,
+        body: JSON.stringify({
+          error: 'Premium membership required for this offer',
+          code: 'premium_only',
+          accessLevel: 'free',
+          freeToken: freeTokenPayload(result.redemptions || [], result.tokenLimit),
+          offer: result.offer ? sanitizeOffer(result.offer) : null,
+        }),
+      };
+    }
     if (result.alreadyRedeemed) {
       if (result.sameOffer || (result.redemption && result.redemption.offer_id === offerId)) {
         const offer = await findActiveOffer(offerId);

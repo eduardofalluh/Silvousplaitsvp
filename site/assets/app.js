@@ -1971,6 +1971,11 @@
     var id = String(offerId || '');
     return freeTokenRedemptions().some(function (entry) { return String(entry.offerId || entry.offer_id || '') === id; });
   }
+  function isPremiumOnlyOffer(offer) {
+    if (!offer) return false;
+    if (offer.premium_redemption_only === true) return true;
+    return /^(true|1|oui|yes)$/i.test(String(offer.premium_redemption_only || '').trim());
+  }
   function goToPremiumOffer() {
     storePremiumScrollIntent();
     window.location.href = 'premium.html#premium-offer';
@@ -1984,6 +1989,21 @@
       confirmLabel: 'Passer à Premium',
       secondaryLabel: 'Plus tard',
       onConfirm: goToPremiumOffer
+    });
+  }
+  function showPremiumOnlyOfferDialog(offer) {
+    svpDialog({
+      kicker: 'Offre Premium',
+      title: 'Réservé aux membres Premium',
+      message: 'Tu peux voir cette offre, mais seuls les membres Premium peuvent l’utiliser. Inscris-toi ou démarre ton essai gratuit de 14 jours pour en profiter.',
+      detail: offer && offer.title ? offer.title : '',
+      confirmLabel: "Démarrer l’essai gratuit",
+      secondaryLabel: 'Voir Premium',
+      onConfirm: function () {
+        var btn = document.querySelector('[data-svp="checkout"]');
+        startPremiumCheckout(btn, { plan: 'trial', returnPath: '/compte.html' });
+      },
+      onSecondary: goToPremiumOffer
     });
   }
   function showFreeTokenBusyDialog(offer) {
@@ -2118,6 +2138,26 @@
       return '';
     }
   }
+  function trackPremiumTicketClick(offer) {
+    if (!offer || !offer.id || !accountOfferAccess.isPremium) return;
+    var session = accountOfferAccess.session || getSession();
+    if (!session) return;
+    var payload = JSON.stringify({ session: session, offerId: offer.id });
+    try {
+      if (navigator.sendBeacon) {
+        var blob = new Blob([payload], { type: 'application/json' });
+        if (navigator.sendBeacon(FN + 'track-premium-ticket-click', blob)) return;
+      }
+    } catch (e) {}
+    try {
+      fetch(FN + 'track-premium-ticket-click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+        keepalive: true
+      }).catch(function () {});
+    } catch (e2) {}
+  }
   function extraFieldLabel(key) {
     return String(key || '')
       .replace(/[_-]+/g, ' ')
@@ -2132,6 +2172,10 @@
     var isAccountPage = document.body && document.body.getAttribute('data-svp') === 'compte';
     var isFreeAccount = isAccountPage && document.body.getAttribute('data-svp-account-premium') !== 'true';
     if (isFreeAccount) {
+      if (isPremiumOnlyOffer(offer)) {
+        showPremiumOnlyOfferDialog(offer);
+        return;
+      }
       if (hasRedeemedFreeOffer(offer.id)) {
         if (!hasOfferSpecifics(offer)) {
           claimFreeOfferToken(offer);
@@ -2171,7 +2215,7 @@
       + (offer.description ? '<p class="svp-offer-modal__description">' + esc(offer.description) + '</p>' : '<p class="svp-offer-modal__description">Tous les détails de cette offre sont envoyés aux membres Premium.</p>')
       + extraFields
       + (offer.promo_code ? '<div class="svp-offer-modal__code"><span>Code promo</span><strong>' + esc(offer.promo_code) + '</strong></div>' : '')
-      + (ticketUrl && !offer.archived ? '<a class="svp-offer-modal__cta" href="' + esc(ticketUrl) + '" target="_blank" rel="noopener">Ouvrir la billetterie</a>' : '')
+      + (ticketUrl && !offer.archived ? '<a class="svp-offer-modal__cta" data-svp-ticket-click data-offer-id="' + esc(offer.id || '') + '" href="' + esc(ticketUrl) + '" target="_blank" rel="noopener">Ouvrir la billetterie</a>' : '')
       + '</div></div>';
     function close() {
       document.removeEventListener('keydown', onKey);
@@ -2180,6 +2224,8 @@
     function onKey(e) { if (e.key === 'Escape') close(); }
     modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
     modal.querySelector('.svp-offer-modal__close').addEventListener('click', close);
+    var ticketClick = modal.querySelector('[data-svp-ticket-click]');
+    if (ticketClick) ticketClick.addEventListener('click', function () { trackPremiumTicketClick(offer); });
     document.addEventListener('keydown', onKey);
     document.body.appendChild(modal);
     startAutoplayVideos(modal);
@@ -2213,16 +2259,22 @@
   }
   function compteCard(o, archived) {
     var img = compteMedia(o);
+    var premiumOnly = isPremiumOnlyOffer(o);
+    var lockedForFree = premiumOnly && !accountOfferAccess.isPremium;
+    var buttonLabel = lockedForFree ? 'Essai gratuit / Premium' : "Voir l'offre";
     return '<div data-svp="offer" data-offer-id="' + esc(o.id) + '" data-offer-type="' + esc(o.offer_type || '') + '" data-offer-region="' + esc(o.region || '') + '" data-offer-search="' + esc((o.title || '') + ' ' + (o.venue || '')) + '" style="background:#fff;border:1.5px solid #ECEAE0;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">'
       + '<div style="position:relative">' + img
-      + '<span style="position:absolute;top:10px;left:10px;background:#F5E642;color:#16182B;font:700 11px \'Instrument Sans\',sans-serif;padding:4px 11px;border-radius:100px">' + esc(o.offer_type || 'Offre') + '</span>'
-      + '<span style="position:absolute;top:10px;right:10px;background:#fff;color:#4A4D66;font:600 11px \'Instrument Sans\',sans-serif;padding:4px 11px;border-radius:100px;border:1px solid #ECEAE0">' + esc(o.region || '') + '</span></div>'
+      + '<span style="position:absolute;top:10px;left:10px;background:#F5E642;color:#16182B;font:700 11px Instrument Sans,sans-serif;padding:4px 11px;border-radius:100px">' + esc(o.offer_type || 'Offre') + '</span>'
+      + '<span style="position:absolute;top:10px;right:10px;background:#fff;color:#4A4D66;font:600 11px Instrument Sans,sans-serif;padding:4px 11px;border-radius:100px;border:1px solid #ECEAE0">' + esc(o.region || '') + '</span>'
+      + (premiumOnly ? '<span style="position:absolute;bottom:10px;left:10px;background:#3347CA;color:#FFFEF5;font:800 10.5px Instrument Sans,sans-serif;letter-spacing:.03em;text-transform:uppercase;padding:5px 10px;border-radius:100px">Premium seulement</span>' : '')
+      + '</div>'
       + '<div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px;flex:1">'
-      + '<div style="font:700 15px/1.25 \'Bricolage Grotesque\',sans-serif">' + esc(o.title) + '</div>'
-      + '<div style="font:500 12.5px \'Instrument Sans\',sans-serif;color:#8B8DA0;flex:1">' + esc(o.venue || '') + (o.event_date ? ' · ' + esc(frDate(o.event_date)) : '') + '</div>'
+      + '<div style="font:700 15px/1.25 Bricolage Grotesque,sans-serif">' + esc(o.title) + '</div>'
+      + '<div style="font:500 12.5px Instrument Sans,sans-serif;color:#8B8DA0;flex:1">' + esc(o.venue || '') + (o.event_date ? ' · ' + esc(frDate(o.event_date)) : '') + '</div>'
+      + (lockedForFree ? '<div style="font:700 11.5px/1.35 Instrument Sans,sans-serif;color:#3347CA;background:#EEF0FD;border-radius:10px;padding:8px 10px;margin-top:6px">Accessible avec Premium ou l’essai gratuit de 14 jours.</div>' : '')
       + (archived
-        ? '<span style="margin-top:10px;text-align:center;background:#EEF0FD;color:#8B8DA0;border-radius:100px;padding:11px;font:700 13px \'Instrument Sans\',sans-serif">Offre passée</span>'
-        : '<button type="button" data-svp-offer-detail data-offer-id="' + esc(o.id) + '" style="margin-top:10px;text-align:center;background:#3347CA;color:#FFFEF5;border:none;border-radius:100px;padding:11px;font:700 13px \'Instrument Sans\',sans-serif;text-decoration:none;cursor:pointer">Voir l\'offre</button>')
+        ? '<span style="margin-top:10px;text-align:center;background:#EEF0FD;color:#8B8DA0;border-radius:100px;padding:11px;font:700 13px Instrument Sans,sans-serif">Offre passée</span>'
+        : '<button type="button" data-svp-offer-detail data-offer-id="' + esc(o.id) + '" style="margin-top:10px;text-align:center;background:' + (lockedForFree ? '#16182B' : '#3347CA') + ';color:#FFFEF5;border:none;border-radius:100px;padding:11px;font:700 13px Instrument Sans,sans-serif;text-decoration:none;cursor:pointer">' + buttonLabel + '</button>')
       + '</div></div>';
   }
   function loadAccountOffers(session) {

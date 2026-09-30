@@ -32,6 +32,7 @@ const OFFER_HEADERS = [
   'video_url',
   'show_on_premium_carousel',
   'show_on_form_carousel',
+  'premium_redemption_only',
 ];
 const LEGACY_OFFER_HEADERS = [
   'id',
@@ -64,7 +65,7 @@ const FREE_SIGNUP_LOCATION_HEADERS = [
   'created_at',
   'updated_at',
 ];
-const ACCESS_LOG_HEADERS = ['id', 'email', 'created_at'];
+const ACCESS_LOG_HEADERS = ['id', 'email', 'event_type', 'offer_id', 'offer_title', 'ticket_url', 'created_at'];
 const LEGACY_ACCESS_LOG_HEADERS = ['id', 'email', 'event_type', 'ip_address', 'user_agent', 'created_at'];
 const FREE_OFFER_REDEMPTION_HEADERS = ['id', 'email', 'offer_id', 'offer_title', 'redeemed_at'];
 const SHOWCASE_HEADERS = [
@@ -159,6 +160,7 @@ const OFFER_HEADER_ALIASES = {
   video_url: ['video_url', 'video', 'video_link', 'lien_video', 'video_url_link'],
   show_on_premium_carousel: ['show_on_premium_carousel', 'premium_carousel', 'show_premium_carousel'],
   show_on_form_carousel: ['show_on_form_carousel', 'form_carousel', 'funnel_carousel', 'show_form_carousel'],
+  premium_redemption_only: ['premium_redemption_only', 'premium_only', 'premium_seulement', 'redemption_premium_only'],
 };
 const DEFAULT_SHOWCASE_ITEMS = [
   {
@@ -352,6 +354,7 @@ function mapOfferRowWithHeaderMap(row, rowNumber, headerMap) {
           updated_at: rawValues.created_at,
           show_on_premium_carousel: rawValues.show_on_premium_carousel,
           show_on_form_carousel: rawValues.show_on_form_carousel,
+          premium_redemption_only: rawValues.premium_redemption_only,
         }
       : rawValues;
 
@@ -377,6 +380,7 @@ function mapOfferRowWithHeaderMap(row, rowNumber, headerMap) {
     filtre_offre: filterLabel || offerTypeLabel,
     show_on_premium_carousel: normalizeBoolean(values.show_on_premium_carousel, true),
     show_on_form_carousel: normalizeBoolean(values.show_on_form_carousel, true),
+    premium_redemption_only: normalizeBoolean(values.premium_redemption_only, false),
     extra_fields: extractOfferExtraFields(headerRow, row),
   };
 }
@@ -664,6 +668,7 @@ async function ensurePremiumOffersSheet(sheets) {
       '',
       'true',
       'true',
+      'false',
     ]);
     await safeWriteRange(sheets, `${PREMIUM_OFFERS_TAB}!A1:${lastCol}1`, [OFFER_HEADERS], 'header migration write');
     if (migratedRows.length) {
@@ -829,7 +834,7 @@ async function ensureShowcaseSheet(sheets) {
 
 async function ensureAccessLogsSheet(sheets) {
   await getOrCreateSheet(sheets, PREMIUM_OFFERS_ACCESS_LOGS_TAB);
-  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_ACCESS_LOGS_TAB}!A1:F10`, 'access logs read');
+  const read = await safeReadRange(sheets, `${PREMIUM_OFFERS_ACCESS_LOGS_TAB}!A1:G10`, 'access logs read');
   const rows = read.data.values || [];
   const headerRow = rows[0] || [];
   const hasExpectedHeaders =
@@ -839,7 +844,7 @@ async function ensureAccessLogsSheet(sheets) {
   if (!hasExpectedHeaders) {
     await safeWriteRange(
       sheets,
-      `${PREMIUM_OFFERS_ACCESS_LOGS_TAB}!A1:C1`,
+      `${PREMIUM_OFFERS_ACCESS_LOGS_TAB}!A1:G1`,
       [ACCESS_LOG_HEADERS],
       'access logs header write'
     );
@@ -932,12 +937,17 @@ async function deleteOfferRows(sheets, offers, tabName = PREMIUM_OFFERS_TAB) {
 }
 
 function mapAccessLogRow(row, rowNumber) {
-  const createdAtIndex = row.length >= LEGACY_ACCESS_LOG_HEADERS.length ? 5 : 2;
+  const compactLegacy = row.length <= 3 || looksLikeDateTime(row[2]);
+  const legacySixColumn = !compactLegacy && row.length >= LEGACY_ACCESS_LOG_HEADERS.length && looksLikeDateTime(row[5]);
   return {
     rowNumber,
     id: normalize(row[0]) || `access_log_${rowNumber}`,
-    email: normalize(row[1]),
-    created_at: normalize(row[createdAtIndex]),
+    email: normalize(row[1]).toLowerCase(),
+    event_type: compactLegacy ? 'login_code_request' : normalize(row[2] || 'login_code_request'),
+    offer_id: compactLegacy || legacySixColumn ? '' : normalize(row[3]),
+    offer_title: compactLegacy || legacySixColumn ? '' : normalize(row[4]),
+    ticket_url: compactLegacy || legacySixColumn ? '' : normalize(row[5]),
+    created_at: compactLegacy ? normalize(row[2]) : (legacySixColumn ? normalize(row[5]) : normalize(row[6])),
   };
 }
 
@@ -978,6 +988,7 @@ function mapOfferRow(row, rowNumber) {
     filtre_offre: canonicalizeFilterLabel(normalize(row[13])) || canonicalizeOfferTypeLabel(values.offer_type),
     show_on_premium_carousel: true,
     show_on_form_carousel: true,
+    premium_redemption_only: false,
     extra_fields: {},
   };
 }
@@ -1082,6 +1093,13 @@ function createOfferRow(offer, existingOffer, headerRow) {
         return normalizeBoolean(
           offer.show_on_form_carousel != null ? offer.show_on_form_carousel : current.show_on_form_carousel,
           true
+        )
+          ? 'true'
+          : 'false';
+      case 'premium_redemption_only':
+        return normalizeBoolean(
+          offer.premium_redemption_only != null ? offer.premium_redemption_only : current.premium_redemption_only,
+          false
         )
           ? 'true'
           : 'false';
@@ -1884,7 +1902,7 @@ async function listPremiumOfferAccessLogs({ limit = 100, sheets: providedSheets 
   await ensureAccessLogsSheet(sheets);
   const read = await safeReadRange(
     sheets,
-    `${PREMIUM_OFFERS_ACCESS_LOGS_TAB}!A:F`,
+    `${PREMIUM_OFFERS_ACCESS_LOGS_TAB}!A:G`,
     'access logs list read'
   );
   const rows = read.data.values || [];
@@ -2050,6 +2068,16 @@ async function redeemFreeOfferToken(entry) {
   if (!offer) {
     throw new Error('Offer not found');
   }
+  if (offer.premium_redemption_only) {
+    return {
+      redeemed: false,
+      premiumOnly: true,
+      redemption: null,
+      redemptions: existingRedemptions,
+      tokenLimit: limit,
+      offer,
+    };
+  }
 
   await ensureFreeOfferRedemptionsSheet(sheets);
   const timestamp = new Date().toISOString();
@@ -2121,21 +2149,26 @@ async function recordPremiumOfferAccessLog(entry) {
     throw new Error('Access log email is required');
   }
 
+  const eventType = normalize(entry && (entry.eventType || entry.event_type)) || 'login_code_request';
   const sheets = await getSheetsClient();
   await ensureAccessLogsSheet(sheets);
   const timestamp = new Date().toISOString();
   const values = [[
     `access_log_${Date.now()}`,
     email,
+    eventType,
+    normalize(entry && (entry.offerId || entry.offer_id)),
+    normalize(entry && (entry.offerTitle || entry.offer_title)),
+    normalize(entry && (entry.ticketUrl || entry.ticket_url)),
     timestamp,
   ]];
   await safeAppendRows(
     sheets,
-    `${PREMIUM_OFFERS_ACCESS_LOGS_TAB}!A:C`,
+    `${PREMIUM_OFFERS_ACCESS_LOGS_TAB}!A:G`,
     values,
     'access log append'
   );
-  return { id: values[0][0], created: true };
+  return { id: values[0][0], created: true, event_type: eventType };
 }
 
 module.exports = {

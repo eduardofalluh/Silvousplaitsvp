@@ -23,6 +23,7 @@ function fullOffer(offer) {
     promo_code: offer.promo_code,
     ticket_url: offer.ticket_url,
     extra_fields: offer.extra_fields || {},
+    premium_redemption_only: offer.premium_redemption_only === true,
     details_unlocked: true,
   };
 }
@@ -37,6 +38,7 @@ function previewOffer(offer) {
     event_date: offer.event_date,
     image_url: offer.image_url,
     video_url: offer.video_url,
+    premium_redemption_only: offer.premium_redemption_only === true,
     details_unlocked: false,
   };
 }

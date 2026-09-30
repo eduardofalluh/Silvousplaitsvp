@@ -18,6 +18,7 @@ function sanitizePublicOffer(offer) {
     description: offer.description,
     show_on_premium_carousel: offer.show_on_premium_carousel !== false,
     show_on_form_carousel: offer.show_on_form_carousel !== false,
+    premium_redemption_only: offer.premium_redemption_only === true,
   };
 }
 

@@ -14,6 +14,7 @@ function sanitizePublicOffer(offer) {
     event_date: offer.event_date,
     image_url: offer.image_url,
     video_url: offer.video_url,
+    premium_redemption_only: offer.premium_redemption_only === true,
   };
 }
 

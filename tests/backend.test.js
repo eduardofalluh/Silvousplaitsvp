@@ -189,3 +189,44 @@ test('free token summary counts only three unique shows and ignores duplicate cl
   assert.equal(summary.remaining, 0);
   assert.deepEqual(summary.redemptions.map(r => r.offer_id), ['a', 'b', 'c']);
 });
+
+test('premium-only offer flag is read from the current offer sheet headers', async () => {
+  const store = require('../utils/premium-offers-store');
+  const rows = [store.OFFER_HEADERS,
+    ['premium-show', 'Premium Show', 'Montreal', 'Rabais', 'Salle', '2099-01-01T20:00', '', 'Desc', 'CODE', 'https://tickets.example', 'true', '2026-09-30T12:00:00Z', '2026-09-30T12:00:00Z', 'Rabais', '', 'true', 'true', 'true']];
+  const sheets = { spreadsheets: {
+    get: async () => ({ data: { sheets: [{ properties: { title: store.PREMIUM_OFFERS_TAB, sheetId: 1 } }] } }),
+    values: {
+      get: async ({ range }) => ({ data: { values: String(range).startsWith(store.PREMIUM_OFFERS_TAB) ? rows : [] } }),
+      update: async () => ({ data: {} }),
+      append: async () => ({ data: {} }),
+    },
+    batchUpdate: async () => ({ data: {} }),
+  } };
+  const offers = await store.listPremiumOffers({ sheets });
+  assert.equal(offers.length, 1);
+  assert.equal(offers[0].premium_redemption_only, true);
+});
+
+test('premium access logs keep connection logs and ticket-click logs with legacy rows', async () => {
+  const store = require('../utils/premium-offers-store');
+  const rows = [store.ACCESS_LOG_HEADERS,
+    ['3', 'vip@example.test', 'ticket_click', 'show-1', 'Show One', 'https://tickets.example/show-1', '2026-09-30T12:00:00Z'],
+    ['2', 'legacy@example.test', '2026-09-30T11:00:00Z'],
+    ['1', 'old@example.test', 'login_code_request', '127.0.0.1', 'Agent', '2026-09-30T10:00:00Z']];
+  const sheets = { spreadsheets: {
+    get: async () => ({ data: { sheets: [{ properties: { title: store.PREMIUM_OFFERS_ACCESS_LOGS_TAB, sheetId: 1 } }] } }),
+    values: {
+      get: async () => ({ data: { values: rows } }),
+      update: async () => ({ data: {} }),
+    },
+    batchUpdate: async () => ({ data: {} }),
+  } };
+  const logs = await store.listPremiumOfferAccessLogs({ sheets });
+  assert.deepEqual(logs.map((item) => item.email), ['vip@example.test', 'legacy@example.test', 'old@example.test']);
+  assert.equal(logs[0].event_type, 'ticket_click');
+  assert.equal(logs[0].offer_id, 'show-1');
+  assert.equal(logs[0].ticket_url, 'https://tickets.example/show-1');
+  assert.equal(logs[1].event_type, 'login_code_request');
+  assert.equal(logs[2].event_type, 'login_code_request');
+});
