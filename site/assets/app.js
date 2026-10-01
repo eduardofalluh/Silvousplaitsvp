@@ -21,11 +21,16 @@
     return META_PIXEL_ID;
   }
 
-  function metaPixelBeaconSeen() {
+  function metaPixelBeaconSeen(eventName, eventId) {
     try {
       if (!window.performance || !window.performance.getEntriesByType) return false;
+      var eventToken = eventName ? 'ev=' + encodeURIComponent(eventName) : '';
+      var eventIdToken = eventId ? 'eid=' + encodeURIComponent(eventId) : '';
       return window.performance.getEntriesByType('resource').some(function (entry) {
-        return entry && typeof entry.name === 'string' && entry.name.indexOf('facebook.com/tr') !== -1;
+        var name = entry && typeof entry.name === 'string' ? entry.name : '';
+        if (name.indexOf('facebook.com/tr') === -1) return false;
+        if (eventIdToken && name.indexOf(eventIdToken) !== -1) return true;
+        return eventToken ? name.indexOf(eventToken) !== -1 : true;
       });
     } catch (e) {
       return false;
@@ -51,12 +56,17 @@
     } catch (e) {}
   }
 
+  function scheduleMetaPixelFallback(id, eventName, eventId) {
+    if (!id || !eventName) return;
+    setTimeout(function () {
+      if (!metaPixelBeaconSeen(eventName, eventId)) sendMetaPixelImageFallback(id, eventName, eventId);
+    }, 1800);
+  }
+
   function scheduleMetaPageViewFallback(id, eventId) {
     if (window.__svpMetaPixelPageViewFallbackScheduled) return;
     window.__svpMetaPixelPageViewFallbackScheduled = true;
-    setTimeout(function () {
-      if (!metaPixelBeaconSeen()) sendMetaPixelImageFallback(id, 'PageView', eventId);
-    }, 1800);
+    scheduleMetaPixelFallback(id, 'PageView', eventId);
   }
 
   function ensureMetaPixel() {
@@ -310,7 +320,15 @@
     if (missing.length === 1) return 'Champ requis : ' + missing[0] + '.';
     return 'Champs requis : ' + missing.join(', ') + '.';
   }
-  function pixel(kind, name) { ensureMetaPixel(); if (typeof window.fbq === 'function') { try { window.fbq(kind, name); } catch (e) {} } }
+  function pixel(kind, name) {
+    var id = configuredMetaPixelId();
+    var eventId = 'svp_' + String(name || 'event').toLowerCase().replace(/[^a-z0-9]+/g, '_') + '_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    ensureMetaPixel();
+    if (typeof window.fbq === 'function') {
+      try { window.fbq(kind, name, {}, { eventID: eventId }); } catch (e) {}
+    }
+    scheduleMetaPixelFallback(id, name, eventId);
+  }
   function tagPremiumClick(email) {
     var knownEmail = String(email || getEmail() || '').trim().toLowerCase();
     pixel('trackCustom', 'PremiumClick');

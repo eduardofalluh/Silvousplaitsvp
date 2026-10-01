@@ -54,6 +54,11 @@ test('funnel starts with no selected quiz answers and no fake Alex in exit popup
 
 test('email step creates partial signup without firing Meta Lead until final submit', async ({ page }) => {
   const pixelEvents = [];
+  const fallbackRequests = [];
+  await page.route('https://www.facebook.com/tr/**', route => {
+    fallbackRequests.push(route.request().url());
+    return route.fulfill({ status: 204, body: '' });
+  });
   await page.addInitScript(() => {
     window.fbq = (...args) => { window.__pixelEvents = window.__pixelEvents || []; window.__pixelEvents.push(args); };
   });
@@ -82,7 +87,9 @@ test('email step creates partial signup without firing Meta Lead until final sub
   await expect(page.locator('[data-funnel-step="4"]')).toBeVisible();
   expect(finalSignup.email).toBe('lou@example.test');
   pixelEvents.push(...await page.evaluate(() => window.__pixelEvents || []));
-  expect(pixelEvents.filter(args => args[0] === 'track' && args[1] === 'Lead')).toEqual([['track', 'Lead']]);
+  const leadEvents = pixelEvents.filter(args => args[0] === 'track' && args[1] === 'Lead');
+  expect(leadEvents.map(args => args.slice(0, 2))).toEqual([['track', 'Lead']]);
+  await expect.poll(() => fallbackRequests.some(url => url.includes('ev=Lead'))).toBe(true);
 });
 
 
