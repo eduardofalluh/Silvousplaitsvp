@@ -225,8 +225,9 @@ function normalizeForCompare(value) {
 }
 
 function normalizeBoolean(value, fallback = true) {
-  const raw = String(value == null ? fallback : value).trim().toLowerCase();
-  return !(raw === 'false' || raw === '0' || raw === 'non' || raw === 'inactive');
+  const normalized = normalize(value);
+  const raw = normalized ? normalized.toLowerCase() : String(fallback).toLowerCase();
+  return !(raw === 'false' || raw === '0' || raw === 'non' || raw === 'no' || raw === 'inactive');
 }
 
 function normalizeInteger(value, fallback = 0) {

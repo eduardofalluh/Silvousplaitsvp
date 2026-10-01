@@ -193,7 +193,8 @@ test('free token summary counts only three unique shows and ignores duplicate cl
 test('premium-only offer flag is read from the current offer sheet headers', async () => {
   const store = require('../utils/premium-offers-store');
   const rows = [store.OFFER_HEADERS,
-    ['premium-show', 'Premium Show', 'Montreal', 'Rabais', 'Salle', '2099-01-01T20:00', '', 'Desc', 'CODE', 'https://tickets.example', 'true', '2026-09-30T12:00:00Z', '2026-09-30T12:00:00Z', 'Rabais', '', 'true', 'true', 'true']];
+    ['premium-show', 'Premium Show', 'Montreal', 'Rabais', 'Salle', '2099-01-01T20:00', '', 'Desc', 'CODE', 'https://tickets.example', 'true', '2026-09-30T12:00:00Z', '2026-09-30T12:00:00Z', 'Rabais', '', 'true', 'true', 'true'],
+    ['regular-show', 'Regular Show', 'Montreal', 'Rabais', 'Salle', '2099-01-02T20:00', '', 'Desc', 'CODE', 'https://tickets.example/regular', 'true', '2026-09-30T12:00:00Z', '2026-09-30T12:00:00Z', 'Rabais', '', 'true', 'true', '']];
   const sheets = { spreadsheets: {
     get: async () => ({ data: { sheets: [{ properties: { title: store.PREMIUM_OFFERS_TAB, sheetId: 1 } }] } }),
     values: {
@@ -204,8 +205,9 @@ test('premium-only offer flag is read from the current offer sheet headers', asy
     batchUpdate: async () => ({ data: {} }),
   } };
   const offers = await store.listPremiumOffers({ sheets });
-  assert.equal(offers.length, 1);
-  assert.equal(offers[0].premium_redemption_only, true);
+  assert.equal(offers.length, 2);
+  assert.equal(offers.find((offer) => offer.id === 'premium-show').premium_redemption_only, true);
+  assert.equal(offers.find((offer) => offer.id === 'regular-show').premium_redemption_only, false);
 });
 
 test('premium access logs keep connection logs and ticket-click logs with legacy rows', async () => {
