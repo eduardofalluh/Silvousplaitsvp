@@ -21,6 +21,44 @@
     return META_PIXEL_ID;
   }
 
+  function metaPixelBeaconSeen() {
+    try {
+      if (!window.performance || !window.performance.getEntriesByType) return false;
+      return window.performance.getEntriesByType('resource').some(function (entry) {
+        return entry && typeof entry.name === 'string' && entry.name.indexOf('facebook.com/tr') !== -1;
+      });
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function sendMetaPixelImageFallback(id, eventName, eventId) {
+    try {
+      var img = new Image(1, 1);
+      var params = [
+        'id=' + encodeURIComponent(id),
+        'ev=' + encodeURIComponent(eventName || 'PageView'),
+        'dl=' + encodeURIComponent(window.location.href),
+        'rl=' + encodeURIComponent(document.referrer || ''),
+        'if=false',
+        'ts=' + Date.now(),
+      ];
+      if (eventId) params.push('eid=' + encodeURIComponent(eventId));
+      img.src = 'https://www.facebook.com/tr/?' + params.join('&');
+      window.__svpMetaPixelFallbackImages = window.__svpMetaPixelFallbackImages || [];
+      window.__svpMetaPixelFallbackImages.push(img);
+      if (window.__svpMetaPixelFallbackImages.length > 8) window.__svpMetaPixelFallbackImages.shift();
+    } catch (e) {}
+  }
+
+  function scheduleMetaPageViewFallback(id, eventId) {
+    if (window.__svpMetaPixelPageViewFallbackScheduled) return;
+    window.__svpMetaPixelPageViewFallbackScheduled = true;
+    setTimeout(function () {
+      if (!metaPixelBeaconSeen()) sendMetaPixelImageFallback(id, 'PageView', eventId);
+    }, 1800);
+  }
+
   function ensureMetaPixel() {
     var id = configuredMetaPixelId();
     if (!id || !/^\d{8,20}$/.test(id)) return false;
@@ -42,9 +80,11 @@
     }
     if (!window.__svpMetaPixelInitialized) {
       window.__svpMetaPixelInitialized = true;
+      var pageViewEventId = 'svp_pageview_' + Date.now() + '_' + Math.random().toString(36).slice(2);
       if (!hasExistingFbq) {
-        try { window.fbq('init', id); window.fbq('track', 'PageView'); } catch (e) {}
+        try { window.fbq('init', id); window.fbq('track', 'PageView', {}, { eventID: pageViewEventId }); } catch (e) {}
       }
+      scheduleMetaPageViewFallback(id, pageViewEventId);
     }
     return true;
   }

@@ -115,20 +115,43 @@ test('home shows partner logos and the three free offers copy', async ({ page })
   await expect(page.locator('#premium')).not.toContainText('Pas de billets gratuits');
 });
 
-test('Meta pixel loader uses the production id, supports overrides, and avoids duplicate injected snippets', async ({ page }) => {
+test('Meta pixel loader uses the production id, supports overrides, avoids duplicate injected snippets, and falls back to a visible beacon', async ({ page }) => {
+  const fallbackRequests = [];
   await page.route('https://connect.facebook.net/**', route => route.fulfill({ body: '' }));
+  await page.route('https://www.facebook.com/tr/**', route => {
+    fallbackRequests.push(route.request().url());
+    return route.fulfill({ status: 204, body: '' });
+  });
   await page.goto('/accueil.html');
   await expect(page.locator('script[src*="connect.facebook.net"][src*="fbevents.js"]')).toHaveCount(1);
   let calls = await page.evaluate(() => (window.fbq && window.fbq.queue ? window.fbq.queue : []).map(args => Array.from(args)));
-  expect(calls).toEqual([['init', '930964623159302'], ['track', 'PageView']]);
+  expect(calls.length).toBe(2);
+  expect(calls[0]).toEqual(['init', '930964623159302']);
+  expect(calls[1][0]).toBe('track');
+  expect(calls[1][1]).toBe('PageView');
+  await expect.poll(() => fallbackRequests.length).toBe(1);
+  expect(fallbackRequests[0]).toContain('id=930964623159302');
+  expect(fallbackRequests[0]).toContain('ev=PageView');
 
+  fallbackRequests.length = 0;
   await page.addInitScript(() => { window.SVP_META_PIXEL_ID = '123456789012345'; });
   await page.goto('/accueil.html');
   await expect(page.locator('script[src*="connect.facebook.net"][src*="fbevents.js"]')).toHaveCount(1);
   calls = await page.evaluate(() => (window.fbq && window.fbq.queue ? window.fbq.queue : []).map(args => Array.from(args)));
-  expect(calls).toEqual([['init', '123456789012345'], ['track', 'PageView']]);
+  expect(calls.length).toBe(2);
+  expect(calls[0]).toEqual(['init', '123456789012345']);
+  expect(calls[1][0]).toBe('track');
+  expect(calls[1][1]).toBe('PageView');
+  await expect.poll(() => fallbackRequests.length).toBe(1);
+  expect(fallbackRequests[0]).toContain('id=123456789012345');
 
+  fallbackRequests.length = 0;
   const injectedPage = await page.context().newPage();
+  await injectedPage.route('https://connect.facebook.net/**', route => route.fulfill({ body: '' }));
+  await injectedPage.route('https://www.facebook.com/tr/**', route => {
+    fallbackRequests.push(route.request().url());
+    return route.fulfill({ status: 204, body: '' });
+  });
   await injectedPage.addInitScript(() => {
     const q = [];
     const fbq = function () { q.push(arguments); };
@@ -143,6 +166,8 @@ test('Meta pixel loader uses the production id, supports overrides, and avoids d
   await injectedPage.goto('/accueil.html');
   calls = await injectedPage.evaluate(() => (window.fbq && window.fbq.queue ? window.fbq.queue : []).map(args => Array.from(args)));
   expect(calls).toEqual([['init', '930964623159302'], ['track', 'PageView']]);
+  await expect.poll(() => fallbackRequests.length).toBe(1);
+  expect(fallbackRequests[0]).toContain('id=930964623159302');
   await injectedPage.close();
 });
 
