@@ -144,8 +144,19 @@
     if (email && cta) cta.href = 'connexion.html?email=' + encodeURIComponent(email);
   } catch (e) {}
 
-  if (typeof window.fbq === 'function') {
-    try { fbq('track', isTrial ? 'StartTrial' : 'Subscribe'); } catch (e2) {}
+  // Query parameters alone cannot prove a payment or trial completed.
+  var sessionId = params.get('session_id') || '';
+  if (/^cs_(?:live|test)_[a-zA-Z0-9]+$/.test(sessionId)) {
+    fetch('/.netlify/functions/get-checkout-session?session_id=' + encodeURIComponent(sessionId), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : {}; })
+      .then(function (result) {
+        if (!result.completed || ['StartTrial', 'Subscribe'].indexOf(result.conversionEvent) < 0 || !result.eventId) return;
+        var key = 'svp_meta_' + result.eventId;
+        try { if (localStorage.getItem(key)) return; } catch (e) {}
+        if (typeof window.SVPTrack !== 'function') return;
+        window.SVPTrack('track', result.conversionEvent, { eventId: result.eventId });
+        try { localStorage.setItem(key, '1'); } catch (e) {}
+      }).catch(function () {});
   }
 })();
 </script>

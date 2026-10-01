@@ -1,3 +1,4 @@
+const { newsletterApi } = require('../../utils/newsletter-api');
 /** Newsletter signup through ActiveCampaign's double opt-in form. */
 const { submitDoubleOptIn } = require('../../utils/newsletter-opt-in');
 const AC_API_URL = process.env.ACTIVECAMPAIGN_API_URL || '';
@@ -27,23 +28,8 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
-async function acApi(path, options = {}) {
-  const res = await fetch(`${AC_API_URL}/api/3/${path}`, {
-    ...options,
-    headers: {
-      'Api-Token': AC_API_KEY,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      ...(options.headers || {}),
-    },
-  });
-  let data = {};
-  try {
-    data = await res.json();
-  } catch {
-    data = {};
-  }
-  return { ok: res.ok, status: res.status, data };
+function acApi(path, options = {}) {
+  return newsletterApi(AC_API_URL, AC_API_KEY, path, options);
 }
 
 async function findContactByEmail(email) {
@@ -147,8 +133,9 @@ exports.handler = async (event) => {
 
     const result = await submitDoubleOptIn(acApi, contactPayloadFromBody({ ...body, email }), body.f);
     return { statusCode: 200, headers, body: JSON.stringify({ result: 'success', subscribed: true, ...result }) };
-  } catch {
-    console.error('Newsletter double opt-in submission failed');
+  } catch (error) {
+    // Messages originate in our helpers; never log contact data or provider bodies.
+    console.error('Newsletter double opt-in submission failed:', error.message);
     return { statusCode: 502, headers, body: JSON.stringify({ subscribed: false, error: "L'inscription n'a pas fonctionné. Réessaie dans quelques instants." }) };
   }
 };

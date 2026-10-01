@@ -1,3 +1,4 @@
+const { newsletterApi } = require('../../utils/newsletter-api');
 /**
  * Enriched signup (the tunnel funnel): captures prénom, ville, interests and
  * outing frequency, then writes to the contact system:
@@ -56,14 +57,8 @@ function slugCity(v) {
   return norm(v).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-');
 }
 
-async function acApi(path, options = {}) {
-  const res = await fetch(`${AC_API_URL}/api/3/${path}`, {
-    ...options,
-    headers: { 'Api-Token': AC_API_KEY, 'Content-Type': 'application/json', Accept: 'application/json', ...(options.headers || {}) },
-  });
-  let data = {};
-  try { data = await res.json(); } catch { data = {}; }
-  return { ok: res.ok, status: res.status, data };
+function acApi(path, options = {}) {
+  return newsletterApi(AC_API_URL, AC_API_KEY, path, options);
 }
 
 async function findContactByEmail(email) {
@@ -192,8 +187,9 @@ exports.handler = async (event) => {
       headers,
       body: JSON.stringify({ subscribed: true, confirmationPending, contactId, listId, appliedTags }),
     };
-  } catch {
-    console.error('Newsletter double opt-in submission failed');
+  } catch (error) {
+    // Messages originate in our helpers; never log contact data or provider bodies.
+    console.error('Newsletter double opt-in submission failed:', error.message);
     return { statusCode: 502, headers, body: JSON.stringify({ subscribed: false, error: "L'inscription n'a pas fonctionné. Réessaie dans quelques instants." }) };
   }
 };

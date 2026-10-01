@@ -232,3 +232,22 @@ test('premium access logs keep connection logs and ticket-click logs with legacy
   assert.equal(logs[1].event_type, 'login_code_request');
   assert.equal(logs[2].event_type, 'login_code_request');
 });
+
+test('transient newsletter lookup failure is retried before one form submission', async () => {
+  const upstream = global.fetch;
+  let reads = 0;
+  global.fetch = async (url, options) => {
+    if (String(url).includes('contacts?') && reads++ === 0) return reply({}, 503);
+    return upstream(url, options);
+  };
+  const r = await enriched(event({ email: 'member@example.test', ville: 'quebec' }));
+  assert.equal(r.statusCode, 200);
+  assert.equal(reads, 2);
+  assert.equal(calls.filter(c => c.path === 'contact/sync').length, 1);
+});
+test('newsletter form writes are never automatically retried after failure', async () => {
+  failure = 'contact/sync';
+  const r = await enriched(event({ email: 'member@example.test' }));
+  assert.equal(r.statusCode, 502);
+  assert.equal(calls.filter(c => c.path === 'contact/sync').length, 1);
+});

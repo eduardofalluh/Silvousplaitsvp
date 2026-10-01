@@ -21,59 +21,54 @@
     return META_PIXEL_ID;
   }
 
-  function metaPixelBeaconSeen(eventName, eventId) {
-    try {
-      if (!window.performance || !window.performance.getEntriesByType) return false;
-      var eventToken = eventName ? 'ev=' + encodeURIComponent(eventName) : '';
-      var eventIdToken = eventId ? 'eid=' + encodeURIComponent(eventId) : '';
-      return window.performance.getEntriesByType('resource').some(function (entry) {
-        var name = entry && typeof entry.name === 'string' ? entry.name : '';
-        if (name.indexOf('facebook.com/tr') === -1) return false;
-        if (eventIdToken) return name.indexOf(eventIdToken) !== -1;
-        return eventToken ? name.indexOf(eventToken) !== -1 : true;
-      });
-    } catch (e) {
-      return false;
+  var pendingMetaEvents = [];
+
+  function metaSdkReady() {
+    return typeof window.fbq === 'function' && typeof window.fbq.callMethod === 'function';
+  }
+
+  function sendMetaPixelFallback(id, name, eventId) {
+    // A queued SDK event and a fallback must never both report the same action.
+    // Remove our queued event before sending; a late SDK load then cannot replay it.
+    var queue = window.fbq && window.fbq.queue;
+    if (Array.isArray(queue)) {
+      for (var i = queue.length - 1; i >= 0; i--) {
+        var args = queue[i];
+        if (args[3] && args[3].eventID === eventId) queue.splice(i, 1);
+      }
     }
+    var url = 'https://www.facebook.com/tr/?' + new URLSearchParams({
+      id: id, ev: name, eid: eventId, dl: window.location.href,
+      rl: document.referrer || '', if: 'false', ts: String(Date.now())
+    }).toString();
+    // keepalive also covers a checkout/page navigation while the SDK is unavailable.
+    // Tracking failures must never block signup or checkout.
+    return fetch(url, { mode: 'no-cors', credentials: 'include', keepalive: true }).catch(function () {});
   }
 
-  function sendMetaPixelImageFallback(id, eventName, eventId) {
-    try {
-      var img = new Image(1, 1);
-      var params = [
-        'id=' + encodeURIComponent(id),
-        'ev=' + encodeURIComponent(eventName || 'PageView'),
-        'dl=' + encodeURIComponent(window.location.href),
-        'rl=' + encodeURIComponent(document.referrer || ''),
-        'if=false',
-        'ts=' + Date.now(),
-      ];
-      if (eventId) params.push('eid=' + encodeURIComponent(eventId));
-      img.src = 'https://www.facebook.com/tr/?' + params.join('&');
-      window.__svpMetaPixelFallbackImages = window.__svpMetaPixelFallbackImages || [];
-      window.__svpMetaPixelFallbackImages.push(img);
-      if (window.__svpMetaPixelFallbackImages.length > 8) window.__svpMetaPixelFallbackImages.shift();
-    } catch (e) {}
+  function scheduleMetaPixelFallback(id, name, eventId) {
+    var event = { done: false, flush: function () {
+      if (event.done) return;
+      event.done = true;
+      pendingMetaEvents = pendingMetaEvents.filter(function (item) { return item !== event; });
+      // When the SDK is loaded it owns delivery, including its privacy settings.
+      // Resource timing cannot reliably tell whether an SDK beacon was delivered.
+      if (!metaSdkReady()) return sendMetaPixelFallback(id, name, eventId);
+    } };
+    pendingMetaEvents.push(event);
+    setTimeout(event.flush, 1800);
   }
 
-  function scheduleMetaPixelFallback(id, eventName, eventId, delay) {
-    if (!id || !eventName) return;
-    setTimeout(function () {
-      if (!metaPixelBeaconSeen(eventName, eventId)) sendMetaPixelImageFallback(id, eventName, eventId);
-    }, typeof delay === 'number' ? delay : 1800);
+  function flushMetaEvents() {
+    pendingMetaEvents.slice().forEach(function (event) { event.flush(); });
   }
-
-  function scheduleMetaPageViewFallback(id, eventId) {
-    if (window.__svpMetaPixelPageViewFallbackScheduled) return;
-    window.__svpMetaPixelPageViewFallbackScheduled = true;
-    scheduleMetaPixelFallback(id, 'PageView', eventId);
-  }
+  window.addEventListener('pagehide', flushMetaEvents);
 
   function ensureMetaPixel() {
     var id = configuredMetaPixelId();
     if (!id || !/^\d{8,20}$/.test(id)) return false;
-    var hasExistingFbq = typeof window.fbq === 'function';
-    if (!hasExistingFbq) {
+    if (window.__svpMetaPixelInitialized) return true;
+    if (typeof window.fbq !== 'function') {
       var n = window.fbq = function () {
         n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
       };
@@ -82,19 +77,33 @@
       n.loaded = true;
       n.version = '2.0';
       n.queue = [];
-      var t = document.createElement('script');
-      t.async = true;
-      t.src = 'https://connect.facebook.net/en_US/fbevents.js';
-      var s = document.getElementsByTagName('script')[0];
-      if (s && s.parentNode) s.parentNode.insertBefore(t, s);
     }
-    if (!window.__svpMetaPixelInitialized) {
-      window.__svpMetaPixelInitialized = true;
-      var pageViewEventId = 'svp_pageview_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-      if (!hasExistingFbq) {
-        try { window.fbq('init', id); window.fbq('track', 'PageView', {}, { eventID: pageViewEventId }); } catch (e) {}
-      }
-      scheduleMetaPageViewFallback(id, pageViewEventId);
+    window.__svpMetaPixelInitialized = true;
+    var queue = window.fbq.queue || [];
+    var initialized = queue.some(function (args) { return args[0] === 'init' && String(args[1]) === id; });
+    var existingPageView = queue.find(function (args) { return args[0] === 'track' && args[1] === 'PageView'; });
+    try {
+      var pixels = window.fbq.getState && window.fbq.getState().pixels || [];
+      initialized = initialized || pixels.some(function (p) { return String(p.id) === id; });
+      // An already loaded host snippet owns its initial PageView.
+      if (initialized && metaSdkReady()) existingPageView = true;
+    } catch (e) {}
+    if (!initialized) window.fbq('init', id);
+    var eventId = 'svp_pageview_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    if (!existingPageView) {
+      window.fbq('track', 'PageView', {}, { eventID: eventId });
+      scheduleMetaPixelFallback(id, 'PageView', eventId);
+    } else if (existingPageView !== true) {
+      // Adopt a queued snippet instead of adding a second PageView.
+      existingPageView[2] = existingPageView[2] || {};
+      existingPageView[3] = existingPageView[3] || { eventID: eventId };
+      scheduleMetaPixelFallback(id, 'PageView', existingPageView[3].eventID);
+    }
+    if (!metaSdkReady() && !document.querySelector('script[src*="connect.facebook.net"][src*="fbevents.js"]')) {
+      var script = document.createElement('script');
+      script.async = true;
+      script.src = 'https://connect.facebook.net/en_US/fbevents.js';
+      document.head.appendChild(script);
     }
     return true;
   }
@@ -321,15 +330,18 @@
     return 'Champs requis : ' + missing.join(', ') + '.';
   }
   function pixel(kind, name, options) {
-    var opts = options || {};
-    var id = configuredMetaPixelId();
-    var eventId = 'svp_' + String(name || 'event').toLowerCase().replace(/[^a-z0-9]+/g, '_') + '_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-    ensureMetaPixel();
-    if (typeof window.fbq === 'function') {
-      try { window.fbq(kind, name, {}, { eventID: eventId }); } catch (e) {}
-    }
-    if (opts.immediateFallback) sendMetaPixelImageFallback(id, name, eventId);
-    else scheduleMetaPixelFallback(id, name, eventId, opts.fallbackDelay);
+    if (!ensureMetaPixel()) return;
+    var eventId = options && options.eventId || 'svp_' + name.toLowerCase() + '_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    try { window.fbq(kind, name, {}, { eventID: eventId }); } catch (e) {}
+    scheduleMetaPixelFallback(configuredMetaPixelId(), name, eventId);
+  }
+  // Confirmation pages share the same event transport and fallback.
+  window.SVPTrack = pixel;
+
+  function navigateToCheckout(url) {
+    pixel('track', 'InitiateCheckout');
+    flushMetaEvents();
+    window.location.href = url;
   }
   function tagPremiumClick(email) {
     var knownEmail = String(email || getEmail() || '').trim().toLowerCase();
@@ -372,22 +384,11 @@
   }
 
 
-  function trackEntryLeadOnce(email) {
-    var clean = String(email || '').trim().toLowerCase();
-    if (!validEmail(clean)) return;
-    var key = 'svp_entry_lead_' + clean;
-    try {
-      if (sessionStorage.getItem(key)) return;
-      sessionStorage.setItem(key, '1');
-    } catch (e) {}
-    pixel('track', 'Lead', { immediateFallback: true });
-  }
-
-  function submitPartialSignup(email, trackLead) {
+  function submitPartialSignup(email) {
     var clean = String(email || '').trim().toLowerCase();
     if (!validEmail(clean)) return Promise.resolve(false);
     setEmail(clean);
-    if (trackLead) trackEntryLeadOnce(clean);
+    // Save unfinished signups, but conversions belong to successful completion.
     try {
       return fetch(FN + 'submit-signup', {
         method: 'POST',
@@ -439,13 +440,16 @@
         if (ev) ev.preventDefault();
         var href = btn.getAttribute('href') || 'tunnel.html';
         var go = function () { window.location.href = href; };
-        submitPartialSignup(email, true).then(go).catch(go);
+        submitPartialSignup(email).then(go).catch(go);
       });
     });
   }
 
   // ---- Premium CTA tagging (P2): tag known contacts on click ----
+  var premiumCtasWired = false;
   function wirePremiumCtas() {
+    if (premiumCtasWired) return;
+    premiumCtasWired = true;
     document.addEventListener('click', function (e) {
       var el = e.target && e.target.closest && e.target.closest('[data-svp="premium-cta"]');
       if (!el) return;
@@ -617,7 +621,7 @@
       btn.addEventListener('click', function () {
         var next = Number(btn.getAttribute('data-funnel-next') || 1);
         if (next > 1 && !validateStep1()) return;
-        if (next > 1 && emailInput) submitPartialSignup(emailInput.value, true);
+        if (next > 1 && emailInput) submitPartialSignup(emailInput.value);
         showStep(next);
       });
     });
@@ -729,7 +733,7 @@
     });
 
     function finishSignup() {
-      if (!validateStep1()) return;
+      if (submitted || (submit && submit.disabled) || !validateStep1()) return;
       var email = ((emailInput && emailInput.value) || '').trim().toLowerCase();
       var honeypot = (funnel.querySelector('[name="website"]') || {}).value || '';
       if (!submit) return;
@@ -751,7 +755,12 @@
           inviteLink: inviteUrl(),
           website: honeypot,
         }),
-      }).then(function (r) { return r.json().catch(function () { return {}; }); })
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          if (!r.ok) throw new Error(d.error || "L'inscription n'a pas fonctionné. Réessaie dans quelques instants.");
+          return d;
+        });
+      })
         .then(function (d) {
           submit.disabled = false;
           submit.textContent = original;
@@ -760,12 +769,11 @@
             showStep('already');
             return;
           }
-          if (d && d.subscribed) {
+          if (d && d.subscribed === true && !d.botBlocked) {
             submitted = true;
             setEmail(email);
             pixel('track', 'Lead');
             showStep(4);
-            wirePremiumCtas();
             return;
           }
           say((d && d.error) || "L'inscription n'a pas fonctionné. Réessaie.", true);
@@ -864,9 +872,14 @@
       fetch(FN + 'submit-enriched', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email, firstName: prenom.trim(), ville: state.ville, interests: state.interests, tranche: state.tranche, premiumInterest: state.premium, website: honeypot }),
-      }).then(function (r) { return r.json().catch(function () { return {}; }); })
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          if (!r.ok) throw new Error(d.error || "L'inscription n'a pas fonctionné. Réessaie dans quelques instants.");
+          return d;
+        });
+      })
         .then(function (d) {
-          if (d && d.subscribed) {
+          if (d && d.subscribed === true && !d.botBlocked) {
             funnelSubmitted = true;
             setEmail(email);
             pixel('track', 'Lead');
@@ -1400,8 +1413,7 @@
   // cost a signup, and Stripe stays the source of truth either way.
   function startTrialCheckout(btn, email, options) {
     var go = function () {
-      pixel('track', 'InitiateCheckout');
-      window.location.href = trialCheckoutUrl(email);
+      navigateToCheckout(trialCheckoutUrl(email));
     };
     if (!validEmail(email)) { go(); return; }
     fetch(FN + 'create-checkout-session', {
@@ -1455,7 +1467,7 @@
       .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }).catch(function () { return { ok: r.ok, d: {} }; }); })
       .then(function (res) {
         var d = res.d || {};
-        if (d && d.url) { pixel('track', 'InitiateCheckout'); window.location.href = d.url; }
+        if (res.ok && d && d.url) { navigateToCheckout(d.url); }
         else {
           resetCheckoutButton(btn);
           if (d.code === 'already_premium') showAlreadyPremiumDialog(btn, options, d, email);
@@ -1835,7 +1847,7 @@
       o.querySelector('[data-x-go]').addEventListener('click', function () {
         var em = (o.querySelector('[data-x-email]').value || '').trim();
         if (!validEmail(em)) { o.querySelector('[data-x-email]').focus(); return; }
-        submitPartialSignup(em, true).then(function () { window.location.href = 'tunnel.html'; }).catch(function () { window.location.href = 'tunnel.html'; });
+        submitPartialSignup(em).then(function () { window.location.href = 'tunnel.html'; }).catch(function () { window.location.href = 'tunnel.html'; });
       });
     }
     document.addEventListener('mouseout', function (e) {
