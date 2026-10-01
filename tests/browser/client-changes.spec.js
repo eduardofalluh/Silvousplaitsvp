@@ -40,7 +40,7 @@ test('home email submit enrolls partial signup, updates count, and waits on Meta
   await expect.poll(async () => partialSignup && partialSignup.email).toBe('home@example.test');
   expect(partialSignup.f).toBe('1');
   await expect(page).toHaveURL(/tunnel\.html$/);
-  expect(pixelEvents).toEqual([]);
+  expect(pixelEvents.filter(args => args[0] === 'track' && args[1] === 'Lead')).toEqual([]);
 });
 
 test('funnel starts with no selected quiz answers and no fake Alex in exit popup', async ({ page }) => {
@@ -75,14 +75,14 @@ test('email step creates partial signup without firing Meta Lead until final sub
   await page.locator('[data-svp-tranche="2-3"]').click();
   await page.locator('[data-funnel-next="2"]').click();
   await expect.poll(async () => partialSignup && partialSignup.email).toBe('lou@example.test');
-  expect(await page.evaluate(() => window.__pixelEvents || [])).toEqual([]);
+  expect((await page.evaluate(() => window.__pixelEvents || [])).filter(args => args[0] === 'track' && args[1] === 'Lead')).toEqual([]);
   await page.locator('[data-premium-choice="no"]').click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Non merci, je reste au forfait gratuit' }).click();
   await page.locator('[data-svp="funnel-submit"]').click();
   await expect(page.locator('[data-funnel-step="4"]')).toBeVisible();
   expect(finalSignup.email).toBe('lou@example.test');
   pixelEvents.push(...await page.evaluate(() => window.__pixelEvents || []));
-  expect(pixelEvents).toEqual([['track', 'Lead']]);
+  expect(pixelEvents.filter(args => args[0] === 'track' && args[1] === 'Lead')).toEqual([['track', 'Lead']]);
 });
 
 
@@ -115,15 +115,17 @@ test('home shows partner logos and the three free offers copy', async ({ page })
   await expect(page.locator('#premium')).not.toContainText('Pas de billets gratuits');
 });
 
-test('Meta pixel loader stays idle without an id and loads when configured', async ({ page }) => {
+test('Meta pixel loader uses the production id and can be overridden for tests', async ({ page }) => {
   await page.route('https://connect.facebook.net/**', route => route.fulfill({ body: '' }));
   await page.goto('/accueil.html');
-  await expect(page.locator('script[src*="connect.facebook.net"][src*="fbevents.js"]')).toHaveCount(0);
+  await expect(page.locator('script[src*="connect.facebook.net"][src*="fbevents.js"]')).toHaveCount(1);
+  let calls = await page.evaluate(() => (window.fbq && window.fbq.queue ? window.fbq.queue : []).map(args => Array.from(args)));
+  expect(calls).toEqual([['init', '930964623159302'], ['track', 'PageView']]);
 
   await page.addInitScript(() => { window.SVP_META_PIXEL_ID = '123456789012345'; });
   await page.goto('/accueil.html');
   await expect(page.locator('script[src*="connect.facebook.net"][src*="fbevents.js"]')).toHaveCount(1);
-  const calls = await page.evaluate(() => (window.fbq && window.fbq.queue ? window.fbq.queue : []).map(args => Array.from(args)));
+  calls = await page.evaluate(() => (window.fbq && window.fbq.queue ? window.fbq.queue : []).map(args => Array.from(args)));
   expect(calls).toEqual([['init', '123456789012345'], ['track', 'PageView']]);
 });
 

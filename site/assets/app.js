@@ -10,16 +10,15 @@
   // server-created Checkout Session: every trial CTA on the site lands here.
   var STRIPE_TRIAL_CHECKOUT_URL = 'https://buy.stripe.com/aFafZj3TV7I7c9Q4DCb7y01';
 
-  var META_PIXEL_ID = '';
+  var META_PIXEL_ID = '930964623159302';
 
   function configuredMetaPixelId() {
-    if (META_PIXEL_ID) return META_PIXEL_ID;
     try {
       if (window.SVP_META_PIXEL_ID) return String(window.SVP_META_PIXEL_ID).trim();
       var meta = document.querySelector('meta[name="facebook-pixel-id"], meta[name="meta-pixel-id"], meta[name="svp-meta-pixel-id"]');
       if (meta) return String(meta.getAttribute('content') || '').trim();
     } catch (e) {}
-    return '';
+    return META_PIXEL_ID;
   }
 
   function ensureMetaPixel() {
