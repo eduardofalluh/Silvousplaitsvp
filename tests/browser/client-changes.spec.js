@@ -22,8 +22,13 @@ async function funnelOffer(page) {
 }
 
 
-test('home email submit enrolls partial signup, updates count, and waits on Meta Lead', async ({ page }) => {
+test('home email submit enrolls partial signup, updates count, and fires the entry Meta Lead', async ({ page }) => {
   const pixelEvents = [];
+  const fallbackRequests = [];
+  await page.route('https://www.facebook.com/tr/**', route => {
+    fallbackRequests.push(route.request().url());
+    return route.fulfill({ status: 204, body: '' });
+  });
   await page.exposeFunction('recordFbq', args => { pixelEvents.push(args); });
   await page.addInitScript(() => {
     window.fbq = (...args) => { window.recordFbq(args); };
@@ -40,7 +45,9 @@ test('home email submit enrolls partial signup, updates count, and waits on Meta
   await expect.poll(async () => partialSignup && partialSignup.email).toBe('home@example.test');
   expect(partialSignup.f).toBe('1');
   await expect(page).toHaveURL(/tunnel\.html$/);
-  expect(pixelEvents.filter(args => args[0] === 'track' && args[1] === 'Lead')).toEqual([]);
+  const leadEvents = pixelEvents.filter(args => args[0] === 'track' && args[1] === 'Lead');
+  expect(leadEvents.map(args => args.slice(0, 2))).toEqual([['track', 'Lead']]);
+  await expect.poll(() => fallbackRequests.some(url => url.includes('ev=Lead'))).toBe(true);
 });
 
 test('funnel starts with no selected quiz answers and no fake Alex in exit popup', async ({ page }) => {
@@ -52,7 +59,7 @@ test('funnel starts with no selected quiz answers and no fake Alex in exit popup
   await expect(page.locator('#funnel-exit-title')).toHaveText('Tu y es presque');
 });
 
-test('email step creates partial signup without firing Meta Lead until final submit', async ({ page }) => {
+test('email step creates partial signup and fires Meta Lead on entry and final submit', async ({ page }) => {
   const pixelEvents = [];
   const fallbackRequests = [];
   await page.route('https://www.facebook.com/tr/**', route => {
@@ -80,7 +87,10 @@ test('email step creates partial signup without firing Meta Lead until final sub
   await page.locator('[data-svp-tranche="2-3"]').click();
   await page.locator('[data-funnel-next="2"]').click();
   await expect.poll(async () => partialSignup && partialSignup.email).toBe('lou@example.test');
-  expect((await page.evaluate(() => window.__pixelEvents || [])).filter(args => args[0] === 'track' && args[1] === 'Lead')).toEqual([]);
+  await expect.poll(() => fallbackRequests.some(url => url.includes('ev=Lead'))).toBe(true);
+  let entryLeadEvents = (await page.evaluate(() => window.__pixelEvents || [])).filter(args => args[0] === 'track' && args[1] === 'Lead');
+  expect(entryLeadEvents.map(args => args.slice(0, 2))).toEqual([['track', 'Lead']]);
+  fallbackRequests.length = 0;
   await page.locator('[data-premium-choice="no"]').click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Non merci, je reste au forfait gratuit' }).click();
   await page.locator('[data-svp="funnel-submit"]').click();
@@ -88,7 +98,7 @@ test('email step creates partial signup without firing Meta Lead until final sub
   expect(finalSignup.email).toBe('lou@example.test');
   pixelEvents.push(...await page.evaluate(() => window.__pixelEvents || []));
   const leadEvents = pixelEvents.filter(args => args[0] === 'track' && args[1] === 'Lead');
-  expect(leadEvents.map(args => args.slice(0, 2))).toEqual([['track', 'Lead']]);
+  expect(leadEvents.map(args => args.slice(0, 2))).toEqual([['track', 'Lead'], ['track', 'Lead']]);
   await expect.poll(() => fallbackRequests.some(url => url.includes('ev=Lead'))).toBe(true);
 });
 

@@ -29,7 +29,7 @@
       return window.performance.getEntriesByType('resource').some(function (entry) {
         var name = entry && typeof entry.name === 'string' ? entry.name : '';
         if (name.indexOf('facebook.com/tr') === -1) return false;
-        if (eventIdToken && name.indexOf(eventIdToken) !== -1) return true;
+        if (eventIdToken) return name.indexOf(eventIdToken) !== -1;
         return eventToken ? name.indexOf(eventToken) !== -1 : true;
       });
     } catch (e) {
@@ -56,11 +56,11 @@
     } catch (e) {}
   }
 
-  function scheduleMetaPixelFallback(id, eventName, eventId) {
+  function scheduleMetaPixelFallback(id, eventName, eventId, delay) {
     if (!id || !eventName) return;
     setTimeout(function () {
       if (!metaPixelBeaconSeen(eventName, eventId)) sendMetaPixelImageFallback(id, eventName, eventId);
-    }, 1800);
+    }, typeof delay === 'number' ? delay : 1800);
   }
 
   function scheduleMetaPageViewFallback(id, eventId) {
@@ -320,14 +320,16 @@
     if (missing.length === 1) return 'Champ requis : ' + missing[0] + '.';
     return 'Champs requis : ' + missing.join(', ') + '.';
   }
-  function pixel(kind, name) {
+  function pixel(kind, name, options) {
+    var opts = options || {};
     var id = configuredMetaPixelId();
     var eventId = 'svp_' + String(name || 'event').toLowerCase().replace(/[^a-z0-9]+/g, '_') + '_' + Date.now() + '_' + Math.random().toString(36).slice(2);
     ensureMetaPixel();
     if (typeof window.fbq === 'function') {
       try { window.fbq(kind, name, {}, { eventID: eventId }); } catch (e) {}
     }
-    scheduleMetaPixelFallback(id, name, eventId);
+    if (opts.immediateFallback) sendMetaPixelImageFallback(id, name, eventId);
+    else scheduleMetaPixelFallback(id, name, eventId, opts.fallbackDelay);
   }
   function tagPremiumClick(email) {
     var knownEmail = String(email || getEmail() || '').trim().toLowerCase();
@@ -370,10 +372,22 @@
   }
 
 
-  function submitPartialSignup(email) {
+  function trackEntryLeadOnce(email) {
+    var clean = String(email || '').trim().toLowerCase();
+    if (!validEmail(clean)) return;
+    var key = 'svp_entry_lead_' + clean;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, '1');
+    } catch (e) {}
+    pixel('track', 'Lead', { immediateFallback: true });
+  }
+
+  function submitPartialSignup(email, trackLead) {
     var clean = String(email || '').trim().toLowerCase();
     if (!validEmail(clean)) return Promise.resolve(false);
     setEmail(clean);
+    if (trackLead) trackEntryLeadOnce(clean);
     try {
       return fetch(FN + 'submit-signup', {
         method: 'POST',
@@ -425,7 +439,7 @@
         if (ev) ev.preventDefault();
         var href = btn.getAttribute('href') || 'tunnel.html';
         var go = function () { window.location.href = href; };
-        submitPartialSignup(email).then(go).catch(go);
+        submitPartialSignup(email, true).then(go).catch(go);
       });
     });
   }
@@ -603,7 +617,7 @@
       btn.addEventListener('click', function () {
         var next = Number(btn.getAttribute('data-funnel-next') || 1);
         if (next > 1 && !validateStep1()) return;
-        if (next > 1 && emailInput) submitPartialSignup(emailInput.value);
+        if (next > 1 && emailInput) submitPartialSignup(emailInput.value, true);
         showStep(next);
       });
     });
@@ -1821,7 +1835,7 @@
       o.querySelector('[data-x-go]').addEventListener('click', function () {
         var em = (o.querySelector('[data-x-email]').value || '').trim();
         if (!validEmail(em)) { o.querySelector('[data-x-email]').focus(); return; }
-        submitPartialSignup(em).then(function () { window.location.href = 'tunnel.html'; }).catch(function () { window.location.href = 'tunnel.html'; });
+        submitPartialSignup(em, true).then(function () { window.location.href = 'tunnel.html'; }).catch(function () { window.location.href = 'tunnel.html'; });
       });
     }
     document.addEventListener('mouseout', function (e) {
