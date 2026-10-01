@@ -27,7 +27,7 @@
     return typeof window.fbq === 'function' && typeof window.fbq.callMethod === 'function';
   }
 
-  function sendMetaPixelFallback(id, name, eventId) {
+  function sendMetaPixelFallback(id, name, eventId, params) {
     // A queued SDK event and a fallback must never both report the same action.
     // Remove our queued event before sending; a late SDK load then cannot replay it.
     var queue = window.fbq && window.fbq.queue;
@@ -37,23 +37,25 @@
         if (args[3] && args[3].eventID === eventId) queue.splice(i, 1);
       }
     }
-    var url = 'https://www.facebook.com/tr/?' + new URLSearchParams({
+    var url = new URLSearchParams({
       id: id, ev: name, eid: eventId, dl: window.location.href,
       rl: document.referrer || '', if: 'false', ts: String(Date.now())
-    }).toString();
+    });
+    Object.keys(params || {}).forEach(function (key) { url.append('cd[' + key + ']', String(params[key])); });
+    url = url.toString();
     // keepalive also covers a checkout/page navigation while the SDK is unavailable.
     // Tracking failures must never block signup or checkout.
-    return fetch(url, { mode: 'no-cors', credentials: 'include', keepalive: true }).catch(function () {});
+    return fetch('https://www.facebook.com/tr/?' + url, { mode: 'no-cors', credentials: 'include', keepalive: true }).catch(function () {});
   }
 
-  function scheduleMetaPixelFallback(id, name, eventId) {
+  function scheduleMetaPixelFallback(id, name, eventId, params) {
     var event = { done: false, flush: function () {
       if (event.done) return;
       event.done = true;
       pendingMetaEvents = pendingMetaEvents.filter(function (item) { return item !== event; });
       // When the SDK is loaded it owns delivery, including its privacy settings.
       // Resource timing cannot reliably tell whether an SDK beacon was delivered.
-      if (!metaSdkReady()) return sendMetaPixelFallback(id, name, eventId);
+      if (!metaSdkReady()) return sendMetaPixelFallback(id, name, eventId, params);
     } };
     pendingMetaEvents.push(event);
     setTimeout(event.flush, 1800);
@@ -332,14 +334,25 @@
   function pixel(kind, name, options) {
     if (!ensureMetaPixel()) return;
     var eventId = options && options.eventId || 'svp_' + name.toLowerCase() + '_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-    try { window.fbq(kind, name, {}, { eventID: eventId }); } catch (e) {}
-    scheduleMetaPixelFallback(configuredMetaPixelId(), name, eventId);
+    var params = options && options.params || {};
+    try { window.fbq(kind, name, params, { eventID: eventId }); } catch (e) {}
+    scheduleMetaPixelFallback(configuredMetaPixelId(), name, eventId, params);
   }
+  // Events the pre-redesign site sent; ad sets and custom conversions still use them.
+  var pixelOnceKeys = {};
+  function pixelOnce(key, kind, name, options) {
+    if (pixelOnceKeys[key]) return;
+    pixelOnceKeys[key] = true;
+    pixel(kind, name, options);
+  }
+  if (/\/premium(\.html)?\/?$/.test(window.location.pathname)) pixelOnce('premium-view', 'trackCustom', 'PremiumView');
   // Confirmation pages share the same event transport and fallback.
   window.SVPTrack = pixel;
 
   function navigateToCheckout(url) {
     pixel('track', 'InitiateCheckout');
+    // Lets the confirmation page recognize a return from a checkout started here.
+    try { localStorage.setItem('svp_checkout_started', String(Date.now())); } catch (e) {}
     flushMetaEvents();
     window.location.href = url;
   }
@@ -1413,6 +1426,7 @@
   // cost a signup, and Stripe stays the source of truth either way.
   function startTrialCheckout(btn, email, options) {
     var go = function () {
+      pixelOnce('premium-trial-click', 'trackCustom', 'PremiumTrialClick');
       navigateToCheckout(trialCheckoutUrl(email));
     };
     if (!validEmail(email)) { go(); return; }

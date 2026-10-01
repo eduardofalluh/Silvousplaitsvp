@@ -146,6 +146,28 @@
 
   // Query parameters alone cannot prove a payment or trial completed.
   var sessionId = params.get('session_id') || '';
+  // Purchase is the conversion the ad account was built on before the redesign.
+  var PURCHASE_FALLBACK_VALUE = 68.99;
+  function trackPurchase(eventId, amount, currency) {
+    var key = 'svp_meta_' + eventId;
+    try { if (localStorage.getItem(key)) return false; } catch (e) {}
+    if (typeof window.SVPTrack !== 'function') return false;
+    window.SVPTrack('track', 'Purchase', {
+      eventId: eventId,
+      params: { value: amount > 0 ? amount : PURCHASE_FALLBACK_VALUE, currency: currency || 'CAD' }
+    });
+    try { localStorage.setItem(key, '1'); } catch (e) {}
+    return true;
+  }
+  if (!sessionId && isTrial) {
+    // The trial Payment Link may return without {CHECKOUT_SESSION_ID}. Only
+    // count it when this browser started a checkout in the last two hours.
+    var started = 0;
+    try { started = Number(localStorage.getItem('svp_checkout_started')) || 0; } catch (e) {}
+    if (started && Date.now() - started < 2 * 60 * 60 * 1000 && trackPurchase('svp_purchase_' + started, 0, 'CAD')) {
+      try { localStorage.removeItem('svp_checkout_started'); } catch (e) {}
+    }
+  }
   if (/^cs_(?:live|test)_[a-zA-Z0-9]+$/.test(sessionId)) {
     fetch('/.netlify/functions/get-checkout-session?session_id=' + encodeURIComponent(sessionId), { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : {}; })
@@ -156,6 +178,7 @@
         if (typeof window.SVPTrack !== 'function') return;
         window.SVPTrack('track', result.conversionEvent, { eventId: result.eventId });
         try { localStorage.setItem(key, '1'); } catch (e) {}
+        trackPurchase(result.eventId + '_purchase', Number(result.amountTotal) || 0, result.currency);
       }).catch(function () {});
   }
 })();

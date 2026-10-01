@@ -19,6 +19,9 @@ The trial Payment Link also ended on Stripe's hosted confirmation screen.
 | InitiateCheckout | Checkout destination is available, immediately before navigation |
 | StartTrial | Server verifies a completed Stripe subscription checkout with a trial |
 | Subscribe | Server verifies a completed Stripe subscription checkout without a trial |
+| PremiumView | Premium page load, once per document (restored from the pre-redesign site) |
+| PremiumTrialClick | Trial CTA, immediately before the Stripe Payment Link (restored) |
+| Purchase | Alongside StartTrial/Subscribe, with `value` (session amount, or 68.99 for a $0 trial) and `currency` (restored); also on a trial return without a session ID when this browser started a checkout in the last two hours |
 
 Entering an email still saves a partial signup. It does not fire Lead. Failed
 responses, bot responses, and already-subscribed responses do not fire Lead.

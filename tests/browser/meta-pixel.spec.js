@@ -18,7 +18,7 @@ async function setup(page, mode = 'blocked') {
   });
   await page.route('https://www.facebook.com/tr/**', route => {
     const url = new URL(route.request().url());
-    events.push({ name: url.searchParams.get('ev'), id: url.searchParams.get('eid') });
+    events.push({ name: url.searchParams.get('ev'), id: url.searchParams.get('eid'), value: url.searchParams.get('cd[value]'), currency: url.searchParams.get('cd[currency]') });
     return route.fulfill({ status: 200, contentType: 'image/gif', body: Buffer.from('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==', 'base64') });
   });
   if (mode !== 'blocked') await page.route('https://connect.facebook.net/**', async route => {
@@ -125,7 +125,40 @@ test('unverified confirmation page cannot create a paid or trial conversion', as
   await page.waitForTimeout(1900);
   await page.goto('/premium-confirmation.html?session_id=cs_test_open&plan=yearly');
   await page.waitForTimeout(1900);
-  expect(events.filter(e => ['StartTrial', 'Subscribe'].includes(e.name))).toHaveLength(0);
+  expect(events.filter(e => ['StartTrial', 'Subscribe', 'Purchase'].includes(e.name))).toHaveLength(0);
+});
+
+test('premium page restores the PremiumView event once', async ({ page }) => {
+  const events = await setup(page);
+  await page.goto('/premium.html');
+  await expect.poll(() => events.filter(e => e.name === 'PremiumView').length).toBe(1);
+  await page.waitForTimeout(2000);
+  expect(events.filter(e => e.name === 'PremiumView')).toHaveLength(1);
+});
+
+test('verified checkout also restores Purchase with value, once', async ({ page }) => {
+  const events = await setup(page);
+  await page.route('**/get-checkout-session**', route => route.fulfill({ json: {
+    completed: true, conversionEvent: 'Subscribe', eventId: 'verified-checkout-456', amountTotal: 68.99, currency: 'CAD'
+  } }));
+  await page.goto('/premium-confirmation.html?session_id=cs_test_456&plan=yearly');
+  await expect.poll(() => events.filter(e => e.name === 'Purchase').length).toBe(1);
+  await page.reload();
+  await page.waitForTimeout(2000);
+  const purchases = events.filter(e => e.name === 'Purchase');
+  expect(purchases).toHaveLength(1);
+  expect(purchases[0]).toMatchObject({ value: '68.99', currency: 'CAD' });
+});
+
+test('trial return without session id counts Purchase only after a checkout started here', async ({ page }) => {
+  const events = await setup(page);
+  await page.goto('/premium-confirmation.html?plan=trial');
+  await page.evaluate(() => localStorage.setItem('svp_checkout_started', String(Date.now())));
+  await page.reload();
+  await expect.poll(() => events.filter(e => e.name === 'Purchase').length).toBe(1);
+  await page.reload();
+  await page.waitForTimeout(2000);
+  expect(events.filter(e => e.name === 'Purchase')).toHaveLength(1);
 });
 
 test('visible live offers emit OfferView and loaded offers do not duplicate PremiumClick handlers', async ({ page }) => {
