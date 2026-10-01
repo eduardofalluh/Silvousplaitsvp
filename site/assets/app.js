@@ -24,7 +24,8 @@
   function ensureMetaPixel() {
     var id = configuredMetaPixelId();
     if (!id || !/^\d{8,20}$/.test(id)) return false;
-    if (!window.fbq) {
+    var hasExistingFbq = typeof window.fbq === 'function';
+    if (!hasExistingFbq) {
       var n = window.fbq = function () {
         n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
       };
@@ -41,7 +42,9 @@
     }
     if (!window.__svpMetaPixelInitialized) {
       window.__svpMetaPixelInitialized = true;
-      try { window.fbq('init', id); window.fbq('track', 'PageView'); } catch (e) {}
+      if (!hasExistingFbq) {
+        try { window.fbq('init', id); window.fbq('track', 'PageView'); } catch (e) {}
+      }
     }
     return true;
   }
