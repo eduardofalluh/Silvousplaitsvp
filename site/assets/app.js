@@ -534,11 +534,10 @@
       setAllText(funnel, '[data-funnel-city]', cityName());
       setAllText(funnel, '[data-funnel-interests]', interestsPhrase());
       setAllText(funnel, '[data-funnel-invite]', inviteUrl().replace(/^https?:\/\//, ''));
-      var pct = current === 4 || current === 'already' ? 100 : Math.max(33, current * 33);
+      var pct = current === 'already' ? 100 : Math.max(33, current * 33);
       if (progress) progress.style.width = Math.min(100, pct) + '%';
       if (badge) {
-        if (current === 4) badge.textContent = 'COURRIEL À CONFIRMER';
-        else if (current === 'already') badge.textContent = 'DÉJÀ INSCRIT';
+        if (current === 'already') badge.textContent = 'DÉJÀ INSCRIT';
         else badge.textContent = 'ÉTAPE ' + current + ' / 3';
       }
       tabs.forEach(function (tab) {
@@ -567,10 +566,10 @@
       applyRevealTargets(activeStep);
     }
     function validateStep1() {
-      // Prénom is required too: it is not decorative — the welcome step and the
-      // invite preview both address the person by name ("Bienvenue, Alex !"),
-      // and it is written to ActiveCampaign. Previously it could be skipped,
-      // which produced empty names downstream.
+      // Prénom is required too: it is not decorative — the premium step and the
+      // invite preview both address the person by name, and it is written to
+      // ActiveCampaign. Previously it could be skipped, which produced empty
+      // names downstream.
       var err = checkRequired([
         { sel: '[data-svp="prenom"]', label: 'Prénom' },
         { sel: '[data-svp="funnel-email"]', label: 'Courriel', email: true }
@@ -642,7 +641,6 @@
       tab.addEventListener('click', function () {
         var next = Number(tab.getAttribute('data-step-tab'));
         if (next > 1 && !validateStep1()) return;
-        if (next === 4 && !submitted) return;
         showStep(next);
       });
     });
@@ -712,16 +710,6 @@
       }
       copied();
     });
-    funnel.querySelectorAll('[data-faq-item]').forEach(function (item) {
-      item.addEventListener('click', function () {
-        var answer = item.querySelector('span[hidden], span:not(:first-child)');
-        var chev = item.querySelector('span span');
-        var open = answer && !answer.hidden;
-        if (answer) answer.hidden = open;
-        if (chev) chev.textContent = open ? '⌄' : '⌃';
-      });
-    });
-
     function openExit() { if (exitModal) { updateCopy(); exitModal.hidden = false; } }
     function closeExit() { if (exitModal) exitModal.hidden = true; }
     var openExitBtn = funnel.querySelector('[data-funnel-open-exit]');
@@ -730,7 +718,7 @@
     funnel.querySelectorAll('a[href="accueil.html"]').forEach(function (link) {
       if (link.hasAttribute('data-funnel-confirm-exit')) return;
       link.addEventListener('click', function (e) {
-        if (submitted || current === 4 || current === 'already') return;
+        if (submitted || current === 'already') return;
         e.preventDefault();
         openExit();
       });
@@ -740,7 +728,7 @@
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeExit(); });
     }
     document.addEventListener('mouseleave', function (e) {
-      if (e.clientY > 0 || exitShown || submitted || current === 4 || current === 'already') return;
+      if (e.clientY > 0 || exitShown || submitted || current === 'already') return;
       exitShown = true;
       openExit();
     });
@@ -775,18 +763,19 @@
         });
       })
         .then(function (d) {
+          if (d && d.subscribed === true && !d.botBlocked && !d.alreadySubscribed) {
+            submitted = true;
+            setEmail(email);
+            pixel('track', 'Lead');
+            submit.textContent = original;
+            leaveAfterSignup();
+            return;
+          }
           submit.disabled = false;
           submit.textContent = original;
           if (d && d.alreadySubscribed) {
             setEmail(email);
             showStep('already');
-            return;
-          }
-          if (d && d.subscribed === true && !d.botBlocked) {
-            submitted = true;
-            setEmail(email);
-            pixel('track', 'Lead');
-            showStep(4);
             return;
           }
           say((d && d.error) || "L'inscription n'a pas fonctionné. Réessaie.", true);
@@ -795,6 +784,20 @@
           submit.textContent = original;
           say("Impossible d'envoyer pour le moment. Réessaie plus tard.", true);
         });
+    }
+    // The funnel used to end on a "Bienvenue" page; the client removed it, so a
+    // finished signup now lands on the home page. Lead is the conversion that
+    // matters most and must survive that navigation: flush first so our
+    // keepalive fallback goes out if the SDK isn't loaded, then hold the page
+    // briefly because the SDK's own requests (and the Conversions API Gateway's)
+    // are not keepalive and would be cancelled by an immediate unload.
+    var LEAD_DELIVERY_DELAY_MS = 1000;
+    function leaveAfterSignup() {
+      flushMetaEvents();
+      if (submit) submit.disabled = true;
+      if (skip) skip.disabled = true;
+      say('Merci\u00a0! Vérifie ta boîte courriel pour confirmer ton inscription.');
+      setTimeout(function () { window.location.assign('accueil.html'); }, LEAD_DELIVERY_DELAY_MS);
     }
     if (submit) submit.addEventListener('click', finishSignup);
     var skip = funnel.querySelector('[data-funnel-submit-skip]');

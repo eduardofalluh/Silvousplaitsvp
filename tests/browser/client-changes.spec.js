@@ -66,8 +66,10 @@ test('Meta Lead fires only after the final successful signup', async ({ page }) 
     fallbackRequests.push(route.request().url());
     return route.fulfill({ status: 204, body: '' });
   });
+  // Recorded outside the page: a successful signup navigates to accueil.html.
+  await page.exposeFunction('recordFbq', args => { pixelEvents.push(args); });
   await page.addInitScript(() => {
-    window.fbq = (...args) => { window.__pixelEvents = window.__pixelEvents || []; window.__pixelEvents.push(args); };
+    window.fbq = (...args) => { window.recordFbq(args); };
   });
   let partialSignup;
   await page.route('**/submit-signup', route => {
@@ -89,15 +91,14 @@ test('Meta Lead fires only after the final successful signup', async ({ page }) 
   await expect.poll(async () => partialSignup && partialSignup.email).toBe('lou@example.test');
   await page.waitForTimeout(1900);
   expect(fallbackRequests.some(url => url.includes('ev=Lead'))).toBe(false);
-  let entryLeadEvents = (await page.evaluate(() => window.__pixelEvents || [])).filter(args => args[0] === 'track' && args[1] === 'Lead');
-  expect(entryLeadEvents).toEqual([]);
+  expect(pixelEvents.filter(args => args[0] === 'track' && args[1] === 'Lead')).toEqual([]);
   fallbackRequests.length = 0;
   await page.locator('[data-premium-choice="no"]').click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Non merci, je reste au forfait gratuit' }).click();
   await page.locator('[data-svp="funnel-submit"]').click();
-  await expect(page.locator('[data-funnel-step="4"]')).toBeVisible();
+  await expect(page.locator('[data-svp="funnel-feedback"]')).toContainText('Vérifie ta boîte courriel');
+  await expect(page).toHaveURL(/accueil\.html$/);
   expect(finalSignup.email).toBe('lou@example.test');
-  pixelEvents.push(...await page.evaluate(() => window.__pixelEvents || []));
   const leadEvents = pixelEvents.filter(args => args[0] === 'track' && args[1] === 'Lead');
   expect(leadEvents.map(args => args.slice(0, 2))).toEqual([['track', 'Lead']]);
   await expect.poll(() => fallbackRequests.some(url => url.includes('ev=Lead'))).toBe(true);
@@ -224,8 +225,7 @@ test('funnel trial layout fits, traps focus, and preserves the free signup', asy
     return route.fulfill({ json: { subscribed: true, confirmationPending: true } });
   });
   await page.locator('[data-svp="funnel-submit"]').click();
-  await expect(page.locator('[data-funnel-step="4"]')).toBeVisible();
-  await expect(page.locator('[data-funnel-step="4"]')).toContainText('clique sur le lien de confirmation');
+  await expect(page).toHaveURL(/accueil\.html$/);
   expect(submitted.premiumInterest).toBe('no');
   expect(submitted.email).toBe('member@example.test');
 });

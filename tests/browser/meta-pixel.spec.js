@@ -73,19 +73,54 @@ test('failed signup emits no Lead; retry succeeds once even with both completion
   await page.locator('[data-funnel-submit-skip]').click();
   expect(attempts).toBe(2);
   release();
-  await expect(page.locator('[data-funnel-step="4"]')).toBeVisible();
+  await expect(page).toHaveURL(/accueil\.html$/);
   await expect.poll(() => events.filter(e => e.name === 'Lead').length).toBe(1);
   await page.waitForTimeout(300);
   expect(events.filter(e => e.name === 'Lead')).toHaveLength(1);
 });
 
-for (const body of [{ alreadySubscribed: true }, { subscribed: true, botBlocked: true }]) {
-  test(`Meta excludes ${body.botBlocked ? 'bots' : 'existing subscribers'} from Lead conversions`, async ({ page }) => {
+// The funnel no longer ends on a welcome page: a finished signup goes to the
+// home page. Lead must still be delivered exactly once whichever way the SDK
+// is (or isn't) loaded when the navigation happens.
+for (const mode of ['ready', 'late', 'blocked']) {
+  test(`Meta ${mode} SDK: signup Lead survives the redirect to the home page`, async ({ page }) => {
+    const events = await setup(page, mode);
+    let leadAt = 0;
+    let leftAt = 0;
+    page.on('request', request => {
+      if (!leadAt && request.url().startsWith('https://www.facebook.com/tr/') && request.url().includes('ev=Lead')) leadAt = Date.now();
+    });
+    page.on('framenavigated', frame => {
+      if (!leftAt && frame === page.mainFrame() && /accueil\.html$/.test(frame.url())) leftAt = Date.now();
+    });
+    await page.route('**/submit-enriched', route => route.fulfill({ json: { subscribed: true, confirmationPending: true } }));
+    await enterFunnel(page);
+    await expect(page.locator('[data-funnel-step="4"], [data-step-tab="4"]')).toHaveCount(0);
+    await page.locator('[data-svp="funnel-submit"]').click();
+    await expect(page.locator('[data-svp="funnel-feedback"]')).toContainText('Vérifie ta boîte courriel');
+    await expect(page.locator('[data-svp="funnel-submit"]')).toBeDisabled();
+    await expect(page.locator('[data-funnel-submit-skip]')).toBeDisabled();
+    await expect(page).toHaveURL(/accueil\.html$/);
+    await expect.poll(() => events.filter(e => e.name === 'Lead').length).toBe(1);
+    expect(leadAt).toBeGreaterThan(0);
+    expect(leadAt).toBeLessThan(leftAt);
+    await page.waitForTimeout(2200);
+    expect(events.filter(e => e.name === 'Lead')).toHaveLength(1);
+  });
+}
+
+for (const body of [{ alreadySubscribed: true }, { subscribed: true, alreadySubscribed: true }, { subscribed: true, botBlocked: true }]) {
+  test(`Meta excludes ${body.botBlocked ? 'bots' : body.subscribed ? 'existing subscribers flagged subscribed' : 'existing subscribers'} from Lead conversions`, async ({ page }) => {
     const events = await setup(page);
     await page.route('**/submit-enriched', route => route.fulfill({ json: body }));
     await enterFunnel(page);
     await page.locator('[data-svp="funnel-submit"]').click();
+    if (body.alreadySubscribed) {
+      await expect(page.locator('[data-funnel-step="already"]')).toBeVisible();
+      await expect(page.locator('[data-funnel-badge]')).toHaveText('DÉJÀ INSCRIT');
+    }
     await page.waitForTimeout(2200);
+    await expect(page).toHaveURL(/tunnel\.html$/);
     expect(events.filter(e => e.name === 'Lead')).toHaveLength(0);
   });
 }

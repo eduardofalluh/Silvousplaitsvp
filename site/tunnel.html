@@ -78,7 +78,6 @@
   .funnel-archive-empty{display:none;border:1.5px dashed #E1E0D4;border-radius:14px;padding:14px 16px;background:#FFFEF5;color:#8B8DA0;font:600 12px/1.45 'Instrument Sans',sans-serif;text-align:center}
   .funnel-invite-link{flex:1;border:1.5px solid #E1E0D4;border-radius:100px;padding:12px 16px;font:500 13px 'Instrument Sans',sans-serif;color:#4A4D66;overflow:hidden;white-space:nowrap;background:#FFFEF5}
   .funnel-secondary{background:#16182B;color:#FFFEF5;border:none;padding:12px 20px;border-radius:100px;font:700 13px 'Instrument Sans',sans-serif;white-space:nowrap;cursor:pointer}
-  .funnel-success-logo{width:110px;margin-bottom:10px}
   .funnel-modal{position:fixed;inset:0;background:rgba(37,52,155,.55);display:flex;align-items:center;justify-content:center;padding:24px;z-index:99999}
   .funnel-modal[hidden]{display:none}
   .funnel-modal-card{background:#FFFEF5;border:1.5px solid #16182B;border-radius:18px;padding:32px 28px;max-width:360px;width:100%;text-align:center;box-shadow:6px 6px 0 #3347CA}
@@ -109,7 +108,6 @@
     <button class="funnel-tab" type="button" data-step-tab="1" aria-selected="true">1 · Quiz</button>
     <button class="funnel-tab" type="button" data-step-tab="2" aria-selected="false">2 · Premium</button>
     <button class="funnel-tab" type="button" data-step-tab="3" aria-selected="false">3 · Invitation</button>
-    <button class="funnel-tab" type="button" data-step-tab="4" aria-selected="false">Bienvenue</button>
   </nav>
 
   <section class="funnel-card" data-svp="funnel-card">
@@ -224,31 +222,6 @@
       <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
       <button class="funnel-primary" type="button" data-svp="funnel-submit">Terminer mon inscription →</button>
       <button class="funnel-link-button" type="button" data-funnel-submit-skip>Passer cette étape</button>
-    </div>
-
-    <div class="funnel-step" data-funnel-step="4" hidden>
-      <div style="text-align:center;margin-bottom:24px">
-        <img src="assets/logo-yeux.png" alt="" class="funnel-success-logo">
-        <h1 class="funnel-title" style="font-size:26px">Bienvenue, <span data-funnel-name></span>&nbsp;!</h1>
-        <p class="funnel-copy" style="margin-bottom:0">Confirme ton courriel pour recevoir l'infolettre <b style="color:#16182B" data-funnel-city>Montréal</b> et nos sélections du lundi.</p>
-      </div>
-
-      <div style="border:1.5px solid #3347CA;background:#EEF0FD;border-radius:14px;padding:16px 18px;margin-bottom:22px">
-        <div style="font:700 13.5px 'Instrument Sans',sans-serif;color:#3347CA;margin-bottom:5px">Une dernière étape importante</div>
-        <div style="font:400 13.5px/1.55 'Instrument Sans',sans-serif;color:#25349B">Vérifie ta boîte courriel et clique sur le lien de confirmation pour activer ton inscription. Pense aussi à vérifier tes indésirables.</div>
-      </div>
-
-      <div style="font:700 15px 'Bricolage Grotesque',sans-serif;margin:22px 0 12px">Questions fréquentes</div>
-      <div data-funnel-faq>
-        <button type="button" class="funnel-chip" style="display:block;width:100%;text-align:left;border-radius:12px;padding:13px 16px;margin-bottom:8px" data-faq-item>
-          <span style="display:flex;justify-content:space-between;align-items:center;gap:12px;font:600 13.5px 'Instrument Sans',sans-serif">Comment ne pas manquer les courriels ?<span style="color:#3347CA;font-size:16px;flex:none">⌄</span></span>
-          <span hidden style="font:400 13px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin-top:8px">Ajoute spectacles@silvousplaitsvp.com à tes contacts et réponds à notre premier courriel. Besoin d'aide&nbsp;? <a href="https://intia.fr/fr/ressources/ajouter-expediteur-aux-contacts-boite-mail/" target="_blank" rel="noopener">Voici comment faire</a>.</span>
-        </button>
-        <button type="button" class="funnel-chip" style="display:block;width:100%;text-align:left;border-radius:12px;padding:13px 16px;margin-bottom:8px" data-faq-item>
-          <span style="display:flex;justify-content:space-between;align-items:center;gap:12px;font:600 13.5px 'Instrument Sans',sans-serif">À quelle fréquence je reçois des offres ?<span style="color:#3347CA;font-size:16px;flex:none">⌄</span></span>
-          <span hidden style="font:400 13px/1.55 'Instrument Sans',sans-serif;color:#4A4D66;margin-top:8px">Une sélection par semaine, le lundi matin.</span>
-        </button>
-      </div>
     </div>
 
     <div class="funnel-step" data-funnel-step="already" hidden>

@@ -13,7 +13,7 @@ The trial Payment Link also ended on Stripe's hosted confirmation screen.
 | Event | Trigger |
 | --- | --- |
 | PageView | Page initialization, once per document |
-| Lead | Successful final newsletter form response, once per submission |
+| Lead | Successful final newsletter form response, once per submission; flushed, then the page waits 1 s before redirecting to the home page (October 2026, welcome step removed) so SDK and gateway requests are not cancelled |
 | PremiumClick | Premium CTA click or confirmed checkout choice |
 | OfferView | Offer card becomes visible |
 | InitiateCheckout | Checkout destination is available, immediately before navigation |

@@ -10,7 +10,7 @@ The partnership form accepts an optional phone number. It is included in the Act
 
 Both signup functions now pass `contact.form` to `POST /api/3/contact/sync`. They first verify that the selected form has double opt-in enabled and a subscribe-to-list action. The tunnel also verifies that the action targets the selected city's list. Neither function writes an active membership as a fallback. Existing active subscribers are not resubmitted; unconfirmed contacts may submit the form again. Enrichment failures do not turn an accepted signup into a retry.
 
-`subscribed: true` means the provider accepted the form submission; `confirmationPending: true` tells clients confirmation is still required. It is not proof of inbox delivery. The success page instructs visitors to click the confirmation link.
+`subscribed: true` means the provider accepted the form submission; `confirmationPending: true` tells clients confirmation is still required. It is not proof of inbox delivery. The tunnel's welcome page was removed at the client's request (October 2026): a successful signup shows a short "Vérifie ta boîte courriel" message on the last step, then goes to the home page.
 
 Production form mapping, verified September 9:
 
